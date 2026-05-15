@@ -4,150 +4,33 @@ Admin Web + User PWA capstone prototype built with **Java Spring Boot**, **React
 
 This system helps users enter symptoms, vitals, and health details, then gives a safe **Low / Medium / High** awareness result with reasons and follow-up questions. It does **not** diagnose disease, prescribe medicine, or replace a doctor.
 
----
-
 ## Medical Disclaimer
 
 This application does not provide medical diagnosis, treatment, prescription, or emergency service. It is only for educational and health-awareness purposes. For serious symptoms or emergencies, consult a qualified medical professional immediately.
 
----
-
 ## Current Branch
 
-Latest requested test branch:
+Use this branch for continuing development:
 
 ```text
 PMS_Test1
 ```
 
-Major changes in this branch:
+This branch contains the Spring Boot backend, React TypeScript frontend, dynamic auth flow, user-owned assessments, admin analytics, follow-up questions, validation, and a componentized frontend structure.
 
-- Backend changed from Python/FastAPI to **Java Spring Boot**
-- Frontend changed from `.jsx` to **TypeScript React `.tsx`**
-- Landing page appears first
-- Login and signup are dynamic
-- Logged-in users see only their own assessments
-- Admin can see all assessments and analytics
-- Follow-up questions are generated after assessment
-- Main symptom field has a fixed searchable symptom drawer
-- Health input values are validated on frontend and backend
+## Required Software
 
----
+Install these on the development system:
 
-## Software To Install
+- IntelliJ IDEA or VS Code
+- Git
+- Java JDK 17 or later
+- Maven or the included Maven wrapper
+- Node.js 20 or later
+- PostgreSQL 16 or compatible local PostgreSQL server
+- Postman or Thunder Client, optional for API testing
 
-### 1. Git
-
-Used to clone and push the project.
-
-Download:
-
-```text
-https://git-scm.com/downloads
-```
-
-Check:
-
-```bash
-git --version
-```
-
-### 2. Java JDK
-
-Required for Spring Boot backend.
-
-Recommended:
-
-```text
-JDK 17 or later
-```
-
-This project was tested with JDK 20.
-
-Download:
-
-```text
-https://www.oracle.com/java/technologies/downloads/
-```
-
-Check:
-
-```bash
-java --version
-```
-
-If Maven wrapper says `JAVA_HOME` is not set, set it on Windows PowerShell:
-
-```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-20"
-```
-
-Change the path if your JDK folder is different.
-
-### 3. Node.js
-
-Required for the React TypeScript frontend.
-
-Recommended:
-
-```text
-Node.js 20 or later
-```
-
-Download:
-
-```text
-https://nodejs.org/
-```
-
-Check:
-
-```bash
-node --version
-npm --version
-```
-
-### 4. Docker Desktop
-
-Used to run PostgreSQL locally.
-
-Download:
-
-```text
-https://www.docker.com/products/docker-desktop/
-```
-
-Check:
-
-```bash
-docker --version
-docker compose version
-```
-
-### 5. VS Code
-
-Recommended editor.
-
-Download:
-
-```text
-https://code.visualstudio.com/
-```
-
-Useful extensions:
-
-- Extension Pack for Java
-- Spring Boot Extension Pack
-- ESLint
-- Prettier
-- Docker
-- Thunder Client
-
-### 6. Postman Or Thunder Client
-
-Optional, used to test APIs.
-
----
+Docker is not required and is not used by this project.
 
 ## Project Structure
 
@@ -172,190 +55,71 @@ PMS/
     vite.config.js
     src/
       main.tsx
+      App.tsx
+      MainContent.tsx
+      api.ts
+      data.ts
+      types.ts
+      utils.ts
+      components/
+      pages/
+        admin/
+        auth/
+        user/
+      __tests__/
       styles.css
 
   docs/
     architecture.md
-
-  docker-compose.yml
-  README.md
 ```
 
----
+## Database Setup Without Docker
 
-## Backend Explanation
+Create a local PostgreSQL database and user:
 
-Backend location:
-
-```text
-backend/
+```sql
+CREATE DATABASE pms_db;
+CREATE USER pms_user WITH PASSWORD 'pms_password';
+GRANT ALL PRIVILEGES ON DATABASE pms_db TO pms_user;
 ```
 
-Technology:
+If PostgreSQL uses stricter schema permissions, connect to `pms_db` as a superuser and run:
 
-- Java
-- Spring Boot
-- Spring Web MVC
-- Spring Data JPA
-- Bean Validation
-- PostgreSQL driver
-- H2 database for test profile
-
-Main backend files:
-
-```text
-BackendApplication.java
-controller/AuthController.java
-controller/AssessmentController.java
-controller/AdminController.java
-service/AuthService.java
-service/AssessmentService.java
-service/RiskEngineService.java
-service/SeedDataService.java
-model/AppUser.java
-model/Assessment.java
-repository/UserRepository.java
-repository/AssessmentRepository.java
+```sql
+GRANT ALL ON SCHEMA public TO pms_user;
+ALTER SCHEMA public OWNER TO pms_user;
 ```
 
-The backend uses simple token-based authentication. After login/signup, the backend returns a token. The frontend sends that token using:
-
-```text
-Authorization: Bearer <token>
-```
-
-This is simple and suitable for a capstone prototype. For production, replace it with JWT or Spring Security session management.
-
----
-
-## Frontend Explanation
-
-Frontend location:
-
-```text
-frontend/
-```
-
-Technology:
-
-- React
-- TypeScript
-- Vite
-- Recharts
-- Lucide React icons
-- CSS custom properties
-
-Main frontend files:
-
-```text
-frontend/src/main.tsx
-frontend/src/styles.css
-frontend/index.html
-frontend/vite.config.js
-```
-
-The frontend now starts with a landing page. From there:
-
-1. User clicks Login or Sign up
-2. User authenticates
-3. The app loads their own records from the backend
-4. Admin users can access admin mode
-5. Normal users only see user mode
-
----
-
-## Demo Accounts
-
-The Spring Boot backend seeds these accounts when the database is empty:
-
-```text
-User:
-Email: user@example.com
-Username: anaya
-Password: password123
-
-Admin:
-Email: admin@example.com
-Username: admin
-Password: password123
-```
-
-You can also sign up with a new account from the landing page.
-
----
-
-## Database Setup
-
-PostgreSQL is configured through Docker Compose.
-
-Database details:
+Default backend connection:
 
 ```text
 Database: pms_db
 Username: pms_user
 Password: pms_password
+Host: localhost
 Port: 5432
 ```
 
-Start database:
+You can override the defaults with environment variables:
 
-```bash
-docker compose up -d
+```powershell
+$env:DATABASE_URL="jdbc:postgresql://localhost:5432/pms_db"
+$env:DATABASE_USERNAME="pms_user"
+$env:DATABASE_PASSWORD="pms_password"
+$env:CORS_ORIGIN="http://localhost:5173"
 ```
-
-Check containers:
-
-```bash
-docker ps
-```
-
-Stop database:
-
-```bash
-docker compose down
-```
-
-Reset database completely:
-
-```bash
-docker compose down -v
-```
-
-Use `down -v` only when you want to delete all saved database data.
-
----
 
 ## Run Backend
 
-Open terminal in project root:
-
-```bash
-cd C:\Users\vamsi\Desktop\PROJECTS\PMS
-```
-
-Start PostgreSQL first:
-
-```bash
-docker compose up -d
-```
-
-Go to backend:
-
-```bash
-cd backend
-```
-
-Set JAVA_HOME if needed:
+From the project root:
 
 ```powershell
+cd backend
 $env:JAVA_HOME="C:\Program Files\Java\jdk-20"
-```
-
-Run backend:
-
-```bash
 .\mvnw.cmd spring-boot:run
 ```
+
+Use your actual JDK path if different. The app sets the JVM default time zone to `Asia/Kolkata` at startup so PostgreSQL does not reject older Windows time zone IDs such as `Asia/Calcutta`.
 
 Backend URL:
 
@@ -369,25 +133,13 @@ Health check:
 http://localhost:8080/api/health
 ```
 
----
-
 ## Run Frontend
 
 Open another terminal:
 
-```bash
-cd C:\Users\vamsi\Desktop\PROJECTS\PMS\frontend
-```
-
-Install dependencies:
-
-```bash
+```powershell
+cd frontend
 npm install
-```
-
-Start frontend:
-
-```bash
 npm run dev
 ```
 
@@ -397,25 +149,29 @@ Frontend URL:
 http://localhost:5173
 ```
 
-If a browser blocks localhost, use:
-
-```text
-http://127.0.0.1:5173
-```
-
-The frontend proxy sends API requests to:
+The Vite proxy forwards `/api` requests to:
 
 ```text
 http://localhost:8080
 ```
 
-Proxy config is in:
+## Demo Accounts
+
+The backend seeds these accounts when the database is empty:
 
 ```text
-frontend/vite.config.js
+User:
+Email: user@example.com
+Username: anaya
+Password: password123
+
+Admin:
+Email: admin@example.com
+Username: admin
+Password: password123
 ```
 
----
+New users can also sign up from the landing page.
 
 ## API Endpoints
 
@@ -425,317 +181,101 @@ Base URL:
 http://localhost:8080/api
 ```
 
-### Health
+Important endpoints:
 
 ```http
-GET /api/health
-```
-
-### Signup
-
-```http
+GET  /api/health
 POST /api/auth/register
-```
-
-Example:
-
-```json
-{
-  "email": "newuser@example.com",
-  "username": "newuser",
-  "fullName": "New User",
-  "password": "password123",
-  "role": "USER"
-}
-```
-
-### Login
-
-```http
 POST /api/auth/login
+GET  /api/auth/me
+GET  /api/assessments
+POST /api/assessments
+GET  /api/admin/analytics
+GET  /api/admin/rules
+POST /api/admin/rules
+GET  /api/admin/questions
 ```
 
-Example:
-
-```json
-{
-  "identifier": "user@example.com",
-  "password": "password123"
-}
-```
-
-You can use email or username in `identifier`.
-
-### Current User
-
-```http
-GET /api/auth/me
-```
-
-Requires:
+Authenticated requests use:
 
 ```text
 Authorization: Bearer <token>
 ```
 
-### Create Assessment
+Normal users only see their own assessments. Admin users can see all assessments and admin analytics.
 
-```http
-POST /api/assessments
-```
+## Frontend Sections
 
-Example:
+The frontend is split by section:
 
-```json
-{
-  "mainSymptom": "Fever",
-  "severity": 6,
-  "durationDays": 4,
-  "temperatureF": 100.4,
-  "oxygenLevel": 97,
-  "heartRate": 88,
-  "chronicCondition": "None"
-}
-```
-
-Validation rules:
-
-```text
-mainSymptom: 2 to 120 characters
-severity: 1 to 10
-durationDays: 0 to 365
-temperatureF: 90.0 to 110.0
-oxygenLevel: 50 to 100
-heartRate: 35 to 220
-```
-
-### List Assessments
-
-```http
-GET /api/assessments
-```
-
-Normal user:
-
-```text
-Sees only their own assessments.
-```
-
-Admin:
-
-```text
-Sees all assessments.
-```
-
-### Admin Analytics
-
-```http
-GET /api/admin/analytics
-```
-
-Admin token required.
-
-### Admin Rules
-
-```http
-GET /api/admin/rules
-POST /api/admin/rules
-```
-
-### Admin Questions
-
-```http
-GET /api/admin/questions
-```
-
----
-
-## Risk Engine Logic
-
-Risk engine file:
-
-```text
-backend/src/main/java/com/pms/backend/service/RiskEngineService.java
-```
-
-It calculates score using:
-
-- Severity
-- Symptom duration
-- Temperature
-- Oxygen level
-- Heart rate
-- Red-flag symptom combinations
-- Chronic condition context
-
-Risk levels:
-
-```text
-0-39   = Low
-40-69  = Medium
-70-100 = High
-```
-
-It also returns:
-
-- Reasons
-- Suggestions
-- Follow-up questions
-
-Example:
-
-```text
-Fever + 4 days + 100.4 F
-=> Medium risk
-=> Follow-up questions about fever duration, chills, weakness, and highest temperature
-```
-
----
-
-## Main Symptom Drawer
-
-On the assessment page, the right side has a fixed symptom drawer.
-
-It includes:
-
-- Search input
-- Common symptoms list
-- Click-to-fill main symptom
-
-The drawer helps avoid random symptom spelling and keeps the assessment flow cleaner.
-
----
+- `pages/auth`: landing and login/signup pages
+- `pages/user`: user overview, assessment form, symptom drawer, reports, history, profile, recent assessments
+- `pages/admin`: admin overview, assessment table, rules, questions, datasets
+- `components`: shared layout and reusable UI pieces
+- `types.ts`, `api.ts`, `data.ts`, `utils.ts`: shared TypeScript contracts and helpers
 
 ## Validation And Testing
 
-Frontend build:
+Backend test profile uses H2 in-memory database, so backend tests do not require PostgreSQL:
 
-```bash
-cd frontend
-npm run build
-```
-
-Backend tests:
-
-```bash
+```powershell
 cd backend
 $env:JAVA_HOME="C:\Program Files\Java\jdk-20"
 .\mvnw.cmd test "-Dspring.profiles.active=test"
 ```
 
-The backend test profile uses H2 in-memory database, so it does not require PostgreSQL during tests.
-
----
-
-## Common Problems
-
-### JAVA_HOME is not defined
-
-Set:
+Frontend section tests render every major auth, user, admin, and layout section:
 
 ```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-20"
+cd frontend
+npm test
 ```
 
-### PostgreSQL connection failed
+Frontend production build:
 
-Make sure Docker Desktop is running:
-
-```bash
-docker compose up -d
-docker ps
+```powershell
+cd frontend
+npm run build
 ```
 
-### Frontend cannot reach backend
+Recommended full validation before pushing:
 
-Check backend is running:
+```powershell
+cd backend
+.\mvnw.cmd test "-Dspring.profiles.active=test"
 
-```text
-http://localhost:8080/api/health
+cd ..\frontend
+npm test
+npm run build
 ```
 
-Check frontend proxy:
+## Current Tested Status
 
-```text
-frontend/vite.config.js
-```
+Validated on `PMS_Test1`:
 
-### Port already in use
-
-Frontend alternate port:
-
-```bash
-npm run dev -- --port 5174
-```
-
-Backend alternate port:
-
-```bash
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
-```
-
----
+- Backend Spring context test passed with H2 test profile
+- Frontend section test suite passed
+- Frontend TypeScript and Vite production build passed
+- Runtime PostgreSQL path documented for local PostgreSQL, no Docker
 
 ## Security Scope
 
-Included:
+Included for prototype:
 
-- Password hashing with BCrypt
-- Simple token login
+- Password hashing
+- Simple token authentication
 - Role-based admin checks
-- Frontend and backend input validation
-- User-owned assessment records
+- User-owned assessment filtering
+- Frontend and backend validation
+- Synthetic demo seed data
 
 Not included:
 
-- Production JWT refresh flow
-- HIPAA compliance
-- Real medical data security
-- Hospital-grade audit logs
-- Real diagnosis
-- Prescription logic
+- Medical diagnosis
+- HIPAA-grade compliance
+- Production identity management
+- Real patient data handling
+- Emergency workflow
+- Advanced audit logging
 
----
-
-## Future Improvements
-
-- Replace simple token store with JWT/Spring Security
-- Add PDF text extraction in Spring Boot using PDFBox
-- Add OCR for scanned reports
-- Add editable patient profile form
-- Add real OpenAI/Gemini/Azure OpenAI integration
-- Add test coverage for controllers and services
-- Add Dockerfile for backend and frontend
-- Add deployment setup
-
----
-
-## Quick Start
-
-Terminal 1:
-
-```bash
-docker compose up -d
-```
-
-Terminal 2:
-
-```bash
-cd backend
-$env:JAVA_HOME="C:\Program Files\Java\jdk-20"
-.\mvnw.cmd spring-boot:run
-```
-
-Terminal 3:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:5173
-```
+This project must not be used with real patient data without major security and compliance upgrades.
