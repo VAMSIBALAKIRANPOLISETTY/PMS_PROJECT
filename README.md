@@ -1,1030 +1,303 @@
-# Patient Health Assessment and Tracking System Using Hybrid AI
+# Patient Health Assessment and Tracking System
 
-Admin Web + User PWA prototype for collecting patient health information, running rule-based risk assessment, uploading text-based PDF reports, generating mock AI summaries, and tracking health history over time.
+Admin Web + User PWA capstone prototype built with **Java Spring Boot**, **React + TypeScript**, and **PostgreSQL**.
 
-> Medical disclaimer: This project does not provide medical diagnosis, treatment, prescription, or emergency support. It is only an educational and health-awareness prototype. For serious symptoms or emergencies, consult a qualified medical professional immediately.
+This system helps users enter symptoms, vitals, and health details, then gives a safe **Low / Medium / High** awareness result with reasons and follow-up questions. It does **not** diagnose disease, prescribe medicine, or replace a doctor.
 
----
+## Detailed Project Description
 
-## 1. Project Overview
+The Patient Health Assessment and Tracking System is a capstone-style full-stack web application designed to support safe health-awareness workflows for normal users and administrative reviewers. The project focuses on collecting structured health inputs, processing those inputs through a controlled rule-based risk engine, and presenting the result in a clear and non-diagnostic format. The system is intentionally positioned as an educational and awareness prototype rather than a medical decision-making tool. It helps users organize their symptoms, vitals, and history before speaking with a qualified medical professional.
 
-This project is a capstone-style healthcare software system with two major parts:
+The application has two major workspaces: the User PWA workspace and the Admin Web Dashboard. The User PWA workspace is built for patients or normal users who want to create an account, log in, fill out a health assessment form, review risk awareness output, answer follow-up prompts, and track their previous assessment history. The Admin Web Dashboard is built for administrative review of the system's synthetic/demo data. Admin users can review assessment records, see analytics, inspect risk rules, view the dynamic question bank, and understand the dataset plan used for testing.
 
-- **User PWA**: A responsive web app for normal users/patients.
-- **Admin Web Dashboard**: A separate dashboard for admins to monitor records, rules, questions, datasets, and analytics.
+On the user side, the assessment form collects practical health indicators such as the main symptom, symptom severity, duration in days, body temperature, oxygen level, heart rate, and chronic condition context. The frontend validates these values before submission, and the backend also validates the request to avoid accepting invalid health data. After submission, the backend returns a risk score, a Low / Medium / High risk level, reasons for that level, safe suggestions, and follow-up questions. These follow-up questions are intended to make the next conversation with a doctor or caretaker more organized.
 
-The system collects details such as symptoms, vitals, medical history, lifestyle, allergies, medications, and uploaded report PDFs. It then uses a controlled hybrid AI approach:
+The risk engine is deliberately simple, explainable, and controlled. It does not use uncontrolled diagnosis logic, and it does not claim that a user has any specific disease. Instead, it evaluates broad risk indicators such as high severity, long duration, abnormal temperature, low oxygen, elevated heart rate, and red-flag symptom combinations. The output stays in the language of health awareness: it explains why the entered data may need attention and encourages professional consultation when symptoms are serious or persistent.
 
-- **Rule-based engine** for risk scoring and red-flag detection.
-- **Basic NLP-style keyword logic** for PDF/report text summaries.
-- **Mock AI response layer** for safe user-friendly explanations.
+The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons, and CSS custom properties. The current branch refactors the earlier single-file frontend into component and section files. This makes the code easier to understand, test, and extend. Authentication pages live under `pages/auth`, user-facing sections live under `pages/user`, admin-facing sections live under `pages/admin`, and shared interface elements live under `components`. Shared TypeScript types, API helpers, static data, and formatting utilities are separated into `types.ts`, `api.ts`, `data.ts`, and `utils.ts`.
 
-The first version uses synthetic/demo data only.
+The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, rules, questions, and analytics through controller, service, repository, DTO, and model layers.
 
----
+Authentication in this prototype uses a simple token-based approach. After login or signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Normal users can see only their own assessments. Admin users can access admin analytics and all assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
 
-## 2. Main Features
+The system avoids Docker by design in the current branch. It is intended to run on a normal development system with IntelliJ IDEA or VS Code, Java 17 or later, Maven, Node.js, and a locally installed PostgreSQL server. The backend connection defaults to `pms_db`, `pms_user`, and `pms_password`, but these can be changed using environment variables. This makes the project easier to run on college lab systems, personal laptops, or another development machine where Docker Desktop is not installed.
 
-### User Features
+Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile. Frontend testing uses Vitest and Testing Library to render every major section: landing page, auth page, layout controls, user overview, assessment form, symptom drawer, reports, history, profile, recent assessments, admin overview, assessment table, rules, questions, datasets, and design picker. The project also supports a production frontend build using TypeScript and Vite.
 
-- Demo login area
-- Consent/disclaimer positioning
-- Patient profile preview
-- Symptom and vitals assessment form
-- Rule-based risk result: Low, Medium, or High
-- Follow-up question preview
-- Safe suggestions and explanation
-- Text-based PDF upload UI
-- Mock report summary
-- Assessment history timeline
-- Vitals and risk trend charts
-- Mobile-friendly PWA-style layout
-- Three selectable UI design directions:
-  - Clinical Calm
-  - Paper Console
-  - Vital Signal
+Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production security model, editable patient profile forms, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
 
-### Admin Features
+## Medical Disclaimer
 
-- Admin dashboard view
-- User and assessment statistics
-- High-risk assessment count
-- Common symptom chart
-- Risk split chart
-- Assessment monitoring table
-- Rule management UI
-- Dynamic question bank UI
-- Synthetic dataset planning UI
-- Filters/search visual controls
+This application does not provide medical diagnosis, treatment, prescription, or emergency service. It is only for educational and health-awareness purposes. For serious symptoms or emergencies, consult a qualified medical professional immediately.
 
-### Backend Features
+## Current Branch
 
-- FastAPI backend
-- PostgreSQL database support
-- SQLAlchemy models
-- Email or username login
-- JWT token generation
-- Role-based access support
-- Seeded demo admin and user accounts
-- Assessment creation API
-- Rule-based risk engine
-- PDF upload endpoint
-- Text extraction from text-based PDFs
-- Mock report summary
-- Admin analytics endpoints
-- Question and rule management endpoints
+Use this branch for continuing development:
 
----
+```text
+PMS_Test1
+```
 
-## 3. Technology Stack
+This branch contains the Spring Boot backend, React TypeScript frontend, dynamic auth flow, user-owned assessments, admin analytics, follow-up questions, validation, and a componentized frontend structure.
 
-### Frontend
+## Required Software
 
-- React
-- Vite
-- CSS custom properties
-- Recharts
-- Lucide React icons
-- Responsive layout
+Install these on the development system:
 
-### Backend
-
-- Python
-- FastAPI
-- Uvicorn
-- SQLAlchemy
-- Pydantic
-- JWT authentication
-- Passlib password hashing
-- PyMuPDF for PDF text extraction
-
-### Database
-
-- PostgreSQL
-- Docker Compose for local database setup
-
-### Development Tools
-
+- IntelliJ IDEA or VS Code
 - Git
-- GitHub
-- VS Code
-- Postman or Thunder Client
-- Docker Desktop
-- pgAdmin optional
+- Java JDK 17 or later
+- Maven or the included Maven wrapper
+- Node.js 20 or later
+- PostgreSQL 16 or compatible local PostgreSQL server
+- Postman or Thunder Client, optional for API testing
 
----
+Docker is not required and is not used by this project.
 
-## 4. Folder Structure
+## Project Structure
 
 ```text
 PMS/
   backend/
-    app/
-      api/
-        routes.py
-      core/
-        config.py
-      models/
-        entities.py
-      schemas/
-        health.py
-      services/
-        pdf_service.py
-        risk_engine.py
-        security.py
-        seed.py
-      database.py
-      main.py
-    .env.example
-    requirements.txt
+    pom.xml
+    mvnw.cmd
+    src/main/java/com/pms/backend/
+      config/
+      controller/
+      dto/
+      model/
+      repository/
+      service/
+    src/main/resources/
+      application.properties
 
   frontend/
-    public/
-    src/
-      main.jsx
-      styles.css
     index.html
     package.json
     vite.config.js
+    src/
+      main.tsx
+      App.tsx
+      MainContent.tsx
+      api.ts
+      data.ts
+      types.ts
+      utils.ts
+      components/
+      pages/
+        admin/
+        auth/
+        user/
+      __tests__/
+      styles.css
 
   docs/
     architecture.md
-
-  docker-compose.yml
-  README.md
-  .gitignore
 ```
 
----
+## Database Setup Without Docker
 
-## 5. Software You Need To Download
+Create a local PostgreSQL database and user:
 
-Install these before running the project.
-
-### 5.1 Git
-
-Git is used to clone, commit, and push the project.
-
-Download:
-
-```text
-https://git-scm.com/downloads
+```sql
+CREATE DATABASE pms_db;
+CREATE USER pms_user WITH PASSWORD 'pms_password';
+GRANT ALL PRIVILEGES ON DATABASE pms_db TO pms_user;
 ```
 
-Check installation:
+If PostgreSQL uses stricter schema permissions, connect to `pms_db` as a superuser and run:
 
-```bash
-git --version
+```sql
+GRANT ALL ON SCHEMA public TO pms_user;
+ALTER SCHEMA public OWNER TO pms_user;
 ```
 
-### 5.2 Node.js
-
-Node.js is required for the React frontend.
-
-Recommended version:
-
-```text
-Node.js 20 or later
-```
-
-Download:
-
-```text
-https://nodejs.org/
-```
-
-Check installation:
-
-```bash
-node --version
-npm --version
-```
-
-### 5.3 Python
-
-Python is required for the FastAPI backend.
-
-Recommended version:
-
-```text
-Python 3.11 or later
-```
-
-Download:
-
-```text
-https://www.python.org/downloads/
-```
-
-Important during installation:
-
-```text
-Tick "Add Python to PATH"
-```
-
-Check installation:
-
-```bash
-python --version
-```
-
-### 5.4 Docker Desktop
-
-Docker Desktop is the easiest way to run PostgreSQL locally.
-
-Download:
-
-```text
-https://www.docker.com/products/docker-desktop/
-```
-
-Check installation:
-
-```bash
-docker --version
-docker compose version
-```
-
-### 5.5 VS Code
-
-VS Code is recommended for editing and running the project.
-
-Download:
-
-```text
-https://code.visualstudio.com/
-```
-
-Recommended VS Code extensions:
-
-- Python
-- Pylance
-- ESLint
-- Prettier
-- Thunder Client
-- Docker
-
-### 5.6 Postman or Thunder Client
-
-Use this to test backend APIs.
-
-Postman:
-
-```text
-https://www.postman.com/downloads/
-```
-
-Thunder Client is a VS Code extension.
-
-### 5.7 pgAdmin Optional
-
-pgAdmin helps you visually inspect the PostgreSQL database.
-
-Download:
-
-```text
-https://www.pgadmin.org/download/
-```
-
----
-
-## 6. Demo Login Accounts
-
-The backend automatically creates these accounts when it starts for the first time and connects to an empty database.
-
-```text
-Admin:
-Email: admin@example.com
-Username: admin
-Password: password123
-
-User:
-Email: user@example.com
-Username: anaya
-Password: password123
-```
-
-The frontend currently displays demo account information visually. Backend authentication endpoints are also available.
-
----
-
-## 7. How The System Works
-
-### Step 1: User Enters Health Data
-
-The user enters symptoms, severity, duration, vitals, and medical history.
-
-Example:
-
-```text
-Main symptom: Fever and weakness
-Severity: 6/10
-Duration: 4 days
-Temperature: 100.4 F
-Oxygen: 97
-```
-
-### Step 2: Rule Engine Calculates Risk
-
-The backend risk engine checks:
-
-- Symptom type
-- Severity
-- Duration
-- Temperature
-- Oxygen level
-- Red-flag combinations
-- Medical history
-
-Then it returns:
-
-- Risk score
-- Risk level
-- Reasons
-- Follow-up questions
-- Safe suggestions
-
-### Step 3: User Sees Safe Output
-
-The output explains risk in simple language and includes a medical disclaimer.
-
-The app never says:
-
-```text
-You have disease X.
-```
-
-It only says:
-
-```text
-Your entered information shows medium risk indicators. Please consult a doctor if symptoms persist.
-```
-
-### Step 4: Admin Monitors System
-
-The admin dashboard shows:
-
-- Total users
-- Total assessments
-- High-risk count
-- PDF uploads
-- Common symptoms
-- Risk split
-- Assessment table
-- Rules and question bank
-
----
-
-## 8. Running The Project Locally
-
-Open a terminal in this folder:
-
-```bash
-cd C:\Users\vamsi\Desktop\PROJECTS\PMS
-```
-
-Or open the folder in VS Code:
-
-```bash
-code C:\Users\vamsi\Desktop\PROJECTS\PMS
-```
-
----
-
-## 9. Start PostgreSQL Database
-
-Make sure Docker Desktop is running.
-
-Then run:
-
-```bash
-docker compose up -d
-```
-
-This starts PostgreSQL with:
+Default backend connection:
 
 ```text
 Database: pms_db
 Username: pms_user
 Password: pms_password
+Host: localhost
 Port: 5432
 ```
 
-Check running containers:
+You can override the defaults with environment variables:
 
-```bash
-docker ps
+```powershell
+$env:DATABASE_URL="jdbc:postgresql://localhost:5432/pms_db"
+$env:DATABASE_USERNAME="pms_user"
+$env:DATABASE_PASSWORD="pms_password"
+$env:CORS_ORIGIN="http://localhost:5173"
 ```
 
-Stop database:
+## Run Backend
 
-```bash
-docker compose down
-```
+From the project root:
 
-Stop database and remove stored data:
-
-```bash
-docker compose down -v
-```
-
-Use `down -v` only when you want to reset all database data.
-
----
-
-## 10. Setup And Run Backend
-
-Open a terminal:
-
-```bash
+```powershell
 cd backend
+$env:JAVA_HOME="C:\Program Files\Java\jdk-20"
+.\mvnw.cmd spring-boot:run
 ```
 
-Create a Python virtual environment:
+Use your actual JDK path if different. The app sets the JVM default time zone to `Asia/Kolkata` at startup so PostgreSQL does not reject older Windows time zone IDs such as `Asia/Calcutta`.
 
-```bash
-python -m venv .venv
-```
-
-Activate the virtual environment on Windows PowerShell:
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-If PowerShell blocks activation, run:
-
-```bash
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-Then activate again:
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-Install backend dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Create `.env` file from the example:
-
-```bash
-copy .env.example .env
-```
-
-Start the backend:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Backend runs at:
+Backend URL:
 
 ```text
-http://localhost:8000
-```
-
-FastAPI docs:
-
-```text
-http://localhost:8000/docs
+http://localhost:8080
 ```
 
 Health check:
 
 ```text
-http://localhost:8000/api/health
+http://localhost:8080/api/health
 ```
 
----
-
-## 11. Setup And Run Frontend
+## Run Frontend
 
 Open another terminal:
 
-```bash
+```powershell
 cd frontend
-```
-
-Install frontend dependencies:
-
-```bash
 npm install
-```
-
-Start frontend:
-
-```bash
 npm run dev
 ```
 
-Frontend runs at:
+Frontend URL:
 
 ```text
 http://localhost:5173
 ```
 
-If localhost is blocked in any tool, use:
+The Vite proxy forwards `/api` requests to:
 
 ```text
-http://127.0.0.1:5173
+http://localhost:8080
 ```
 
-Build frontend for production:
+## Demo Accounts
 
-```bash
-npm run build
-```
-
-Preview production build:
-
-```bash
-npm run preview
-```
-
----
-
-## 12. Backend Environment Variables
-
-Backend configuration is in:
+The backend seeds these accounts when the database is empty:
 
 ```text
-backend/.env
+User:
+Email: user@example.com
+Username: anaya
+Password: password123
+
+Admin:
+Email: admin@example.com
+Username: admin
+Password: password123
 ```
 
-Example:
+New users can also sign up from the landing page.
 
-```env
-APP_NAME="Patient Health Assessment API"
-DATABASE_URL="postgresql+psycopg://pms_user:pms_password@localhost:5432/pms_db"
-JWT_SECRET="change-this-demo-secret"
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-CORS_ORIGINS="http://localhost:5173"
-```
-
-Meaning:
-
-- `APP_NAME`: Name shown in FastAPI docs.
-- `DATABASE_URL`: PostgreSQL connection string.
-- `JWT_SECRET`: Secret key used to sign login tokens.
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token lifetime.
-- `CORS_ORIGINS`: Frontend URLs allowed to call backend.
-
-For a real production app, change `JWT_SECRET`.
-
----
-
-## 13. Important API Endpoints
+## API Endpoints
 
 Base URL:
 
 ```text
-http://localhost:8000/api
+http://localhost:8080/api
 ```
 
-### Health Check
+Important endpoints:
 
 ```http
-GET /api/health
-```
-
-### Register
-
-```http
+GET  /api/health
 POST /api/auth/register
-```
-
-Example JSON:
-
-```json
-{
-  "email": "newuser@example.com",
-  "username": "newuser",
-  "full_name": "New User",
-  "password": "password123",
-  "role": "user"
-}
-```
-
-### Login With Email Or Username
-
-```http
 POST /api/auth/login
-```
-
-Example JSON:
-
-```json
-{
-  "identifier": "user@example.com",
-  "password": "password123"
-}
-```
-
-Or:
-
-```json
-{
-  "identifier": "anaya",
-  "password": "password123"
-}
-```
-
-### Get Current User
-
-```http
-GET /api/me
-```
-
-Requires Bearer token.
-
-### Create Assessment
-
-```http
+GET  /api/auth/me
+GET  /api/assessments
 POST /api/assessments
-```
-
-Example JSON:
-
-```json
-{
-  "main_symptom": "Fever and weakness",
-  "symptom_details": {
-    "severity": 6,
-    "duration": "4 days"
-  },
-  "vitals": {
-    "temperature": 100.4,
-    "oxygen": 97
-  },
-  "medical_history": {
-    "diabetes": false,
-    "asthma": false
-  }
-}
-```
-
-### List Assessments
-
-```http
-GET /api/assessments
-```
-
-Admin sees all assessments. User sees only their own assessments.
-
-### Upload PDF Report
-
-```http
-POST /api/reports/upload
-```
-
-Use multipart form data:
-
-```text
-file: report.pdf
-```
-
-Only text-based PDFs are supported in version one. Scanned image PDFs are out of scope.
-
-### Admin Analytics
-
-```http
-GET /api/admin/analytics
-```
-
-Admin token required.
-
-### Admin Questions
-
-```http
-GET /api/admin/questions
-POST /api/admin/questions
-```
-
-### Admin Rules
-
-```http
-GET /api/admin/rules
+GET  /api/admin/analytics
+GET  /api/admin/rules
 POST /api/admin/rules
+GET  /api/admin/questions
 ```
 
----
-
-## 14. Database Tables
-
-The backend creates tables automatically on startup.
-
-Important tables:
-
-- `users`
-- `consents`
-- `patient_profiles`
-- `assessments`
-- `questions`
-- `admin_rules`
-- `uploaded_reports`
-- `audit_logs`
-
-The models are defined in:
+Authenticated requests use:
 
 ```text
-backend/app/models/entities.py
+Authorization: Bearer <token>
 ```
 
----
+Normal users only see their own assessments. Admin users can see all assessments and admin analytics.
 
-## 15. Risk Engine Explanation
+## Frontend Sections
 
-The risk engine is in:
+The frontend is split by section:
 
-```text
-backend/app/services/risk_engine.py
+- `pages/auth`: landing and login/signup pages
+- `pages/user`: user overview, assessment form, symptom drawer, reports, history, profile, recent assessments
+- `pages/admin`: admin overview, assessment table, rules, questions, datasets
+- `components`: shared layout and reusable UI pieces
+- `types.ts`, `api.ts`, `data.ts`, `utils.ts`: shared TypeScript contracts and helpers
+
+## Validation And Testing
+
+Backend test profile uses H2 in-memory database, so backend tests do not require PostgreSQL:
+
+```powershell
+cd backend
+$env:JAVA_HOME="C:\Program Files\Java\jdk-20"
+.\mvnw.cmd test "-Dspring.profiles.active=test"
 ```
 
-It checks inputs and calculates a score.
+Frontend section tests render every major auth, user, admin, and layout section:
 
-Example rules:
-
-- Chest pain + breathing difficulty increases risk strongly.
-- Severity greater than or equal to 7 increases risk.
-- Fever longer than three days increases risk.
-- Temperature above normal increases risk.
-- Very high temperature increases risk more.
-- Oxygen below demo threshold increases risk.
-- Diabetes history + dizziness triggers follow-up logic.
-
-Risk classification:
-
-```text
-0-39   = Low
-40-69  = Medium
-70-100 = High
+```powershell
+cd frontend
+npm test
 ```
 
-The system also returns reasons so the output is explainable.
+Frontend production build:
 
----
-
-## 16. PDF Report Processing
-
-PDF logic is in:
-
-```text
-backend/app/services/pdf_service.py
-```
-
-Current scope:
-
-- Accept PDF files
-- Extract readable text using PyMuPDF
-- Detect a few common words such as hemoglobin, glucose, cholesterol, WBC, platelet, blood pressure
-- Generate a mock summary
-
-Not included in version one:
-
-- OCR
-- Scanned report reading
-- X-ray/MRI image analysis
-- Medical diagnosis
-- Lab-value clinical interpretation
-
----
-
-## 17. Frontend UI Explanation
-
-Frontend entry file:
-
-```text
-frontend/src/main.jsx
-```
-
-Frontend styling:
-
-```text
-frontend/src/styles.css
-```
-
-The UI has two modes:
-
-- User mode
-- Admin mode
-
-The top segmented control switches between them.
-
-The design selector switches between:
-
-- Clinical Calm
-- Paper Console
-- Vital Signal
-
-These are controlled using CSS variables on `body[data-theme]`.
-
-Charts are built using Recharts.
-
-Icons are from Lucide React.
-
----
-
-## 18. Validation Commands
-
-Run frontend build:
-
-```bash
+```powershell
 cd frontend
 npm run build
 ```
 
-Run backend syntax check:
+Recommended full validation before pushing:
 
-```bash
+```powershell
 cd backend
-python -m compileall app
+.\mvnw.cmd test "-Dspring.profiles.active=test"
+
+cd ..\frontend
+npm test
+npm run build
 ```
 
-Check API manually:
+## Current Tested Status
 
-```bash
-curl http://localhost:8000/api/health
-```
+Validated on `PMS_Test1`:
 
----
+- Backend Spring context test passed with H2 test profile
+- Frontend section test suite passed
+- Frontend TypeScript and Vite production build passed
+- Runtime PostgreSQL path documented for local PostgreSQL, no Docker
 
-## 19. Common Problems And Fixes
+## Security Scope
 
-### Problem: `docker` command not found
-
-Fix:
-
-- Install Docker Desktop.
-- Restart your terminal.
-- Make sure Docker Desktop is running.
-
-### Problem: PostgreSQL connection error
-
-Fix:
-
-Run:
-
-```bash
-docker compose up -d
-docker ps
-```
-
-Confirm PostgreSQL is running on port `5432`.
-
-### Problem: Python virtual environment activation blocked
-
-Fix:
-
-```bash
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-Then:
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-### Problem: Frontend port already in use
-
-Fix:
-
-Stop the old frontend terminal or run:
-
-```bash
-npm run dev -- --port 5174
-```
-
-### Problem: Backend port already in use
-
-Fix:
-
-Run backend on another port:
-
-```bash
-uvicorn app.main:app --reload --port 8001
-```
-
-If you change backend port, update frontend proxy in:
-
-```text
-frontend/vite.config.js
-```
-
-### Problem: PDF summary says no readable text
-
-Reason:
-
-The PDF is probably scanned or image-based.
-
-Fix:
-
-Use a text-based PDF for this version.
-
----
-
-## 20. Security Scope
-
-Included for demo:
+Included for prototype:
 
 - Password hashing
-- JWT authentication
-- Role field
-- Admin-only endpoint checks
-- File type validation for PDF endpoint
-- Environment-based configuration
+- Simple token authentication
+- Role-based admin checks
+- User-owned assessment filtering
+- Frontend and backend validation
+- Synthetic demo seed data
 
 Not included:
 
-- HIPAA compliance
-- Production-grade encryption
-- Hospital-grade audit system
+- Medical diagnosis
+- HIPAA-grade compliance
+- Production identity management
 - Real patient data handling
-- Advanced rate limiting
-- Refresh token rotation
+- Emergency workflow
+- Advanced audit logging
 
 This project must not be used with real patient data without major security and compliance upgrades.
-
----
-
-## 21. Future Enhancements
-
-Possible improvements:
-
-- Real OpenAI/Gemini/Azure OpenAI integration
-- OCR for scanned PDFs
-- Native Android app
-- Doctor dashboard
-- Appointment booking
-- Multilingual support
-- Voice symptom input
-- Wearable integration
-- Emergency alert workflow
-- FHIR/HL7 medical data support
-- More advanced rule builder
-- Exportable assessment summary PDF
-- Better test suite
-- Dockerized frontend/backend services
-
----
-
-## 22. Project Status
-
-Current status:
-
-- Frontend scaffold complete
-- Backend scaffold complete
-- PostgreSQL configuration complete
-- Demo users seeded
-- Synthetic data included
-- Mock AI summary included
-- PDF text extraction included
-- Detailed documentation included
-
-This is a demo-ready capstone MVP foundation.
-
----
-
-## 23. Quick Start Summary
-
-Run database:
-
-```bash
-docker compose up -d
-```
-
-Run backend:
-
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-copy .env.example .env
-uvicorn app.main:app --reload
-```
-
-Run frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:5173
-```
-
-API docs:
-
-```text
-http://localhost:8000/docs
-```
