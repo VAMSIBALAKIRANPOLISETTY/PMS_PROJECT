@@ -68,7 +68,8 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
         <button className="ghost-button" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
           {authMode === "login" ? "Need an account? Sign up" : "Already have an account? Login"}
         </button>
-        <div className="disclaimer-box">Demo users: user@example.com / admin@example.com. Password: password123.</div>
+        <button className="ghost-button" onClick={onBack}>Back</button>
+       {/* <div className="disclaimer-box">Demo users: user@example.com / admin@example.com. Password: password123.</div> */}
       </section>
     </div>
   );
