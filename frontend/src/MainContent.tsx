@@ -1,4 +1,4 @@
-import type { Analytics, Assessment, DesignId, Mode, Page, Question, Rule, User } from "./types";
+import type { Analytics, Assessment, DesignId, Mode, Notify, Page, Question, Rule, User } from "./types";
 import { AdminOverview } from "./pages/admin/AdminOverview";
 import { AssessmentTable } from "./pages/admin/AssessmentTable";
 import { Datasets } from "./pages/admin/Datasets";
@@ -23,6 +23,8 @@ interface MainContentProps {
   refresh: () => Promise<void>;
   design: DesignId;
   setDesign: (design: DesignId) => void;
+  updateUser: (user: User) => void;
+  notify: Notify;
 }
 
 export function MainContent(props: MainContentProps) {
@@ -33,9 +35,9 @@ export function MainContent(props: MainContentProps) {
     if (props.page === "datasets") return <Datasets />;
     return <AdminOverview analytics={props.analytics} assessments={props.assessments} setPage={props.setPage} />;
   }
-  if (props.page === "assessment") return <AssessmentForm token={props.token} onCreated={props.refresh} />;
-  if (props.page === "reports") return <Reports />;
+  if (props.page === "assessment") return <AssessmentForm token={props.token} onCreated={props.refresh} notify={props.notify} />;
+  if (props.page === "reports") return <Reports notify={props.notify} />;
   if (props.page === "history") return <History assessments={props.assessments} />;
-  if (props.page === "profile") return <Profile user={props.user} />;
-  return <UserOverview user={props.user} assessments={props.assessments} setPage={props.setPage} design={props.design} setDesign={props.setDesign} />;
+  if (props.page === "profile") return <Profile user={props.user} token={props.token} updateUser={props.updateUser} notify={props.notify} />;
+  return <UserOverview user={props.user} token={props.token} assessments={props.assessments} setPage={props.setPage} design={props.design} setDesign={props.setDesign} updateUser={props.updateUser} notify={props.notify} />;
 }

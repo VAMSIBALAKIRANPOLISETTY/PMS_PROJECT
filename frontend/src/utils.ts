@@ -16,12 +16,11 @@ export function formatDate(value: string) {
 
 export function trendFromAssessments(assessments: Assessment[]) {
   const latest = [...assessments].slice(0, 7).reverse();
-  if (latest.length === 0) return [{ day: "Now", risk: 0, temp: 98.6, heart: 0, sleep: 0 }];
+  if (latest.length === 0) return [{ day: "Now", risk: 0, temp: 98.6, sleep: 0 }];
   return latest.map((item) => ({
     day: formatDate(item.createdAt),
     risk: item.riskScore,
-    temp: item.temperatureF,
-    heart: item.heartRate,
+    temp: item.temperatureF ?? 98.6,
     sleep: 7,
   }));
 }

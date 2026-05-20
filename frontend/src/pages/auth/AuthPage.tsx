@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import axios from "axios";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ClipboardCheck, HeartPulse, ShieldCheck } from "lucide-react";
 import { api } from "../../api";
 import type { Role, User } from "../../types";
 
@@ -21,6 +21,10 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
     fullName: "",
     password: "password123",
     role: "USER" as Role,
+    age: 24,
+    heightCm: 170,
+    weightKg: 68,
+    sex: "Prefer not to say",
   });
 
   async function submit(event: FormEvent) {
@@ -35,6 +39,10 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
           fullName: form.fullName,
           password: form.password,
           role: form.role,
+          age: form.age,
+          heightCm: form.heightCm,
+          weightKg: form.weightKg,
+          sex: form.sex,
         });
       onSuccess(response.data.token, response.data.user);
     } catch (error) {
@@ -44,8 +52,20 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
 
   return (
     <div className="auth-page" data-section="auth">
+      <div className="auth-backdrop" aria-hidden="true">
+        <div className="auth-device-card">
+          <HeartPulse size={28} />
+          <strong>Safe health workspace</strong>
+          <span>Profile, assessment, report, and follow-up history in one flow.</span>
+        </div>
+        <div className="auth-mini-grid">
+          <span><ShieldCheck size={17} /> Awareness only</span>
+          <span><ClipboardCheck size={17} /> Guided setup</span>
+          <span>4-7 follow-ups</span>
+        </div>
+      </div>
       <section className="panel auth-panel">
-        <button className="ghost-button" onClick={onBack}>Back</button>
+        <button className="ghost-button back-button" onClick={onBack}><ArrowLeft size={18} />Back</button>
         <div>
           <p className="eyebrow">{authMode === "login" ? "Welcome back" : "Create account"}</p>
           <h2>{authMode === "login" ? "Login to your health workspace" : "Sign up for your own health history"}</h2>
@@ -59,6 +79,10 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
               <label>Username<input value={form.username} minLength={3} onChange={(event) => setForm({ ...form, username: event.target.value })} required /></label>
               <label>Full name<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required /></label>
               <label>Role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Role })}><option value="USER">User</option><option value="ADMIN">Admin</option></select></label>
+              <label>Age<input type="number" min="1" max="120" value={form.age} onChange={(event) => setForm({ ...form, age: Number(event.target.value) })} required /></label>
+              <label>Height cm<input type="number" min="30" max="260" step="0.1" value={form.heightCm} onChange={(event) => setForm({ ...form, heightCm: Number(event.target.value) })} required /></label>
+              <label>Weight kg<input type="number" min="2" max="350" step="0.1" value={form.weightKg} onChange={(event) => setForm({ ...form, weightKg: Number(event.target.value) })} required /></label>
+              <label>Sex<select value={form.sex} onChange={(event) => setForm({ ...form, sex: event.target.value })} required><option>Female</option><option>Male</option><option>Intersex</option><option>Prefer not to say</option></select></label>
             </>
           )}
           <label>Password<input type="password" minLength={8} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required /></label>

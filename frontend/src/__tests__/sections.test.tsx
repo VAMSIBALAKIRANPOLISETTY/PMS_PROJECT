@@ -48,6 +48,11 @@ const user: User = {
   username: "anaya",
   fullName: "Anaya Rao",
   role: "USER",
+  age: 24,
+  sex: "Female",
+  heightCm: 162,
+  weightKg: 58,
+  profileCompletion: 100,
 };
 
 const admin: User = {
@@ -64,17 +69,18 @@ const assessment: Assessment = {
   userId: 1,
   patient: "Anaya Rao",
   mainSymptom: "Fever",
+  symptoms: ["Fever"],
   severity: 6,
   durationDays: 4,
+  temperatureAvailable: true,
   temperatureF: 100.4,
-  oxygenLevel: 97,
-  heartRate: 88,
   chronicCondition: "None",
   riskScore: 52,
   riskLevel: "MEDIUM",
   reasons: ["Fever lasting several days"],
   suggestions: ["Monitor symptoms"],
-  followUpQuestions: ["Any chills?"],
+  followUpQuestions: ["Any chills?", "Any body pain?", "Any new severe symptom?", "Any chronic conditions?"],
+  followUpAnswers: [],
   createdAt: "2026-05-15T10:00:00",
 };
 
@@ -111,7 +117,9 @@ describe("section rendering", () => {
   it("renders landing section", () => {
     render(<LandingPage onAuth={vi.fn()} />);
     expect(screen.getByText("PMS Health")).toBeInTheDocument();
-    expect(screen.getByText("Create account")).toBeInTheDocument();
+    expect(screen.getAllByText("Create account").length).toBeGreaterThan(0);
+    expect(screen.getByText("Built for awareness, not medical decision-making.")).toBeInTheDocument();
+    expect(screen.getByText("Questions about the PMS project?")).toBeInTheDocument();
   });
 
   it("renders auth section", () => {
@@ -127,25 +135,25 @@ describe("section rendering", () => {
   });
 
   it("renders user overview and design picker", () => {
-    render(<UserOverview user={user} assessments={[assessment]} setPage={vi.fn()} design="clinical" setDesign={vi.fn()} />);
+    render(<UserOverview user={user} token="token" assessments={[assessment]} setPage={vi.fn()} design="clinical" setDesign={vi.fn()} updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText(/latest assessment is medium risk/i)).toBeInTheDocument();
     expect(screen.getByText("Select a design direction")).toBeInTheDocument();
   });
 
   it("renders assessment and symptom drawer sections", () => {
-    render(<AssessmentForm token="token" onCreated={vi.fn()} />);
+    render(<AssessmentForm token="token" onCreated={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Health assessment")).toBeInTheDocument();
     expect(screen.getByText("Possible symptoms")).toBeInTheDocument();
-    render(<SymptomDrawer selected="Fever" onSelect={vi.fn()} />);
+    render(<SymptomDrawer selected={["Fever"]} onSelect={vi.fn()} />);
     expect(screen.getAllByText("Fever").length).toBeGreaterThan(0);
   });
 
   it("renders reports, history, profile, and recent assessments", () => {
-    render(<Reports />);
+    render(<Reports notify={vi.fn()} />);
     expect(screen.getByText("Upload text-based PDF report")).toBeInTheDocument();
     render(<History assessments={[assessment]} />);
     expect(screen.getByText("Assessment timeline")).toBeInTheDocument();
-    render(<Profile user={user} />);
+    render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
     render(<RecentAssessments assessments={[assessment]} />);
     expect(screen.getByText("Recent assessments")).toBeInTheDocument();

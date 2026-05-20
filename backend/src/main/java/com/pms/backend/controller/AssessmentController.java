@@ -2,6 +2,7 @@ package com.pms.backend.controller;
 
 import com.pms.backend.dto.AssessmentDtos.AssessmentRequest;
 import com.pms.backend.dto.AssessmentDtos.AssessmentResponse;
+import com.pms.backend.dto.AssessmentDtos.FollowUpAnswerRequest;
 import com.pms.backend.model.AppUser;
 import com.pms.backend.service.AssessmentService;
 import com.pms.backend.service.AuthService;
@@ -33,5 +34,15 @@ public class AssessmentController {
     ) {
         AppUser user = authService.requireUser(authHeader);
         return assessmentService.create(user, request);
+    }
+
+    @PostMapping("/{assessmentId}/follow-ups")
+    public AssessmentResponse answerFollowUps(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long assessmentId,
+            @Valid @RequestBody FollowUpAnswerRequest request
+    ) {
+        AppUser user = authService.requireUser(authHeader);
+        return assessmentService.answerFollowUps(user, assessmentId, request);
     }
 }

@@ -33,6 +33,10 @@ public class AppUser {
     private String allergies = "No known allergies";
     private String chronicConditions = "None";
     private String lifestyle = "Moderate activity";
+    private String medications = "None";
+    private String familyHistory = "Not set";
+    private String mentalHealthHistory = "Not set";
+    private String sleepQuality = "Not set";
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Long getId() { return id; }
@@ -61,6 +65,14 @@ public class AppUser {
     public void setChronicConditions(String chronicConditions) { this.chronicConditions = chronicConditions; }
     public String getLifestyle() { return lifestyle; }
     public void setLifestyle(String lifestyle) { this.lifestyle = lifestyle; }
+    public String getMedications() { return medications; }
+    public void setMedications(String medications) { this.medications = medications; }
+    public String getFamilyHistory() { return familyHistory; }
+    public void setFamilyHistory(String familyHistory) { this.familyHistory = familyHistory; }
+    public String getMentalHealthHistory() { return mentalHealthHistory; }
+    public void setMentalHealthHistory(String mentalHealthHistory) { this.mentalHealthHistory = mentalHealthHistory; }
+    public String getSleepQuality() { return sleepQuality; }
+    public void setSleepQuality(String sleepQuality) { this.sleepQuality = sleepQuality; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

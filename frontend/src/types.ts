@@ -13,12 +13,17 @@ export interface User {
   fullName: string;
   role: Role;
   age?: number;
-  gender?: string;
+  sex?: string;
   heightCm?: number;
   weightKg?: number;
   allergies?: string;
   chronicConditions?: string;
   lifestyle?: string;
+  medications?: string;
+  familyHistory?: string;
+  mentalHealthHistory?: string;
+  sleepQuality?: string;
+  profileCompletion?: number;
 }
 
 export interface Assessment {
@@ -26,19 +31,22 @@ export interface Assessment {
   userId: number;
   patient: string;
   mainSymptom: string;
+  symptoms: string[];
   severity: number;
   durationDays: number;
-  temperatureF: number;
-  oxygenLevel: number;
-  heartRate: number;
+  temperatureAvailable: boolean;
+  temperatureF?: number | null;
   chronicCondition?: string;
   riskScore: number;
   riskLevel: RiskLevel;
   reasons: string[];
   suggestions: string[];
   followUpQuestions: string[];
+  followUpAnswers: string[];
   createdAt: string;
 }
+
+export type Notify = (message: string, tone?: "success" | "warning" | "danger") => void;
 
 export interface Analytics {
   totalUsers: number;

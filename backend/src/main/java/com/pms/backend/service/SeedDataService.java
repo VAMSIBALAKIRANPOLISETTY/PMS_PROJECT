@@ -49,9 +49,9 @@ public class SeedDataService implements CommandLineRunner {
         AppUser rohan = makeUser("rohan@example.com", "rohan", "Rohan Mehta", Role.USER);
         userRepository.saveAll(List.of(admin, anaya, rohan));
 
-        assessmentService.create(anaya, new AssessmentRequest("Fever and weakness", 6, 4, 100.4, 97, 88, "None"));
-        assessmentService.create(anaya, new AssessmentRequest("Mild headache", 3, 1, 98.4, 99, 74, "None"));
-        assessmentService.create(rohan, new AssessmentRequest("Chest pain with shortness of breath", 9, 1, 98.8, 93, 132, "Blood pressure"));
+        assessmentService.create(anaya, new AssessmentRequest(List.of("Fever", "Weakness"), 6, 4, true, 100.4, "None"));
+        assessmentService.create(anaya, new AssessmentRequest(List.of("Headache"), 3, 1, true, 98.4, "None"));
+        assessmentService.create(rohan, new AssessmentRequest(List.of("Chest pain", "Shortness of breath"), 9, 1, false, null, "Blood pressure"));
 
         seedQuestions();
         seedRules();
@@ -68,6 +68,9 @@ public class SeedDataService implements CommandLineRunner {
         user.setGender(role == Role.ADMIN ? "Not applicable" : "Female");
         user.setHeightCm(role == Role.ADMIN ? 0 : 162.0);
         user.setWeightKg(role == Role.ADMIN ? 0 : 58.0);
+        user.setFamilyHistory(role == Role.ADMIN ? "Not applicable" : "Diabetes in family");
+        user.setMentalHealthHistory(role == Role.ADMIN ? "Not applicable" : "No psychiatric treatment history");
+        user.setSleepQuality(role == Role.ADMIN ? "Not applicable" : "7 hours, regular");
         return user;
     }
 

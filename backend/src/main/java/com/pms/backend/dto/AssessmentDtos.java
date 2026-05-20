@@ -7,13 +7,16 @@ import java.util.List;
 
 public class AssessmentDtos {
     public record AssessmentRequest(
-            @NotBlank @Size(min = 2, max = 120) String mainSymptom,
+            @NotEmpty @Size(max = 5) List<@NotBlank @Size(min = 2, max = 80) String> symptoms,
             @NotNull @Min(1) @Max(10) Integer severity,
             @NotNull @Min(0) @Max(365) Integer durationDays,
-            @NotNull @DecimalMin("90.0") @DecimalMax("110.0") Double temperatureF,
-            @NotNull @Min(50) @Max(100) Integer oxygenLevel,
-            @NotNull @Min(35) @Max(220) Integer heartRate,
+            Boolean temperatureAvailable,
+            @DecimalMin("90.0") @DecimalMax("110.0") Double temperatureF,
             @Size(max = 100) String chronicCondition
+    ) {}
+
+    public record FollowUpAnswerRequest(
+            @NotEmpty @Size(min = 1, max = 7) List<@NotBlank @Size(max = 500) String> answers
     ) {}
 
     public record AssessmentResponse(
@@ -21,17 +24,18 @@ public class AssessmentDtos {
             Long userId,
             String patient,
             String mainSymptom,
+            List<String> symptoms,
             Integer severity,
             Integer durationDays,
+            Boolean temperatureAvailable,
             Double temperatureF,
-            Integer oxygenLevel,
-            Integer heartRate,
             String chronicCondition,
             Integer riskScore,
             RiskLevel riskLevel,
             List<String> reasons,
             List<String> suggestions,
             List<String> followUpQuestions,
+            List<String> followUpAnswers,
             LocalDateTime createdAt
     ) {}
 

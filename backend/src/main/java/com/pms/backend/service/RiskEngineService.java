@@ -1,17 +1,28 @@
 package com.pms.backend.service;
 
 import com.pms.backend.dto.AssessmentDtos.AssessmentRequest;
+import com.pms.backend.model.Assessment;
 import com.pms.backend.model.RiskLevel;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RiskEngineService {
     public RiskResult calculate(AssessmentRequest request) {
-        String symptom = request.mainSymptom().toLowerCase();
+        String symptom = String.join(" ", request.symptoms()).toLowerCase(Locale.ROOT);
         int score = 15;
         List<String> reasons = new ArrayList<>();
+
+        if (request.symptoms().size() >= 4) {
+            score += 12;
+            reasons.add("Multiple symptoms were selected, so the assessment keeps a closer watch.");
+        } else if (request.symptoms().size() >= 2) {
+            score += 6;
+            reasons.add("More than one symptom was selected for this assessment.");
+        }
 
         if (request.severity() >= 8) {
             score += 25;
@@ -29,25 +40,16 @@ public class RiskEngineService {
             reasons.add("Symptoms have lasted more than three days.");
         }
 
-        if (request.temperatureF() >= 103.0) {
-            score += 32;
-            reasons.add("Temperature is very high.");
-        } else if (request.temperatureF() >= 100.4) {
-            score += 14;
-            reasons.add("Temperature is above normal range.");
-        }
-
-        if (request.oxygenLevel() < 92) {
-            score += 38;
-            reasons.add("Oxygen level is below the safe demo threshold.");
-        } else if (request.oxygenLevel() < 95) {
-            score += 18;
-            reasons.add("Oxygen level is lower than expected.");
-        }
-
-        if (request.heartRate() > 130 || request.heartRate() < 45) {
-            score += 24;
-            reasons.add("Heart rate is outside the expected demo range.");
+        if (Boolean.TRUE.equals(request.temperatureAvailable()) && request.temperatureF() != null) {
+            if (request.temperatureF() >= 103.0) {
+                score += 32;
+                reasons.add("Temperature is very high.");
+            } else if (request.temperatureF() >= 100.4) {
+                score += 14;
+                reasons.add("Temperature is above normal range.");
+            }
+        } else {
+            reasons.add("Temperature was not available, so the result avoids assuming fever details.");
         }
 
         if (symptom.contains("chest pain") && (symptom.contains("breath") || symptom.contains("shortness"))) {
@@ -71,6 +73,31 @@ public class RiskEngineService {
         List<String> followUps = followUpsFor(symptom, level);
         List<String> suggestions = suggestionsFor(level);
         return new RiskResult(score, level, reasons, followUps, suggestions);
+    }
+
+    public RiskResult refineWithFollowUps(Assessment assessment, List<String> answers) {
+        int score = assessment.getRiskScore() == null ? 15 : assessment.getRiskScore();
+        List<String> reasons = new ArrayList<>(assessment.getReasons());
+        String combinedAnswers = String.join(" ", answers).toLowerCase(Locale.ROOT);
+
+        if (combinedAnswers.matches(".*(breath|shortness|chest|faint|unconscious|severe).*")) {
+            score += 18;
+            reasons.add("Follow-up answers mention a possible red-flag symptom that needs closer review.");
+        }
+        if (combinedAnswers.matches(".*(vomit|vision|neck stiffness|confusion|blood).*")) {
+            score += 12;
+            reasons.add("Follow-up answers include symptoms that can change the awareness result.");
+        }
+        if (combinedAnswers.matches(".*(improving|better|reduced|normal).*")) {
+            score -= 6;
+            reasons.add("Follow-up answers suggest at least one symptom may be improving.");
+        }
+
+        score = Math.max(0, Math.min(score, 100));
+        RiskLevel level = score >= 70 ? RiskLevel.HIGH : score >= 40 ? RiskLevel.MEDIUM : RiskLevel.LOW;
+        List<String> suggestions = new ArrayList<>(suggestionsFor(level));
+        suggestions.add("Review the updated result after answering follow-up questions.");
+        return new RiskResult(score, level, dedupe(reasons), assessment.getFollowUpQuestions(), dedupe(suggestions));
     }
 
     private List<String> followUpsFor(String symptom, RiskLevel level) {
@@ -97,11 +124,20 @@ public class RiskEngineService {
             questions.add("Did you faint or nearly faint?");
             questions.add("Have you checked blood sugar or blood pressure recently?");
         }
-        if (questions.isEmpty() || level == RiskLevel.HIGH) {
-            questions.add("Are symptoms getting worse compared with yesterday?");
-            questions.add("Do you have any new severe symptom that started suddenly?");
+        if (symptom.contains("anxiety") || symptom.contains("fatigue") || symptom.contains("weakness")) {
+            questions.add("Have sleep, stress, or appetite changed recently?");
+            questions.add("Have you felt unusually low, panicked, or unable to function?");
         }
-        return questions.stream().limit(6).toList();
+        if (!symptom.contains("fever")) {
+            questions.add("Do you have a measured temperature right now?");
+        }
+        questions.add("Are symptoms getting worse compared with yesterday?");
+        questions.add("Do you have any new severe symptom that started suddenly?");
+        questions.add("Do you have allergies, medicines, or chronic conditions that may be related?");
+        if (level == RiskLevel.HIGH) {
+            questions.add("Is there severe pain, breathing trouble, confusion, fainting, or bleeding?");
+        }
+        return dedupe(questions).stream().limit(7).toList();
     }
 
     private List<String> suggestionsFor(RiskLevel level) {
@@ -113,6 +149,10 @@ public class RiskEngineService {
         suggestions.add("Use this result only for awareness, not diagnosis.");
         suggestions.add("Consult a qualified doctor if symptoms persist or concern you.");
         return suggestions;
+    }
+
+    private List<String> dedupe(List<String> values) {
+        return new ArrayList<>(new LinkedHashSet<>(values));
     }
 
     public record RiskResult(
