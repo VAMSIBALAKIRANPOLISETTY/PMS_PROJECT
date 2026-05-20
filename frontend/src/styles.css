@@ -536,11 +536,19 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   margin: 0;
 }
 
-.auth-page {
+/*.auth-page {
   display: grid;
-  grid-template-columns: minmax(280px, 0.82fr) minmax(340px, 760px);
+  grid-template-columns: minmax(340px, 760px) minmax(340px, 760px);
   gap: 28px;
   align-items: center;
+  padding: 20px;
+}*/
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
   padding: 20px;
 }
 
@@ -551,6 +559,12 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   width: min(760px, 100%);
   display: grid;
   gap: 18px;
+
+
+  width: 520px;
+  max-width: 100%;
+  margin: 0 auto;
+
 }
 
 .auth-backdrop {
@@ -975,8 +989,9 @@ main { min-width: 0; padding: 28px; }
   top: 28px;
   width: 300px;
   max-height: calc(100vh - 56px);
-  overflow: hidden;
-  display: grid;
+/*  overflow: hidden;*/
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1048,6 +1063,9 @@ main { min-width: 0; padding: 28px; }
 }
 
 .symptom-list {
+  flex: 1;
+  min-height: 0;
+  scroll-behaviour: smooth;
   display: grid;
   gap: 8px;
   overflow: auto;

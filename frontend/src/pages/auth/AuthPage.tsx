@@ -51,8 +51,8 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
   }
 
   return (
-    <div className="auth-page" data-section="auth">
-      <div className="auth-backdrop" aria-hidden="true">
+     <div className="auth-page" data-section="auth">
+      {/* <div className="auth-backdrop" aria-hidden="true">
         <div className="auth-device-card">
           <HeartPulse size={28} />
           <strong>Safe health workspace</strong>
@@ -63,9 +63,8 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
           <span><ClipboardCheck size={17} /> Guided setup</span>
           <span>4-7 follow-ups</span>
         </div>
-      </div>
+      </div> */}
       <section className="panel auth-panel">
-        <button className="ghost-button back-button" onClick={onBack}><ArrowLeft size={18} />Back</button>
         <div>
           <p className="eyebrow">{authMode === "login" ? "Welcome back" : "Create account"}</p>
           <h2>{authMode === "login" ? "Login to your health workspace" : "Sign up for your own health history"}</h2>
