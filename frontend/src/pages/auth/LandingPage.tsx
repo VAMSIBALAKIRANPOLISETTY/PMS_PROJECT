@@ -24,9 +24,9 @@ const safetyCards = [
   { title: "Doctor-first guidance", text: "Every result encourages users to consult a qualified professional for real medical decisions." },
 ];
 const contactCards = [
-  { title: "Project support", text: "Use this section for demo questions, setup help, and capstone review conversations." },
-  { title: "Technical setup", text: "For local development, run PostgreSQL, the Spring Boot backend, and the Vite frontend." },
-  { title: "Feedback", text: "Collect feedback about landing copy, usability, follow-up questions, and safe explanation wording." },
+  { title: "support", text: "this section for demo questions" },
+  { title: "Consent", text: "Patient consent is the voluntary agreement of a patient to undergo medical treatment or procedures after receiving adequate information." },
+  { title: "Feedback", text: "Collect feedback about landing copy" },
 ];
 
 export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => void }) {
@@ -87,8 +87,7 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
           <span className="eyebrow">Public website content</span>
           <h2>Prepare notes, understand context, stay safe.</h2>
           <p>
-            The landing page explains the product clearly without exposing user,
-            profile, assessment, or role-specific information.
+            PMS does not diagnose. It gives visitors a clear explanation of what the system does
           </p>
           <div className="public-preview-grid">
             <span>Symptoms</span>
@@ -151,11 +150,9 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
       <section className="landing-contact-section" id="landing-contact">
         <div className="contact-copy">
           <p className="eyebrow">Contact page</p>
-          <h2>Questions about the PMS project?</h2>
+          <h2>Questions about the PMS</h2>
           <p>
-            Keep contact content public and simple: project support, technical setup,
-            and feedback collection. Personal health records stay inside authenticated
-            user screens.
+            Personal health records stay inside authenticated user screens.
           </p>
           <div className="hero-actions">
             <button className="primary-button" onClick={() => onAuth("signup")}>Create account<ArrowRight size={18} /></button>
