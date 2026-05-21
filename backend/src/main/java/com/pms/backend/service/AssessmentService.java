@@ -16,15 +16,29 @@ import org.springframework.stereotype.Service;
 public class AssessmentService {
     private final AssessmentRepository assessmentRepository;
     private final RiskEngineService riskEngineService;
+    private final AiInsightService aiInsightService;
 
-    public AssessmentService(AssessmentRepository assessmentRepository, RiskEngineService riskEngineService) {
+    public AssessmentService(
+            AssessmentRepository assessmentRepository,
+            RiskEngineService riskEngineService,
+            AiInsightService aiInsightService
+    ) {
         this.assessmentRepository = assessmentRepository;
         this.riskEngineService = riskEngineService;
+        this.aiInsightService = aiInsightService;
     }
 
     public AssessmentResponse create(AppUser user, AssessmentRequest request) {
-        RiskEngineService.RiskResult result = riskEngineService.calculate(request);
         List<String> symptoms = cleanSymptoms(request.symptoms());
+        AssessmentRequest normalizedRequest = new AssessmentRequest(
+                symptoms,
+                request.severity(),
+                request.durationDays(),
+                request.temperatureAvailable(),
+                request.temperatureF(),
+                request.chronicCondition()
+        );
+        RiskEngineService.RiskResult result = riskEngineService.calculate(normalizedRequest);
         Assessment assessment = new Assessment();
         assessment.setUser(user);
         assessment.setSymptoms(symptoms);
@@ -39,6 +53,7 @@ public class AssessmentService {
         assessment.setReasons(result.reasons());
         assessment.setFollowUpQuestions(result.followUps());
         assessment.setSuggestions(result.suggestions());
+        applyCarePrep(assessment, aiInsightService.forAssessment(user, assessment, result), result);
         return toResponse(assessmentRepository.save(assessment));
     }
 
@@ -59,6 +74,7 @@ public class AssessmentService {
         assessment.setRiskLevel(result.level());
         assessment.setReasons(result.reasons());
         assessment.setSuggestions(result.suggestions());
+        applyCarePrep(assessment, aiInsightService.forAssessment(user, assessment, result), result);
         return toResponse(assessmentRepository.save(assessment));
     }
 
@@ -87,8 +103,31 @@ public class AssessmentService {
                 assessment.getSuggestions(),
                 assessment.getFollowUpQuestions(),
                 assessment.getFollowUpAnswers(),
+                assessment.getCareSummary(),
+                assessment.getExplanation(),
+                assessment.getPossibleDirections(),
+                assessment.getUrgentWarning(),
+                assessment.getMonitoringPlan(),
+                assessment.getDoctorPrepQuestions(),
+                assessment.getTrustedSourceLinks(),
+                assessment.getAiMode(),
                 assessment.getCreatedAt()
         );
+    }
+
+    private void applyCarePrep(
+            Assessment assessment,
+            AiInsightService.CarePrepInsight insight,
+            RiskEngineService.RiskResult result
+    ) {
+        assessment.setCareSummary(insight.careSummary());
+        assessment.setExplanation(insight.explanation());
+        assessment.setPossibleDirections(insight.possibleDirections());
+        assessment.setUrgentWarning(result.urgentWarning() != null ? result.urgentWarning() : insight.urgentWarning());
+        assessment.setMonitoringPlan(insight.monitoringPlan());
+        assessment.setDoctorPrepQuestions(insight.doctorPrepQuestions());
+        assessment.setTrustedSourceLinks(insight.trustedSourceLinks());
+        assessment.setAiMode(insight.aiMode());
     }
 
     private List<String> cleanSymptoms(List<String> symptoms) {

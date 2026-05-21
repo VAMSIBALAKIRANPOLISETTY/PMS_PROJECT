@@ -954,6 +954,77 @@ main { min-width: 0; padding: 28px; }
 
 .reason-list li { display: flex; align-items: center; gap: 8px; }
 
+.care-guide {
+  display: grid;
+  gap: 14px;
+}
+
+.care-guide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.care-guide-header h2 {
+  margin: 0;
+}
+
+.score-ring.compact {
+  min-height: 110px;
+}
+
+.urgent-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+  color: var(--text);
+}
+
+.urgent-warning svg {
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+
+.care-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.care-section > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.care-section svg {
+  color: var(--accent);
+}
+
+.care-section p,
+.care-section ul {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.care-section ul {
+  padding-left: 18px;
+}
+
+.source-list a {
+  color: var(--accent);
+  font-weight: 800;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -974,6 +1045,28 @@ main { min-width: 0; padding: 28px; }
 }
 
 .upload-zone input { max-width: 250px; }
+
+.report-text-box {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.report-text-box textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+}
 
 .assessment-workspace { min-width: 0; }
 

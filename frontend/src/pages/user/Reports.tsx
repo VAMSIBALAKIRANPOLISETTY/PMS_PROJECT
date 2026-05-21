@@ -1,40 +1,69 @@
 import { useState } from "react";
+import axios from "axios";
 import { ArrowRight, CheckCircle2, Upload } from "lucide-react";
-import type { Notify } from "../../types";
+import { api, authHeaders } from "../../api";
+import { CarePrepGuide } from "../../components/CarePrepGuide";
+import type { Notify, ReportFollowUpResponse, ReportInsight } from "../../types";
 
 interface ReportsProps {
+  token: string;
   notify: Notify;
 }
 
-const reportFollowUps = [
-  "What main symptom or concern made you upload this report?",
-  "Did a doctor already review this report with you?",
-  "Are any values marked high, low, critical, or abnormal?",
-  "Do you currently have fever, pain, breathing difficulty, dizziness, or weakness?",
-  "Are you taking medicines related to this report?",
-  "Do you have a chronic condition connected to these results?",
-];
-
-export function Reports({ notify }: ReportsProps) {
+export function Reports({ token, notify }: ReportsProps) {
   const [fileName, setFileName] = useState("");
+  const [reportText, setReportText] = useState("");
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(Array(reportFollowUps.length).fill(""));
-  const [summary, setSummary] = useState("");
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [insight, setInsight] = useState<ReportInsight | null>(null);
+  const [message, setMessage] = useState("");
 
-  function handleFile(file?: File) {
+  async function handleFile(file?: File) {
     if (!file) return;
     setFileName(file.name);
     setStep(0);
-    setAnswers(Array(reportFollowUps.length).fill(""));
-    setSummary("");
-    notify("Report added successfully. Please answer the follow-up cards.");
+    setReportText("");
+    setQuestions([]);
+    setAnswers([]);
+    setInsight(null);
+    setMessage("");
+    try {
+      const response = await api.post<ReportFollowUpResponse>("/reports/follow-ups", { reportName: file.name }, { headers: authHeaders(token) });
+      setQuestions(response.data.followUpQuestions);
+      setAnswers(Array(response.data.followUpQuestions.length).fill(""));
+      notify("Report added successfully. Backend follow-up cards are ready.");
+    } catch (error) {
+      const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Could not prepare report follow-ups." : "Could not prepare report follow-ups.";
+      setMessage(fallback);
+      notify("Report follow-up setup failed.", "danger");
+    }
   }
 
-  function submitReportFollowUps() {
-    const answered = answers.filter((answer) => answer.trim());
-    setSummary(`Report follow-up insights were refreshed from ${answered.length} answers. Review abnormal values, symptoms, current medicines, and chronic conditions with a qualified medical professional.`);
-    notify("Report follow-up answers submitted. New report insights are ready.");
+  async function submitReportFollowUps() {
+    if (!fileName) return;
+    setMessage("");
+    const cleanedAnswers = answers.map((answer) => answer.trim()).filter(Boolean);
+    if (cleanedAnswers.length === 0) {
+      setMessage("Answer at least one report follow-up before generating the care-prep guide.");
+      return;
+    }
+    try {
+      const response = await api.post<ReportInsight>("/reports/insight", {
+        reportName: fileName,
+        reportText,
+        answers: cleanedAnswers,
+      }, { headers: authHeaders(token) });
+      setInsight(response.data);
+      notify("Report follow-up answers submitted. Care-prep guide is ready.");
+    } catch (error) {
+      const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Report insight failed." : "Report insight failed.";
+      setMessage(fallback);
+      notify("Report insight failed.", "danger");
+    }
   }
+
+  const currentQuestion = questions[step];
 
   return (
     <div className="split-layout" data-section="reports">
@@ -43,16 +72,27 @@ export function Reports({ notify }: ReportsProps) {
           <Upload size={38} />
           <h2>Upload text-based PDF report</h2>
           <p>After a report is added, the system asks follow-up cards before refreshing the insight summary.</p>
-          <input type="file" accept="application/pdf" onChange={(event) => handleFile(event.target.files?.[0])} />
+          <input type="file" accept="application/pdf" onChange={(event) => void handleFile(event.target.files?.[0])} />
           {fileName && <div className="success-row"><CheckCircle2 size={18} />{fileName} added</div>}
+          {fileName && (
+            <label className="report-text-box">
+              Report notes or copied text
+              <textarea
+                placeholder="Paste key report text, abnormal values, or notes from the report."
+                value={reportText}
+                onChange={(event) => setReportText(event.target.value)}
+              />
+            </label>
+          )}
         </div>
       </section>
       <section className="panel">
         <p className="eyebrow">Report follow-ups</p>
-        <h2>Question {step + 1} of {reportFollowUps.length}</h2>
-        {fileName ? (
+        <h2>{questions.length > 0 ? `Question ${step + 1} of ${questions.length}` : "Backend-generated report questions"}</h2>
+        {message && <div className="form-message">{message}</div>}
+        {fileName && currentQuestion ? (
           <div className="followup-card">
-            <strong>{reportFollowUps[step]}</strong>
+            <strong>{currentQuestion}</strong>
             <textarea
               placeholder="Type your answer"
               value={answers[step]}
@@ -60,7 +100,7 @@ export function Reports({ notify }: ReportsProps) {
             />
             <div className="profile-setup-actions">
               <button className="ghost-button" disabled={step === 0} onClick={() => setStep(Math.max(0, step - 1))}>Back</button>
-              {step < reportFollowUps.length - 1 ? (
+              {step < questions.length - 1 ? (
                 <button className="primary-button" onClick={() => setStep(step + 1)}>Next<ArrowRight size={18} /></button>
               ) : (
                 <button className="primary-button" onClick={submitReportFollowUps}>Submit answers<ArrowRight size={18} /></button>
@@ -70,7 +110,7 @@ export function Reports({ notify }: ReportsProps) {
         ) : (
           <p className="summary-box">Upload a report to start the follow-up question flow.</p>
         )}
-        {summary && <p className="summary-box">{summary}</p>}
+        {insight && <CarePrepGuide title="Report care-preparation guide" insight={insight} />}
         <div className="disclaimer-box">This application does not provide medical diagnosis, treatment, or prescription.</div>
       </section>
     </div>

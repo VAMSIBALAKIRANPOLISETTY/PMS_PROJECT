@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type Role = "USER" | "ADMIN";
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type AiMode = "MOCK" | "PROVIDER";
 export type Mode = "user" | "admin";
 export type Page = "overview" | "assessment" | "reports" | "history" | "profile" | "assessments" | "rules" | "questions" | "datasets";
 export type DesignId = "clinical" | "paper" | "vital";
@@ -43,7 +44,38 @@ export interface Assessment {
   suggestions: string[];
   followUpQuestions: string[];
   followUpAnswers: string[];
+  careSummary: string;
+  explanation: string;
+  possibleDirections: string[];
+  urgentWarning?: string | null;
+  monitoringPlan: string[];
+  doctorPrepQuestions: string[];
+  trustedSourceLinks: string[];
+  aiMode: AiMode;
   createdAt: string;
+}
+
+export interface CarePrepGuideData {
+  careSummary: string;
+  explanation: string;
+  possibleDirections: string[];
+  urgentWarning?: string | null;
+  monitoringPlan: string[];
+  doctorPrepQuestions: string[];
+  trustedSourceLinks: string[];
+  aiMode: AiMode;
+}
+
+export interface ReportFollowUpResponse {
+  reportName: string;
+  followUpQuestions: string[];
+  aiMode: AiMode;
+}
+
+export interface ReportInsight extends CarePrepGuideData {
+  reportName: string;
+  followUpQuestions: string[];
+  followUpAnswers: string[];
 }
 
 export type Notify = (message: string, tone?: "success" | "warning" | "danger") => void;

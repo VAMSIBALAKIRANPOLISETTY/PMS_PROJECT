@@ -1,11 +1,11 @@
 import { useState } from "react";
 import type { DragEvent, FormEvent } from "react";
 import axios from "axios";
-import { ArrowRight, CheckCircle2, Sparkles, Stethoscope, X } from "lucide-react";
+import { ArrowRight, Sparkles, Stethoscope, X } from "lucide-react";
 import { api, authHeaders } from "../../api";
-import { RiskPill } from "../../components/RiskPill";
+import { CarePrepGuide } from "../../components/CarePrepGuide";
 import type { Assessment, Notify } from "../../types";
-import { clampNumber, displayRisk } from "../../utils";
+import { clampNumber } from "../../utils";
 import { SymptomDrawer } from "./SymptomDrawer";
 
 interface AssessmentFormProps {
@@ -135,11 +135,13 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
           <p className="eyebrow">Final output</p>
           {result ? (
             <>
-              <div className="score-ring"><strong>{result.riskScore}</strong><span>Risk score</span></div>
-              <RiskPill value={result.riskLevel} />
-              <h2>{displayRisk(result.riskLevel)} risk health awareness result</h2>
-              <p>This is a non-diagnostic explanation based on entered data. Consult a qualified medical professional for diagnosis, treatment, or urgent symptoms.</p>
-              <ul className="reason-list">{result.reasons.map((reason) => <li key={reason}><CheckCircle2 size={17} />{reason}</li>)}</ul>
+              <CarePrepGuide
+                insight={result}
+                riskLevel={result.riskLevel}
+                riskScore={result.riskScore}
+                reasons={result.reasons}
+                suggestions={result.suggestions}
+              />
               <div className="followup-box">
                 <div className="section-title"><div><p className="eyebrow">Follow-up questions</p><h2>{answeredCount}/{result.followUpQuestions.length} answered</h2></div></div>
                 {currentQuestion && (

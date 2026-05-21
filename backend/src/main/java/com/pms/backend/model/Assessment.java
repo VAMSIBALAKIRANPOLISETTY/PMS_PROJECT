@@ -42,6 +42,33 @@ public class Assessment {
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> followUpAnswers = new ArrayList<>();
 
+    @Column(length = 1200)
+    private String careSummary;
+
+    @Column(length = 2200)
+    private String explanation;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(length = 700)
+    private List<String> possibleDirections = new ArrayList<>();
+
+    @Column(length = 1200)
+    private String urgentWarning;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(length = 700)
+    private List<String> monitoringPlan = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(length = 700)
+    private List<String> doctorPrepQuestions = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(length = 700)
+    private List<String> trustedSourceLinks = new ArrayList<>();
+
+    private String aiMode;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Long getId() { return id; }
@@ -74,6 +101,22 @@ public class Assessment {
     public void setFollowUpQuestions(List<String> followUpQuestions) { this.followUpQuestions = followUpQuestions; }
     public List<String> getFollowUpAnswers() { return followUpAnswers; }
     public void setFollowUpAnswers(List<String> followUpAnswers) { this.followUpAnswers = followUpAnswers; }
+    public String getCareSummary() { return careSummary; }
+    public void setCareSummary(String careSummary) { this.careSummary = careSummary; }
+    public String getExplanation() { return explanation; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
+    public List<String> getPossibleDirections() { return possibleDirections; }
+    public void setPossibleDirections(List<String> possibleDirections) { this.possibleDirections = possibleDirections; }
+    public String getUrgentWarning() { return urgentWarning; }
+    public void setUrgentWarning(String urgentWarning) { this.urgentWarning = urgentWarning; }
+    public List<String> getMonitoringPlan() { return monitoringPlan; }
+    public void setMonitoringPlan(List<String> monitoringPlan) { this.monitoringPlan = monitoringPlan; }
+    public List<String> getDoctorPrepQuestions() { return doctorPrepQuestions; }
+    public void setDoctorPrepQuestions(List<String> doctorPrepQuestions) { this.doctorPrepQuestions = doctorPrepQuestions; }
+    public List<String> getTrustedSourceLinks() { return trustedSourceLinks; }
+    public void setTrustedSourceLinks(List<String> trustedSourceLinks) { this.trustedSourceLinks = trustedSourceLinks; }
+    public String getAiMode() { return aiMode; }
+    public void setAiMode(String aiMode) { this.aiMode = aiMode; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

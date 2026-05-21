@@ -36,7 +36,45 @@ public class AssessmentDtos {
             List<String> suggestions,
             List<String> followUpQuestions,
             List<String> followUpAnswers,
+            String careSummary,
+            String explanation,
+            List<String> possibleDirections,
+            String urgentWarning,
+            List<String> monitoringPlan,
+            List<String> doctorPrepQuestions,
+            List<String> trustedSourceLinks,
+            String aiMode,
             LocalDateTime createdAt
+    ) {}
+
+    public record ReportFollowUpRequest(
+            @NotBlank @Size(max = 160) String reportName
+    ) {}
+
+    public record ReportFollowUpResponse(
+            String reportName,
+            List<String> followUpQuestions,
+            String aiMode
+    ) {}
+
+    public record ReportInsightRequest(
+            @NotBlank @Size(max = 160) String reportName,
+            @Size(max = 4000) String reportText,
+            @NotEmpty @Size(min = 1, max = 7) List<@NotBlank @Size(max = 500) String> answers
+    ) {}
+
+    public record ReportInsightResponse(
+            String reportName,
+            List<String> followUpQuestions,
+            List<String> followUpAnswers,
+            String careSummary,
+            String explanation,
+            List<String> possibleDirections,
+            String urgentWarning,
+            List<String> monitoringPlan,
+            List<String> doctorPrepQuestions,
+            List<String> trustedSourceLinks,
+            String aiMode
     ) {}
 
     public record AnalyticsResponse(

@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CarePrepGuide } from "../components/CarePrepGuide";
 import { DesignPicker } from "../components/DesignPicker";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
@@ -81,6 +82,14 @@ const assessment: Assessment = {
   suggestions: ["Monitor symptoms"],
   followUpQuestions: ["Any chills?", "Any body pain?", "Any new severe symptom?", "Any chronic conditions?"],
   followUpAnswers: [],
+  careSummary: "PMS reviewed fever and weakness as a care-preparation guide.",
+  explanation: "The rule engine found moderate severity and fever duration that should be watched.",
+  possibleDirections: ["Discuss fever pattern, exposure history, and weakness with a clinician."],
+  urgentWarning: null,
+  monitoringPlan: ["Track symptoms and temperature twice a day."],
+  doctorPrepQuestions: ["What symptoms should I mention first?"],
+  trustedSourceLinks: ["MedlinePlus evaluating health information: https://medlineplus.gov/evaluatinghealthinformation.html"],
+  aiMode: "MOCK",
   createdAt: "2026-05-15T10:00:00",
 };
 
@@ -149,7 +158,7 @@ describe("section rendering", () => {
   });
 
   it("renders reports, history, profile, and recent assessments", () => {
-    render(<Reports notify={vi.fn()} />);
+    render(<Reports token="token" notify={vi.fn()} />);
     expect(screen.getByText("Upload text-based PDF report")).toBeInTheDocument();
     render(<History assessments={[assessment]} />);
     expect(screen.getByText("Assessment timeline")).toBeInTheDocument();
@@ -157,6 +166,15 @@ describe("section rendering", () => {
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
     render(<RecentAssessments assessments={[assessment]} />);
     expect(screen.getByText("Recent assessments")).toBeInTheDocument();
+  });
+
+  it("renders care-preparation guide sections", () => {
+    render(<CarePrepGuide insight={assessment} riskLevel={assessment.riskLevel} riskScore={assessment.riskScore} reasons={assessment.reasons} suggestions={assessment.suggestions} />);
+    expect(screen.getByText("Summary")).toBeInTheDocument();
+    expect(screen.getByText("Why this matters")).toBeInTheDocument();
+    expect(screen.getByText("Possible directions to discuss")).toBeInTheDocument();
+    expect(screen.getByText("What to do next")).toBeInTheDocument();
+    expect(screen.getByText("Doctor questions")).toBeInTheDocument();
   });
 
   it("renders admin overview and admin sections", () => {

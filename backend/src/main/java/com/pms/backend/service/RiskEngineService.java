@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 public class RiskEngineService {
     public RiskResult calculate(AssessmentRequest request) {
         String symptom = String.join(" ", request.symptoms()).toLowerCase(Locale.ROOT);
+        String safetyContext = (symptom + " " + safeText(request.chronicCondition())).toLowerCase(Locale.ROOT);
         int score = 15;
         List<String> reasons = new ArrayList<>();
+        String urgentWarning = urgentWarningFor(safetyContext, request.severity());
 
         if (request.symptoms().size() >= 4) {
             score += 12;
@@ -52,6 +54,11 @@ public class RiskEngineService {
             reasons.add("Temperature was not available, so the result avoids assuming fever details.");
         }
 
+        if (urgentWarning != null) {
+            score = Math.max(score, 85);
+            reasons.add("A rule-based red-flag pattern was detected and cannot be lowered by AI wording.");
+        }
+
         if (symptom.contains("chest pain") && (symptom.contains("breath") || symptom.contains("shortness"))) {
             score += 45;
             reasons.add("Chest pain with breathing difficulty is treated as a red flag.");
@@ -72,17 +79,23 @@ public class RiskEngineService {
 
         List<String> followUps = followUpsFor(symptom, level);
         List<String> suggestions = suggestionsFor(level);
-        return new RiskResult(score, level, reasons, followUps, suggestions);
+        return new RiskResult(score, level, reasons, followUps, suggestions, urgentWarning);
     }
 
     public RiskResult refineWithFollowUps(Assessment assessment, List<String> answers) {
         int score = assessment.getRiskScore() == null ? 15 : assessment.getRiskScore();
         List<String> reasons = new ArrayList<>(assessment.getReasons());
         String combinedAnswers = String.join(" ", answers).toLowerCase(Locale.ROOT);
+        String urgentWarning = assessment.getUrgentWarning();
+        String followUpUrgentWarning = urgentWarningFor(combinedAnswers, assessment.getSeverity());
 
-        if (combinedAnswers.matches(".*(breath|shortness|chest|faint|unconscious|severe).*")) {
-            score += 18;
+        if (followUpUrgentWarning != null) {
+            score = Math.max(score, 85);
+            urgentWarning = urgentWarning == null ? followUpUrgentWarning : urgentWarning;
             reasons.add("Follow-up answers mention a possible red-flag symptom that needs closer review.");
+        } else if (combinedAnswers.matches(".*(breath|shortness|chest|faint|unconscious|severe).*")) {
+            score += 18;
+            reasons.add("Follow-up answers mention a symptom that needs closer review.");
         }
         if (combinedAnswers.matches(".*(vomit|vision|neck stiffness|confusion|blood).*")) {
             score += 12;
@@ -97,7 +110,7 @@ public class RiskEngineService {
         RiskLevel level = score >= 70 ? RiskLevel.HIGH : score >= 40 ? RiskLevel.MEDIUM : RiskLevel.LOW;
         List<String> suggestions = new ArrayList<>(suggestionsFor(level));
         suggestions.add("Review the updated result after answering follow-up questions.");
-        return new RiskResult(score, level, dedupe(reasons), assessment.getFollowUpQuestions(), dedupe(suggestions));
+        return new RiskResult(score, level, dedupe(reasons), assessment.getFollowUpQuestions(), dedupe(suggestions), urgentWarning);
     }
 
     private List<String> followUpsFor(String symptom, RiskLevel level) {
@@ -151,6 +164,29 @@ public class RiskEngineService {
         return suggestions;
     }
 
+    private String urgentWarningFor(String text, Integer severity) {
+        String value = safeText(text).toLowerCase(Locale.ROOT);
+        boolean breathingTrouble = value.matches(".*(shortness of breath|breathing difficulty|difficulty breathing|cannot breathe|can't breathe|breathlessness).*");
+        boolean chestConcern = value.matches(".*(chest pain|chest pressure|chest tightness|pressure in chest).*");
+        boolean severeNeurologic = value.matches(".*(confusion|confused|faint|fainted|unconscious|seizure|seizures).*");
+        boolean severeBleeding = value.matches(".*(heavy bleeding|bleeding heavily|blood loss).*");
+        boolean severeWeakness = value.matches(".*(severe weakness|unable to stand|cannot stand).*");
+        boolean suddenSevere = value.contains("sudden") && severity != null && severity >= 8;
+        boolean chronicWorsening = value.contains("worsening") && value.contains("chronic");
+
+        if (chestConcern && breathingTrouble) {
+            return "Chest pain or pressure with breathing difficulty can be urgent. Seek emergency medical care now if this is happening.";
+        }
+        if (breathingTrouble || severeNeurologic || severeBleeding || severeWeakness || suddenSevere || chronicWorsening) {
+            return "A red-flag symptom was reported. Seek urgent medical advice or local emergency care if symptoms are severe, sudden, or worsening.";
+        }
+        return null;
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
+    }
+
     private List<String> dedupe(List<String> values) {
         return new ArrayList<>(new LinkedHashSet<>(values));
     }
@@ -160,6 +196,7 @@ public class RiskEngineService {
             RiskLevel level,
             List<String> reasons,
             List<String> followUps,
-            List<String> suggestions
+            List<String> suggestions,
+            String urgentWarning
     ) {}
 }
