@@ -29,6 +29,11 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/staff-login")
+    public AuthResponse staffLogin(@Valid @RequestBody LoginRequest request) {
+        return authService.staffLogin(request);
+    }
+
     @GetMapping("/me")
     public UserResponse me(@RequestHeader("Authorization") String authHeader) {
         AppUser user = authService.requireUser(authHeader);

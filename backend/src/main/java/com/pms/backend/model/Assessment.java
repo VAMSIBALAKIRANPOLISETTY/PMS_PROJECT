@@ -30,6 +30,9 @@ public class Assessment {
     @Enumerated(EnumType.STRING)
     private RiskLevel riskLevel;
 
+    @Enumerated(EnumType.STRING)
+    private AssessmentStatus status = AssessmentStatus.PENDING_FOLLOW_UP;
+
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> reasons = new ArrayList<>();
 
@@ -93,6 +96,8 @@ public class Assessment {
     public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
     public RiskLevel getRiskLevel() { return riskLevel; }
     public void setRiskLevel(RiskLevel riskLevel) { this.riskLevel = riskLevel; }
+    public AssessmentStatus getStatus() { return status; }
+    public void setStatus(AssessmentStatus status) { this.status = status; }
     public List<String> getReasons() { return reasons; }
     public void setReasons(List<String> reasons) { this.reasons = reasons; }
     public List<String> getSuggestions() { return suggestions; }

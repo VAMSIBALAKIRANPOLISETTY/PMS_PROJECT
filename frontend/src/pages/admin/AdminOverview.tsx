@@ -10,6 +10,32 @@ interface AdminOverviewProps {
   setPage: (page: Page) => void;
 }
 
+interface SymptomTickProps {
+  x?: number;
+  y?: number;
+  payload?: { value?: string };
+}
+
+function SymptomTick({ x = 0, y = 0, payload }: SymptomTickProps) {
+  const lines = wrapSymptomLabel(payload?.value ?? "");
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={14} textAnchor="middle" fill="var(--muted)" fontSize={11}>
+        {lines.map((line, index) => <tspan x={0} dy={index === 0 ? 0 : 13} key={`${line}-${index}`}>{line}</tspan>)}
+      </text>
+    </g>
+  );
+}
+
+function wrapSymptomLabel(value: string) {
+  return value.split(", ").flatMap((part) => part.split(" ").reduce<string[]>((lines, word) => {
+    const current = lines[lines.length - 1];
+    if (!current || `${current} ${word}`.length > 15) lines.push(word);
+    else lines[lines.length - 1] = `${current} ${word}`;
+    return lines;
+  }, []));
+}
+
 export function AdminOverview({ analytics, assessments, setPage }: AdminOverviewProps) {
   const riskData = [
     { name: "Low", value: analytics.lowRiskCount, color: "#2f9e75" },
@@ -20,27 +46,27 @@ export function AdminOverview({ analytics, assessments, setPage }: AdminOverview
     <div className="page-grid" data-section="admin-overview">
       <div className="stats-grid">
         <StatCard icon={Users} label="Total users" value={analytics.totalUsers} delta="registered" />
-        <StatCard icon={ClipboardList} label="Assessments" value={analytics.totalAssessments} delta="database" />
+        <StatCard icon={ClipboardList} label="Assessments" value={analytics.totalAssessments} delta="recorded" />
         <StatCard icon={AlertTriangle} label="High risk" value={analytics.highRiskCount} delta="needs review" tone="danger" />
-        <StatCard icon={FileText} label="PDF uploads" value="0" delta="next module" />
+        <StatCard icon={FileText} label="Reports reviewed" value="0" delta="care preparation" />
       </div>
-      <section className="panel wide">
+      <section className="panel">
         <div className="section-title"><div><p className="eyebrow">Analytics</p><h2>Common symptoms</h2></div><div className="search-box"><Search size={17} /><input placeholder="Filter symptoms" /></div></div>
-        <ResponsiveContainer width="100%" height={270}>
-          <BarChart data={analytics.commonSymptoms.map((item) => ({ name: item.symptom, count: item.count }))}>
+        <ResponsiveContainer width="100%" height={205}>
+          <BarChart data={analytics.commonSymptoms.map((item) => ({ name: item.symptom, count: item.count }))} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
+            <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} height={52} tick={<SymptomTick />} />
             <YAxis tickLine={false} axisLine={false} />
             <Tooltip />
-            <Bar dataKey="count" radius={[7, 7, 0, 0]} fill="var(--accent)" />
+            <Bar dataKey="count" maxBarSize={72} radius={[7, 7, 0, 0]} fill="var(--accent)" />
           </BarChart>
         </ResponsiveContainer>
       </section>
       <section className="panel">
         <div className="section-title"><div><p className="eyebrow">Risk mix</p><h2>Assessment split</h2></div><PieChart size={24} /></div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={160}>
           <RePieChart>
-            <Pie data={riskData} innerRadius={62} outerRadius={92} paddingAngle={4} dataKey="value">{riskData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie>
+            <Pie data={riskData} innerRadius={44} outerRadius={66} paddingAngle={4} dataKey="value">{riskData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie>
             <Tooltip />
           </RePieChart>
         </ResponsiveContainer>

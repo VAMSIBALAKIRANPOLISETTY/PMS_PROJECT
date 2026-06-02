@@ -1,17 +1,21 @@
+import { useState } from "react";
 import { CartesianGrid, Line, LineChart as ReLineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AssessmentReportDrawer } from "../../components/AssessmentReportDrawer";
 import { RiskPill } from "../../components/RiskPill";
 import type { Assessment } from "../../types";
 import { formatDate, trendFromAssessments } from "../../utils";
 
 export function History({ assessments }: { assessments: Assessment[] }) {
+  const [selected, setSelected] = useState<Assessment | null>(null);
   return (
+    <>
     <div className="page-grid" data-section="history">
       <section className="panel wide">
         <div className="section-title"><div><p className="eyebrow">History</p><h2>Assessment timeline</h2></div></div>
         <div className="timeline">
           {assessments.length === 0 && <div className="empty-row">No history found for this account.</div>}
           {assessments.map((item) => (
-            <div key={item.id} className="timeline-item"><span /><div><strong>{formatDate(item.createdAt)} | {item.mainSymptom}</strong><p>{item.reasons[0]}</p></div><RiskPill value={item.riskLevel} /></div>
+            <button type="button" key={item.id} className="timeline-item assessment-open-button" onClick={() => setSelected(item)}><span /><div><strong>{formatDate(item.createdAt)} | {item.mainSymptom}</strong><p>{item.reasons[0]}</p></div><RiskPill value={item.riskLevel} /></button>
           ))}
         </div>
       </section>
@@ -28,5 +32,7 @@ export function History({ assessments }: { assessments: Assessment[] }) {
         </ResponsiveContainer>
       </section>
     </div>
+    <AssessmentReportDrawer assessment={selected} onClose={() => setSelected(null)} />
+    </>
   );
 }

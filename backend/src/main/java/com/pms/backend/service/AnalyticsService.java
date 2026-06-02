@@ -3,6 +3,7 @@ package com.pms.backend.service;
 import com.pms.backend.dto.AssessmentDtos.AnalyticsResponse;
 import com.pms.backend.dto.AssessmentDtos.SymptomCount;
 import com.pms.backend.model.Assessment;
+import com.pms.backend.model.AssessmentStatus;
 import com.pms.backend.model.RiskLevel;
 import com.pms.backend.repository.AssessmentRepository;
 import com.pms.backend.repository.UserRepository;
@@ -23,7 +24,9 @@ public class AnalyticsService {
     }
 
     public AnalyticsResponse getAnalytics() {
-        List<Assessment> assessments = assessmentRepository.findAll();
+        List<Assessment> assessments = assessmentRepository.findAll().stream()
+                .filter(item -> item.getStatus() == null || item.getStatus() == AssessmentStatus.COMPLETED)
+                .toList();
         long high = assessments.stream().filter(item -> item.getRiskLevel() == RiskLevel.HIGH).count();
         long medium = assessments.stream().filter(item -> item.getRiskLevel() == RiskLevel.MEDIUM).count();
         long low = assessments.stream().filter(item -> item.getRiskLevel() == RiskLevel.LOW).count();

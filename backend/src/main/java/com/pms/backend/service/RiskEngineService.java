@@ -1,16 +1,37 @@
 package com.pms.backend.service;
 
 import com.pms.backend.dto.AssessmentDtos.AssessmentRequest;
+import com.pms.backend.model.AdminRule;
 import com.pms.backend.model.Assessment;
+import com.pms.backend.model.HealthQuestion;
 import com.pms.backend.model.RiskLevel;
+import com.pms.backend.repository.AdminRuleRepository;
+import com.pms.backend.repository.HealthQuestionRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RiskEngineService {
+    private static final String STANDARD_URGENT_WARNING =
+            "A red-flag symptom was reported. Seek urgent medical advice or local emergency care if symptoms are severe, sudden, or worsening.";
+    private final AdminRuleRepository ruleRepository;
+    private final HealthQuestionRepository questionRepository;
+
+    @Autowired
+    public RiskEngineService(AdminRuleRepository ruleRepository, HealthQuestionRepository questionRepository) {
+        this.ruleRepository = ruleRepository;
+        this.questionRepository = questionRepository;
+    }
+
+    public RiskEngineService() {
+        this.ruleRepository = null;
+        this.questionRepository = null;
+    }
+
     public RiskResult calculate(AssessmentRequest request) {
         String symptom = String.join(" ", request.symptoms()).toLowerCase(Locale.ROOT);
         String safetyContext = (symptom + " " + safeText(request.chronicCondition())).toLowerCase(Locale.ROOT);
@@ -70,6 +91,16 @@ public class RiskEngineService {
             reasons.add("Dizziness with diabetes history needs extra follow-up.");
         }
 
+        if (symptom.contains("fever") && symptom.contains("weakness") && request.durationDays() >= 3) {
+            score = Math.max(score, 55);
+            reasons.add("Fever lasting more than three days with weakness needs closer review.");
+        }
+
+        OperationalRuleResult operational = applyOperationalRules(request, symptom, score, urgentWarning);
+        score = operational.score();
+        urgentWarning = operational.urgentWarning();
+        reasons.addAll(operational.reasons());
+
         if (reasons.isEmpty()) {
             reasons.add("No major red-flag indicator was detected from the provided values.");
         }
@@ -121,7 +152,7 @@ public class RiskEngineService {
             questions.add("Do you feel shortness of breath?");
         }
         if (symptom.contains("fever")) {
-            questions.add("What was the highest temperature you measured?");
+            questions.add("Have you measured a temperature above 100.4 F?");
             questions.add("Do you have chills, weakness, or body pain?");
             questions.add("Did the fever reduce after rest or fluids?");
         }
@@ -141,16 +172,63 @@ public class RiskEngineService {
             questions.add("Have sleep, stress, or appetite changed recently?");
             questions.add("Have you felt unusually low, panicked, or unable to function?");
         }
-        if (!symptom.contains("fever")) {
-            questions.add("Do you have a measured temperature right now?");
-        }
         questions.add("Are symptoms getting worse compared with yesterday?");
         questions.add("Do you have any new severe symptom that started suddenly?");
-        questions.add("Do you have allergies, medicines, or chronic conditions that may be related?");
         if (level == RiskLevel.HIGH) {
             questions.add("Is there severe pain, breathing trouble, confusion, fainting, or bleeding?");
         }
+        questions.addAll(managedQuestionsFor(symptom));
+        if (!symptom.contains("fever")) {
+            questions.add("Do you have a measured temperature right now?");
+        }
+        questions.add("Do you have allergies, medicines, or chronic conditions that may be related?");
         return dedupe(questions).stream().limit(7).toList();
+    }
+
+    private OperationalRuleResult applyOperationalRules(
+            AssessmentRequest request,
+            String symptoms,
+            int currentScore,
+            String currentUrgentWarning
+    ) {
+        if (ruleRepository == null) {
+            return new OperationalRuleResult(currentScore, currentUrgentWarning, List.of());
+        }
+        int score = currentScore;
+        String urgentWarning = currentUrgentWarning;
+        List<String> reasons = new ArrayList<>();
+        for (AdminRule rule : ruleRepository.findByActiveTrueOrderByConditionLabelAsc()) {
+            if (!matches(rule, request, symptoms)) {
+                continue;
+            }
+            score = Math.max(score, rule.getScore() == null ? score : rule.getScore());
+            reasons.add("Operational safety rule matched: " + rule.getConditionLabel() + ". " + rule.getExplanation());
+            if (rule.isUrgent() && urgentWarning == null) {
+                urgentWarning = STANDARD_URGENT_WARNING;
+                score = Math.max(score, 85);
+            }
+        }
+        return new OperationalRuleResult(score, urgentWarning, reasons);
+    }
+
+    private boolean matches(AdminRule rule, AssessmentRequest request, String symptoms) {
+        return containsIgnoreCase(symptoms, rule.getPrimarySymptom())
+                && (!hasText(rule.getSecondarySymptom()) || containsIgnoreCase(symptoms, rule.getSecondarySymptom()))
+                && (rule.getMinSeverity() == null || request.severity() >= rule.getMinSeverity())
+                && (rule.getMinDurationDays() == null || request.durationDays() >= rule.getMinDurationDays())
+                && (!hasText(rule.getChronicConditionKeyword())
+                || containsIgnoreCase(request.chronicCondition(), rule.getChronicConditionKeyword()));
+    }
+
+    private List<String> managedQuestionsFor(String symptoms) {
+        if (questionRepository == null) {
+            return List.of();
+        }
+        return questionRepository.findByActiveTrueOrderBySymptomKeyAsc().stream()
+                .filter(question -> "general".equalsIgnoreCase(question.getSymptomKey())
+                        || containsIgnoreCase(symptoms, question.getSymptomKey()))
+                .map(HealthQuestion::getPrompt)
+                .toList();
     }
 
     private List<String> suggestionsFor(RiskLevel level) {
@@ -178,13 +256,21 @@ public class RiskEngineService {
             return "Chest pain or pressure with breathing difficulty can be urgent. Seek emergency medical care now if this is happening.";
         }
         if (breathingTrouble || severeNeurologic || severeBleeding || severeWeakness || suddenSevere || chronicWorsening) {
-            return "A red-flag symptom was reported. Seek urgent medical advice or local emergency care if symptoms are severe, sudden, or worsening.";
+            return STANDARD_URGENT_WARNING;
         }
         return null;
     }
 
     private String safeText(String value) {
         return value == null ? "" : value;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private boolean containsIgnoreCase(String value, String expected) {
+        return hasText(expected) && safeText(value).toLowerCase(Locale.ROOT).contains(expected.trim().toLowerCase(Locale.ROOT));
     }
 
     private List<String> dedupe(List<String> values) {
@@ -199,4 +285,6 @@ public class RiskEngineService {
             List<String> suggestions,
             String urgentWarning
     ) {}
+
+    private record OperationalRuleResult(int score, String urgentWarning, List<String> reasons) {}
 }

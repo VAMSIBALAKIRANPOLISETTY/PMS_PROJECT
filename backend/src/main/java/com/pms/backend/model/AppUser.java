@@ -30,13 +30,18 @@ public class AppUser {
     private String gender;
     private Double heightCm;
     private Double weightKg;
-    private String allergies = "No known allergies";
-    private String chronicConditions = "None";
-    private String lifestyle = "Moderate activity";
-    private String medications = "None";
-    private String familyHistory = "Not set";
-    private String mentalHealthHistory = "Not set";
-    private String sleepQuality = "Not set";
+    private String allergies;
+    private String chronicConditions;
+    private String lifestyle;
+    private String medications;
+    private String familyHistory;
+    private String mentalHealthHistory;
+    private String sleepQuality;
+    private LocalDateTime profileSetupCompletedAt;
+    private String privacyNoticeVersion;
+    private String termsVersion;
+    private LocalDateTime privacyNoticeAcceptedAt;
+    private LocalDateTime termsAcceptedAt;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Long getId() { return id; }
@@ -73,6 +78,16 @@ public class AppUser {
     public void setMentalHealthHistory(String mentalHealthHistory) { this.mentalHealthHistory = mentalHealthHistory; }
     public String getSleepQuality() { return sleepQuality; }
     public void setSleepQuality(String sleepQuality) { this.sleepQuality = sleepQuality; }
+    public LocalDateTime getProfileSetupCompletedAt() { return profileSetupCompletedAt; }
+    public void setProfileSetupCompletedAt(LocalDateTime profileSetupCompletedAt) { this.profileSetupCompletedAt = profileSetupCompletedAt; }
+    public String getPrivacyNoticeVersion() { return privacyNoticeVersion; }
+    public void setPrivacyNoticeVersion(String privacyNoticeVersion) { this.privacyNoticeVersion = privacyNoticeVersion; }
+    public String getTermsVersion() { return termsVersion; }
+    public void setTermsVersion(String termsVersion) { this.termsVersion = termsVersion; }
+    public LocalDateTime getPrivacyNoticeAcceptedAt() { return privacyNoticeAcceptedAt; }
+    public void setPrivacyNoticeAcceptedAt(LocalDateTime privacyNoticeAcceptedAt) { this.privacyNoticeAcceptedAt = privacyNoticeAcceptedAt; }
+    public LocalDateTime getTermsAcceptedAt() { return termsAcceptedAt; }
+    public void setTermsAcceptedAt(LocalDateTime termsAcceptedAt) { this.termsAcceptedAt = termsAcceptedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

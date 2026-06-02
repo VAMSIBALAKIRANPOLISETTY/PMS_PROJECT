@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 
 public class AuthDtos {
     public record RegisterRequest(
@@ -16,11 +17,12 @@ public class AuthDtos {
             @NotBlank @Size(min = 3, max = 40) String username,
             @NotBlank String fullName,
             @NotBlank @Size(min = 8, max = 80) String password,
-            Role role,
-            @NotNull @Min(1) @Max(120) Integer age,
+            @NotNull @Min(18) @Max(120) Integer age,
             @NotNull @DecimalMin("30.0") @DecimalMax("260.0") Double heightCm,
             @NotNull @DecimalMin("2.0") @DecimalMax("350.0") Double weightKg,
-            @NotBlank @Size(max = 40) String sex
+            @NotBlank @Size(max = 40) String sex,
+            @AssertTrue(message = "Privacy notice acceptance is required.") Boolean privacyNoticeAccepted,
+            @AssertTrue(message = "Terms acceptance is required.") Boolean termsAccepted
     ) {}
 
     public record LoginRequest(
@@ -60,7 +62,8 @@ public class AuthDtos {
             String familyHistory,
             String mentalHealthHistory,
             String sleepQuality,
-            Integer profileCompletion
+            Integer profileCompletion,
+            Boolean profileSetupComplete
     ) {}
 
     public record AuthResponse(String token, UserResponse user) {}

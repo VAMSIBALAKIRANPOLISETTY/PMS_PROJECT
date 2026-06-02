@@ -2,8 +2,8 @@
 
 ```mermaid
 flowchart TD
-  A["User PWA React sections"] --> B["Vite frontend proxy"]
-  C["Admin Dashboard React sections"] --> B
+  A["Patient workspace React sections"] --> B["Vite frontend proxy"]
+  C["Clinical operations React sections"] --> B
   B --> D["Spring Boot API"]
   D --> E["Local PostgreSQL"]
   D --> F["Rule-Based Risk Engine"]
@@ -27,9 +27,16 @@ flowchart TD
 - Bean Validation
 - PostgreSQL for local runtime
 - H2 for the test profile
-- Seeded demo user/admin accounts
-- User-scoped assessment listing
-- Admin analytics, rules, and questions endpoints
+- Patient-only public registration
+- Adult signup with cm or ft/in height entry, centimeter storage, and stored privacy-notice and terms acknowledgments
+- Separate patient and staff login paths
+- Seeded demo patient/staff accounts
+- Explicit seven-card health-history review with backend-owned completion state
+- Patient-owned pending drafts with resume and discard actions
+- Completed-only patient history and staff analytics
+- Protected built-in red flags plus upward-only operational safety rules
+- Symptom-matched active staff questions for future assessment drafts
+- Admin analytics, rule management, question management, and read-only staff profile
 
 ## Frontend
 
@@ -45,6 +52,7 @@ src/
   types.ts
   utils.ts
   components/
+    AssessmentReportDrawer.tsx
     DesignPicker.tsx
     RiskPill.tsx
     Sidebar.tsx
@@ -58,14 +66,14 @@ src/
 
 ## Current MVP Scope
 
-- Landing page and login/signup flow
-- User health assessment workspace
-- Searchable symptom drawer
+- Landing page, legal notice pages, three-step adult patient signup, and Staff login flow
+- Patient health assessment workspace
+- Grouped searchable symptom drawer
 - Rule-based Low, Medium, High risk output
-- Follow-up questions after assessment
-- Assessment history and profile views
-- Admin analytics overview
-- Admin assessment, rule, question, and dataset sections
+- Resumable pending intake followed by required follow-up cards and completed care guide
+- Assessment history, reusable completed-report drawer, and labeled profile views
+- Clinical operations analytics overview
+- Full-width staff care review, operational safety-rule management, managed questions, and read-only staff profile
 - No real patient data and no diagnosis
 
 ## Test Coverage

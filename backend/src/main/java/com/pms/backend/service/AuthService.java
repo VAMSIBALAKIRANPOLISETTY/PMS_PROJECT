@@ -11,12 +11,15 @@ import com.pms.backend.repository.UserRepository;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
+    static final String PRIVACY_NOTICE_VERSION = "2026-06-02";
+    static final String TERMS_VERSION = "2026-06-02";
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final Map<String, Long> tokenStore = new ConcurrentHashMap<>();
@@ -26,6 +29,15 @@ public class AuthService {
     }
 
     public AuthResponse register(RegisterRequest request) {
+        if (request.age() == null || request.age() < 18) {
+            throw new IllegalArgumentException("Patient self-registration is available for adults age 18 and older.");
+        }
+        if (!Boolean.TRUE.equals(request.privacyNoticeAccepted())) {
+            throw new IllegalArgumentException("Review and accept the privacy notice before creating an account.");
+        }
+        if (!Boolean.TRUE.equals(request.termsAccepted())) {
+            throw new IllegalArgumentException("Review and accept the terms of use before creating an account.");
+        }
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new IllegalArgumentException("Email is already registered.");
         }
@@ -38,20 +50,38 @@ public class AuthService {
         user.setUsername(request.username().trim().toLowerCase());
         user.setFullName(request.fullName().trim());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setRole(request.role() == Role.ADMIN ? Role.ADMIN : Role.USER);
+        user.setRole(Role.USER);
         user.setAge(request.age());
         user.setGender(clean(request.sex(), "Not set"));
         user.setHeightCm(request.heightCm());
         user.setWeightKg(request.weightKg());
+        LocalDateTime acceptedAt = LocalDateTime.now();
+        user.setPrivacyNoticeVersion(PRIVACY_NOTICE_VERSION);
+        user.setTermsVersion(TERMS_VERSION);
+        user.setPrivacyNoticeAcceptedAt(acceptedAt);
+        user.setTermsAcceptedAt(acceptedAt);
         userRepository.save(user);
         return makeAuthResponse(user);
     }
 
     public AuthResponse login(LoginRequest request) {
+        return loginForRole(request, Role.USER);
+    }
+
+    public AuthResponse staffLogin(LoginRequest request) {
+        return loginForRole(request, Role.ADMIN);
+    }
+
+    private AuthResponse loginForRole(LoginRequest request, Role requiredRole) {
         AppUser user = findByEmailOrUsername(request.identifier())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email/username or password."));
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid email/username or password.");
+        }
+        if (user.getRole() != requiredRole) {
+            throw new IllegalArgumentException(requiredRole == Role.ADMIN
+                    ? "Staff access is required. Use patient login for patient accounts."
+                    : "Staff account detected. Use Staff login.");
         }
         return makeAuthResponse(user);
     }
@@ -88,14 +118,15 @@ public class AuthService {
                 user.getGender(),
                 user.getHeightCm(),
                 user.getWeightKg(),
-                user.getAllergies(),
-                user.getChronicConditions(),
-                user.getLifestyle(),
-                user.getMedications(),
-                user.getFamilyHistory(),
-                user.getMentalHealthHistory(),
-                user.getSleepQuality(),
-                profileCompletion(user)
+                historyForResponse(user, user.getAllergies()),
+                historyForResponse(user, user.getChronicConditions()),
+                historyForResponse(user, user.getLifestyle()),
+                historyForResponse(user, user.getMedications()),
+                historyForResponse(user, user.getFamilyHistory()),
+                historyForResponse(user, user.getMentalHealthHistory()),
+                historyForResponse(user, user.getSleepQuality()),
+                profileCompletion(user),
+                user.getProfileSetupCompletedAt() != null
         );
     }
 
@@ -105,13 +136,14 @@ public class AuthService {
         user.setHeightCm(request.heightCm());
         user.setWeightKg(request.weightKg());
         user.setGender(clean(request.sex(), "Not set"));
-        user.setAllergies(clean(request.allergies(), "No known allergies"));
-        user.setChronicConditions(clean(request.chronicConditions(), "None"));
-        user.setLifestyle(clean(request.lifestyle(), "Moderate activity"));
-        user.setMedications(clean(request.medications(), "None"));
-        user.setFamilyHistory(clean(request.familyHistory(), "Not set"));
-        user.setMentalHealthHistory(clean(request.mentalHealthHistory(), "Not set"));
-        user.setSleepQuality(clean(request.sleepQuality(), "Not set"));
+        user.setAllergies(cleanNullable(request.allergies()));
+        user.setChronicConditions(cleanNullable(request.chronicConditions()));
+        user.setLifestyle(cleanNullable(request.lifestyle()));
+        user.setMedications(cleanNullable(request.medications()));
+        user.setFamilyHistory(cleanNullable(request.familyHistory()));
+        user.setMentalHealthHistory(cleanNullable(request.mentalHealthHistory()));
+        user.setSleepQuality(cleanNullable(request.sleepQuality()));
+        user.setProfileSetupCompletedAt(historyComplete(user) ? LocalDateTime.now() : null);
         return toUserResponse(userRepository.save(user));
     }
 
@@ -135,14 +167,41 @@ public class AuthService {
         if (user.getHeightCm() != null && user.getHeightCm() > 0) completed++;
         if (user.getWeightKg() != null && user.getWeightKg() > 0) completed++;
         if (hasValue(user.getGender()) && !"not set".equalsIgnoreCase(user.getGender())) completed++;
-        if (hasValue(user.getAllergies())) completed++;
-        if (hasValue(user.getChronicConditions())) completed++;
-        if (hasValue(user.getLifestyle())) completed++;
-        if (hasValue(user.getMedications())) completed++;
-        if (hasValue(user.getFamilyHistory()) && !"not set".equalsIgnoreCase(user.getFamilyHistory())) completed++;
-        if (hasValue(user.getMentalHealthHistory()) && !"not set".equalsIgnoreCase(user.getMentalHealthHistory())) completed++;
-        if (hasValue(user.getSleepQuality()) && !"not set".equalsIgnoreCase(user.getSleepQuality())) completed++;
+        if (countHistoryValue(user, user.getAllergies())) completed++;
+        if (countHistoryValue(user, user.getChronicConditions())) completed++;
+        if (countHistoryValue(user, user.getLifestyle())) completed++;
+        if (countHistoryValue(user, user.getMedications())) completed++;
+        if (countHistoryValue(user, user.getFamilyHistory())) completed++;
+        if (countHistoryValue(user, user.getMentalHealthHistory())) completed++;
+        if (countHistoryValue(user, user.getSleepQuality())) completed++;
         return Math.round((completed * 100f) / total);
+    }
+
+    private boolean historyComplete(AppUser user) {
+        return hasValue(user.getAllergies())
+                && hasValue(user.getChronicConditions())
+                && hasValue(user.getLifestyle())
+                && hasValue(user.getMedications())
+                && hasValue(user.getFamilyHistory())
+                && hasValue(user.getMentalHealthHistory())
+                && hasValue(user.getSleepQuality());
+    }
+
+    private boolean countHistoryValue(AppUser user, String value) {
+        return user.getProfileSetupCompletedAt() != null
+                ? hasValue(value)
+                : hasValue(value) && !isLegacyGeneratedValue(value);
+    }
+
+    private String historyForResponse(AppUser user, String value) {
+        return user.getProfileSetupCompletedAt() == null && isLegacyGeneratedValue(value) ? null : value;
+    }
+
+    private boolean isLegacyGeneratedValue(String value) {
+        return "none".equalsIgnoreCase(value)
+                || "no known allergies".equalsIgnoreCase(value)
+                || "moderate activity".equalsIgnoreCase(value)
+                || "not set".equalsIgnoreCase(value);
     }
 
     private boolean hasValue(String value) {
@@ -151,5 +210,9 @@ public class AuthService {
 
     private String clean(String value, String fallback) {
         return hasValue(value) ? value.trim() : fallback;
+    }
+
+    private String cleanNullable(String value) {
+        return hasValue(value) ? value.trim() : null;
     }
 }

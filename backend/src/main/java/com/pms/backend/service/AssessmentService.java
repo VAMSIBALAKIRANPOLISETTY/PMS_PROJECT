@@ -5,6 +5,7 @@ import com.pms.backend.dto.AssessmentDtos.AssessmentResponse;
 import com.pms.backend.dto.AssessmentDtos.FollowUpAnswerRequest;
 import com.pms.backend.model.AppUser;
 import com.pms.backend.model.Assessment;
+import com.pms.backend.model.AssessmentStatus;
 import com.pms.backend.model.Role;
 import com.pms.backend.repository.AssessmentRepository;
 import java.util.ArrayList;
@@ -29,6 +30,12 @@ public class AssessmentService {
     }
 
     public AssessmentResponse create(AppUser user, AssessmentRequest request) {
+        if (user.getRole() != Role.USER) {
+            throw new IllegalArgumentException("Patient access is required to create an assessment.");
+        }
+        if (assessmentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, AssessmentStatus.PENDING_FOLLOW_UP).isPresent()) {
+            throw new IllegalArgumentException("Finish or discard your current assessment draft before starting another.");
+        }
         List<String> symptoms = cleanSymptoms(request.symptoms());
         AssessmentRequest normalizedRequest = new AssessmentRequest(
                 symptoms,
@@ -53,21 +60,31 @@ public class AssessmentService {
         assessment.setReasons(result.reasons());
         assessment.setFollowUpQuestions(result.followUps());
         assessment.setSuggestions(result.suggestions());
-        applyCarePrep(assessment, aiInsightService.forAssessment(user, assessment, result), result);
+        assessment.setStatus(AssessmentStatus.PENDING_FOLLOW_UP);
+        assessment.setUrgentWarning(result.urgentWarning());
         return toResponse(assessmentRepository.save(assessment));
     }
 
     public AssessmentResponse answerFollowUps(AppUser user, Long assessmentId, FollowUpAnswerRequest request) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found."));
-        if (user.getRole() != Role.ADMIN && !assessment.getUser().getId().equals(user.getId())) {
+        if (user.getRole() != Role.USER || !assessment.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("Assessment does not belong to this user.");
+        }
+        if (completed(assessment)) {
+            throw new IllegalArgumentException("This assessment has already been completed.");
         }
         List<String> answers = request.answers().stream()
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .limit(7)
                 .toList();
+        if (answers.size() != assessment.getFollowUpQuestions().size()) {
+            throw new IllegalArgumentException("Answer every follow-up question before preparing your care guide.");
+        }
+        if (answers.stream().anyMatch(answer -> !answer.matches("^(Yes|No|Not sure)( \\| Note: .+)?$"))) {
+            throw new IllegalArgumentException("Choose Yes, No, or Not sure for every follow-up question.");
+        }
         RiskEngineService.RiskResult result = riskEngineService.refineWithFollowUps(assessment, answers);
         assessment.setFollowUpAnswers(answers);
         assessment.setRiskScore(result.score());
@@ -75,6 +92,7 @@ public class AssessmentService {
         assessment.setReasons(result.reasons());
         assessment.setSuggestions(result.suggestions());
         applyCarePrep(assessment, aiInsightService.forAssessment(user, assessment, result), result);
+        assessment.setStatus(AssessmentStatus.COMPLETED);
         return toResponse(assessmentRepository.save(assessment));
     }
 
@@ -82,7 +100,28 @@ public class AssessmentService {
         List<Assessment> rows = user.getRole() == Role.ADMIN
                 ? assessmentRepository.findAllByOrderByCreatedAtDesc()
                 : assessmentRepository.findByUserOrderByCreatedAtDesc(user);
-        return rows.stream().map(this::toResponse).toList();
+        return rows.stream().filter(this::completed).map(this::toResponse).toList();
+    }
+
+    public AssessmentResponse pendingFor(AppUser user) {
+        if (user.getRole() != Role.USER) {
+            return null;
+        }
+        return assessmentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, AssessmentStatus.PENDING_FOLLOW_UP)
+                .map(this::toResponse)
+                .orElse(null);
+    }
+
+    public void discardDraft(AppUser user, Long assessmentId) {
+        Assessment assessment = assessmentRepository.findById(assessmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Assessment draft not found."));
+        if (user.getRole() != Role.USER || !assessment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Assessment draft does not belong to this user.");
+        }
+        if (completed(assessment)) {
+            throw new IllegalArgumentException("Completed assessments cannot be discarded.");
+        }
+        assessmentRepository.delete(assessment);
     }
 
     public AssessmentResponse toResponse(Assessment assessment) {
@@ -99,6 +138,7 @@ public class AssessmentService {
                 assessment.getChronicCondition(),
                 assessment.getRiskScore(),
                 assessment.getRiskLevel(),
+                assessment.getStatus() == null ? AssessmentStatus.COMPLETED : assessment.getStatus(),
                 assessment.getReasons(),
                 assessment.getSuggestions(),
                 assessment.getFollowUpQuestions(),
@@ -136,5 +176,9 @@ public class AssessmentService {
                 .filter(value -> !value.isBlank())
                 .limit(5)
                 .toList()));
+    }
+
+    private boolean completed(Assessment assessment) {
+        return assessment.getStatus() == null || assessment.getStatus() == AssessmentStatus.COMPLETED;
     }
 }

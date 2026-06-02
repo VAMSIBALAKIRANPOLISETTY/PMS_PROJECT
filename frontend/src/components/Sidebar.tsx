@@ -16,7 +16,7 @@ export function Sidebar({ mode, page, setPage, open, setOpen }: SidebarProps) {
     <aside className={`sidebar ${open ? "open" : ""}`}>
       <div className="brand-row">
         <div className="brand-mark"><HeartPulse size={24} /></div>
-        <div><strong>PMS Health</strong><span>Assessment system</span></div>
+        <div><strong>PMS Health</strong><span>Care preparation</span></div>
         <button className="icon-button mobile-only close-menu" onClick={() => setOpen(false)}><X size={18} /></button>
       </div>
       <nav>
@@ -28,7 +28,7 @@ export function Sidebar({ mode, page, setPage, open, setOpen }: SidebarProps) {
       </nav>
       <div className="disclaimer-mini">
         <ShieldCheck size={18} />
-        <p>Insights only. No diagnosis, prescription, or emergency response.</p>
+        <p>For health awareness only. Seek qualified medical care for diagnosis, treatment, or urgent concerns.</p>
       </div>
     </aside>
   );

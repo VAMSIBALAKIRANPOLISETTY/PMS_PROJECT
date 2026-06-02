@@ -21,12 +21,12 @@ function sourceParts(source: string) {
   };
 }
 
-export function CarePrepGuide({ title = "Care-preparation guide", insight, riskLevel, riskScore, reasons = [], suggestions = [] }: CarePrepGuideProps) {
+export function CarePrepGuide({ title = "Your care-preparation guide", insight, riskLevel, riskScore, reasons = [], suggestions = [] }: CarePrepGuideProps) {
   return (
     <div className="care-guide">
       <div className="care-guide-header">
         <div>
-          <p className="eyebrow">Rules + AI mode: {insight.aiMode}</p>
+          <p className="eyebrow">Personalized guidance</p>
           <h2>{title}</h2>
         </div>
         {riskLevel && <RiskPill value={riskLevel} />}

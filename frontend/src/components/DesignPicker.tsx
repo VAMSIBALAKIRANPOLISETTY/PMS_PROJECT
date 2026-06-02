@@ -9,7 +9,7 @@ interface DesignPickerProps {
 export function DesignPicker({ design, setDesign }: DesignPickerProps) {
   return (
     <section className="panel design-picker" data-section="design-picker">
-      <div className="section-title"><div><p className="eyebrow">UI options</p><h2>Select a design direction</h2></div></div>
+      <div className="section-title"><div><p className="eyebrow">Appearance</p><h2>Choose your workspace theme</h2></div></div>
       <div className="design-grid">
         {designOptions.map((option) => (
           <button key={option.id} className={`design-option ${option.id} ${design === option.id ? "active" : ""}`} onClick={() => setDesign(option.id)}>

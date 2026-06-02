@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HealthQuestionRepository extends JpaRepository<HealthQuestion, Long> {
     List<HealthQuestion> findByActiveTrueOrderBySymptomKeyAsc();
+    List<HealthQuestion> findAllByOrderBySymptomKeyAsc();
+    boolean existsBySymptomKeyIgnoreCaseAndPromptIgnoreCase(String symptomKey, String prompt);
 }

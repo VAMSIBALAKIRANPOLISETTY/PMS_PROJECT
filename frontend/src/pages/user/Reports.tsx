@@ -32,7 +32,7 @@ export function Reports({ token, notify }: ReportsProps) {
       const response = await api.post<ReportFollowUpResponse>("/reports/follow-ups", { reportName: file.name }, { headers: authHeaders(token) });
       setQuestions(response.data.followUpQuestions);
       setAnswers(Array(response.data.followUpQuestions.length).fill(""));
-      notify("Report added successfully. Backend follow-up cards are ready.");
+      notify("Report added successfully. Follow-up questions are ready.");
     } catch (error) {
       const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Could not prepare report follow-ups." : "Could not prepare report follow-ups.";
       setMessage(fallback);
@@ -71,7 +71,7 @@ export function Reports({ token, notify }: ReportsProps) {
         <div className="upload-zone">
           <Upload size={38} />
           <h2>Upload text-based PDF report</h2>
-          <p>After a report is added, the system asks follow-up cards before refreshing the insight summary.</p>
+          <p>Add a report and answer a few guided questions to prepare a clearer summary for your doctor.</p>
           <input type="file" accept="application/pdf" onChange={(event) => void handleFile(event.target.files?.[0])} />
           {fileName && <div className="success-row"><CheckCircle2 size={18} />{fileName} added</div>}
           {fileName && (
@@ -88,7 +88,7 @@ export function Reports({ token, notify }: ReportsProps) {
       </section>
       <section className="panel">
         <p className="eyebrow">Report follow-ups</p>
-        <h2>{questions.length > 0 ? `Question ${step + 1} of ${questions.length}` : "Backend-generated report questions"}</h2>
+        <h2>{questions.length > 0 ? `Question ${step + 1} of ${questions.length}` : "Prepare your report summary"}</h2>
         {message && <div className="form-message">{message}</div>}
         {fileName && currentQuestion ? (
           <div className="followup-card">

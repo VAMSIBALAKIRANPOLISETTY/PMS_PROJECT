@@ -1,6 +1,6 @@
 # Patient Health Assessment and Tracking System
 
-Admin Web + User PWA capstone prototype built with **Java Spring Boot**, **React + TypeScript**, and **PostgreSQL**.
+Patient workspace + clinical operations capstone prototype built with **Java Spring Boot**, **React + TypeScript**, and **PostgreSQL**.
 
 This system helps users enter symptoms, optional temperature details, reports, and health history, then gives a safe care-preparation guide with risk level, reasons, possible directions, monitoring notes, doctor questions, and follow-up questions. It does **not** diagnose disease, prescribe medicine, or replace a doctor.
 
@@ -8,21 +8,21 @@ This system helps users enter symptoms, optional temperature details, reports, a
 
 The Patient Health Assessment and Tracking System is a capstone-style full-stack web application designed to support safe health-awareness workflows for normal users and administrative reviewers. The project focuses on collecting structured health inputs, processing those inputs through a controlled rule-based risk engine, and presenting the result in a clear and non-diagnostic format. The system is intentionally positioned as an educational and awareness prototype rather than a medical decision-making tool. It helps users organize their symptoms, optional temperature data, reports, and health history before speaking with a qualified medical professional.
 
-The application has two major workspaces: the User PWA workspace and the Admin Web Dashboard. The User PWA workspace is built for patients or normal users who want to create an account, log in, fill out a health assessment form, review risk awareness output, answer follow-up prompts, and track their previous assessment history. The Admin Web Dashboard is built for administrative review of the system's synthetic/demo data. Admin users can review assessment records, see analytics, inspect risk rules, view the dynamic question bank, and understand the dataset plan used for testing.
+The application has two role-appropriate workspaces: the patient health workspace and the clinical operations workspace. The patient workspace is built for people who want to create an account, log in, fill out a health assessment form, review risk-awareness output, answer follow-up prompts, and inspect previous assessment reports. The clinical operations workspace is restricted to staff accounts. Staff users can review assessment records, see analytics, manage upward-only operational safety rules, maintain the guided question bank, and view a read-only staff profile. Patient and staff sessions remain separate so administrative accounts are not treated like patient profiles.
 
-On the user side, account creation collects basic profile information such as age, height, weight, and sex. After login, users can finish a richer health-history setup through progressive question cards covering allergies, chronic conditions, medicines, family history, mental health or psychiatric history, sleep quality, and lifestyle. The assessment form now supports selecting up to five symptoms from an in-page symptom drawer. It collects severity, duration, optional body temperature, and chronic condition context without asking for oxygen level or heart rate because those values are often not immediately available to normal users. After submission, the backend returns a risk score, a Low / Medium / High risk level, reasons for that level, safe suggestions, four to seven follow-up questions, and a structured care-preparation guide. Users can answer those follow-ups and refresh the guide with new context.
+On the patient side, public account creation always creates an adult patient account and collects basic profile information such as age, height, weight, and sex. Height can be entered in centimeters or feet and inches; the API stores centimeters consistently. Signup uses three steps: account details, privacy-notice acknowledgment, and terms acceptance. The backend stores the accepted privacy-notice and terms versions with timestamps for the project record. Staff accounts are provisioned separately and use a dedicated Staff login path. After patient login, users finish a richer health-history setup through progressive mixed-control question cards covering allergies, chronic conditions, medicines, family history, mental health history, sleep quality, and lifestyle. New accounts do not receive invented health-history values. Legacy placeholder-like values require explicit patient review before setup is complete. The assessment form supports selecting up to five symptoms from a grouped searchable symptom drawer. It collects a deliberate severity selection, duration, optional body temperature, and chronic-condition context without assuming default patient answers. The backend saves this intake as a resumable draft, returns four to seven follow-up questions, and generates the structured care-preparation guide only after all follow-ups are answered. Rule-based urgent warnings can still appear immediately before the questions.
 
-The risk engine is deliberately simple, explainable, and controlled. It does not use uncontrolled diagnosis logic, and it does not claim that a user has any specific disease. Instead, it evaluates broad risk indicators such as high severity, long duration, optional abnormal temperature, multiple selected symptoms, chronic-condition context, and red-flag symptom combinations. Red-flag checks are rule-based before AI-style wording is generated, so urgent warnings cannot be lowered by generated text. Follow-up answers can adjust the risk explanation when the user reports concerning details such as breathing difficulty, fainting, chest pain, confusion, bleeding, vomiting, or vision changes. The output stays in the language of care preparation: it explains why the entered data may need attention, gives non-diagnostic directions to discuss, and encourages professional consultation when symptoms are serious or persistent.
+The risk engine is deliberately simple, explainable, and controlled. It does not use uncontrolled diagnosis logic, and it does not claim that a user has any specific disease. Instead, it evaluates broad risk indicators such as high severity, long duration, optional abnormal temperature, multiple selected symptoms, chronic-condition context, and red-flag symptom combinations. Protected red-flag checks are rule-based before AI-style wording is generated, so urgent warnings cannot be lowered by generated text. Staff can add structured operational rules that use symptom, severity, duration, and chronic-condition matching. These rules can only raise a score floor and optionally show the standard urgent message; they cannot reduce risk or replace protected emergency wording. Active staff-managed questions can join future assessment drafts when their symptom matches. Follow-up answers can adjust the risk explanation when the user reports concerning details such as breathing difficulty, fainting, chest pain, confusion, bleeding, vomiting, or vision changes. The output stays in the language of care preparation: it explains why the entered data may need attention, gives non-diagnostic directions to discuss, and encourages professional consultation when symptoms are serious or persistent.
 
 The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons, and CSS custom properties. The current branch refactors the earlier single-file frontend into component and section files. This makes the code easier to understand, test, and extend. Authentication pages live under `pages/auth`, user-facing sections live under `pages/user`, admin-facing sections live under `pages/admin`, and shared interface elements live under `components`. The public landing page now keeps only public product information on the first screens, with Home, How It Works, Safety, and Contact sections. User profile details, admin information, assessment history, and private health data remain inside authenticated screens only. Shared TypeScript types, API helpers, static data, and formatting utilities are separated into `types.ts`, `api.ts`, `data.ts`, and `utils.ts`.
 
 The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The current AI layer is a backend-owned mock `AiInsightService`; the frontend does not call AI providers or store AI keys.
 
-Authentication in this prototype uses a simple token-based approach. After login or signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Normal users can see only their own assessments. Admin users can access admin analytics and all assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
+Authentication in this prototype uses a simple token-based approach. After patient login, staff login, or patient signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
 
 The system avoids Docker by design in the current branch. It is intended to run on a normal development system with IntelliJ IDEA or VS Code, Java 17 or later, Maven, Node.js, and a locally installed PostgreSQL server. The backend connection defaults to `pms_db`, `pms_user`, and `pms_password`, but these can be changed using environment variables. This makes the project easier to run on college lab systems, personal laptops, or another development machine where Docker Desktop is not installed.
 
-Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile. Frontend testing uses Vitest and Testing Library to render every major section: landing page, auth page, layout controls, user overview, assessment form, symptom drawer, reports, history, profile, recent assessments, admin overview, assessment table, rules, questions, datasets, and design picker. The project also supports a production frontend build using TypeScript and Vite.
+Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile, public registration creates adult patient accounts with acknowledgment metadata, patient and staff login paths remain isolated, draft assessments stay outside completed analytics, red-flag warnings remain immediate, risk rules remain predictable, and mock insight output stays structured. Frontend testing uses Vitest and Testing Library to render every major section and verify the legal signup steps, blank intake controls, grouped symptom library, pending follow-up gate, labeled profile fields, and completed care-preparation guide. The project also supports a production frontend build using TypeScript and Vite.
 
 Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, backend-owned mock AI care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production AI provider adapter, a production security model, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
 
@@ -38,7 +38,7 @@ Use this branch for continuing development:
 PMS_Test2
 ```
 
-This branch contains the Spring Boot backend, React TypeScript frontend, dynamic public landing/auth UI, landing Safety and Contact sections, profile setup flow, editable user profile, multi-symptom assessments, user-owned records, admin analytics, follow-up questions, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
+This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
 
 ## Required Software
 
@@ -197,21 +197,22 @@ Username: admin
 Password: password123
 ```
 
-New users can also sign up from the landing page.
+New patients can sign up from the landing page. Staff should use the separate `Staff login` link on the login screen.
 
 ## Demo Presentation Guide
 
 Use this flow when presenting the project:
 
 1. Open the landing page and explain the product boundary: PMS is a care-preparation assistant, not a diagnosis or treatment system.
-2. Show login/signup. Mention that signup collects age, height, weight, and sex so the system has basic profile context.
-3. Login as the demo user and show the profile setup card. Explain that richer health history helps the system prepare better follow-up questions and doctor notes.
-4. Open the assessment page. Select up to five symptoms from the symptom drawer, set severity, duration, temperature availability, and chronic-condition context.
-5. Generate the assessment. Explain that the backend first runs rule-based safety checks, then the mock AI service generates a structured care-preparation guide.
-6. Show the result sections: Summary, Why this matters, Possible directions to discuss, What to do next, Doctor questions, Trusted sources, and Follow-up questions.
-7. Answer follow-up questions and submit them. Explain that the backend refreshes the insight with the extra context while preserving rule-based urgent warnings.
+2. Show login/signup. Mention that public signup creates adult patient accounts only, collects basic profile context, and records privacy-notice and terms acknowledgments before account creation.
+3. Login as the demo user and show the profile setup card. Explain that question-specific controls require reviewed answers before the panel disappears and that richer health history helps prepare better follow-up questions and doctor notes.
+4. Open the assessment page. Select up to five symptoms from the grouped symptom drawer, choose severity, enter duration, choose temperature availability, and select chronic-condition context.
+5. Click Prepare care guide. Explain that the backend saves a resumable pending draft and runs rule-based safety checks immediately.
+6. Answer every follow-up card using Yes, No, or Not sure, with an optional note. Mention that red-flag warnings can appear before the guide and are never delayed by the questions.
+7. Submit the answers and show the completed result sections: Summary, Why this matters, Possible directions to discuss, What to do next, Doctor questions, and Trusted sources.
 8. Open Reports. Upload a PDF name, paste report notes or abnormal values, answer follow-up cards, and generate the report care-prep guide.
-9. Switch to admin mode and show analytics, assessment records, risk rules, and question bank to explain the management side of the prototype.
+9. Open History and click an assessment record to show the reusable full care-preparation report drawer.
+10. Log out, use the separate Staff login link, and sign in with the demo admin account. Show analytics, full-width assessment records, the same report drawer, upward-only safety-rule management, managed assessment questions, and the read-only staff profile.
 
 Suggested short explanation:
 
@@ -221,13 +222,14 @@ PMS helps users organize symptoms, health history, and report notes before they 
 
 ## Where Key Functions Are Used
 
-- `AuthService`: handles registration, login, token lookup, role checks, profile updates, and profile-completion percentage.
-- `AssessmentService`: creates assessments, stores user-owned records, applies care-prep output, and refreshes insights after follow-up answers.
-- `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, and rule-based urgent warnings.
+- `AuthService`: handles adult patient-only registration, stored privacy and terms acknowledgments, separate patient and staff login paths, token lookup, role checks, explicit health-history completion, and profile-completion percentage.
+- `AssessmentService`: saves pending intake drafts, resumes or discards patient-owned drafts, finalizes completed records after follow-up answers, and keeps unfinished drafts outside normal history.
+- `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, protected urgent warnings, upward-only operational rule matches, and symptom-matched managed questions.
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
 - `MockAiInsightService`: current development/mock implementation that generates care summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and report insights.
 - `ReportInsightController`: exposes backend report follow-up and report insight endpoints.
 - `CarePrepGuide`: shared React component that renders the structured care-preparation result for both assessments and reports.
+- `AssessmentReportDrawer`: shared React component that opens completed patient and staff assessment records without leaving the current screen.
 - `AssessmentForm`: collects symptoms, severity, duration, temperature availability, chronic condition, follow-up answers, and displays the care-prep guide.
 - `Reports`: collects report file name, pasted report notes, report follow-up answers, and displays the report care-prep guide.
 
@@ -252,7 +254,7 @@ PMS helps users organize symptoms, health history, and report notes before they 
   Report values need context. The system asks about symptoms, abnormal values, medicines, chronic conditions, and doctor review before creating a safe preparation guide.
 
 - How is user privacy handled in this prototype?
-  Normal users can see only their own assessments. Admin users can view all records for demo analytics. Production use would need stronger authentication, audit logs, consent, and compliance work.
+  Adult signup records the accepted privacy-notice and terms versions with timestamps. Normal users can see only their own completed assessments, and unfinished drafts stay private. Admin users can view completed records for demo analytics. This is still a capstone prototype, not a HIPAA-certified production system.
 
 - What database and stack are used?
   Spring Boot, Spring Data JPA, PostgreSQL for local runtime, H2 for tests, React TypeScript, Vite, Recharts, and CSS.
@@ -277,17 +279,23 @@ Important endpoints:
 GET  /api/health
 POST /api/auth/register
 POST /api/auth/login
+POST /api/auth/staff-login
 GET  /api/auth/me
 PUT  /api/auth/profile
 GET  /api/assessments
 POST /api/assessments
+GET  /api/assessments/pending
 POST /api/assessments/{id}/follow-ups
+DELETE /api/assessments/{id}/draft
 POST /api/reports/follow-ups
 POST /api/reports/insight
 GET  /api/admin/analytics
 GET  /api/admin/rules
 POST /api/admin/rules
+PATCH /api/admin/rules/{id}/active
 GET  /api/admin/questions
+POST /api/admin/questions
+PATCH /api/admin/questions/{id}/active
 ```
 
 Authenticated requests use:
@@ -296,15 +304,23 @@ Authenticated requests use:
 Authorization: Bearer <token>
 ```
 
-Normal users only see their own assessments. Admin users can see all assessments and admin analytics.
+Normal users only see their own completed assessments. Admin users can see completed assessments and admin analytics. Pending drafts remain private to the patient until finalized or discarded.
+
+### How Staff Rules Work
+
+`Add rule` creates an operational safety rule for future patient assessments. Staff choose one required symptom and optional matching conditions such as a second symptom, minimum severity, minimum duration, or chronic-condition keyword. Every configured condition must match. A matched active rule applies `max(currentScore, configuredScoreFloor)` and may show the standard urgent message. It cannot lower risk, disable protected red flags, or introduce custom emergency wording.
+
+### How Managed Questions Work
+
+`Create question` adds a Yes / No / Not sure compatible follow-up prompt for a specific symptom or `General`. Active symptom-matched questions can join future assessment drafts while the backend keeps the final follow-up set between four and seven questions. Paused questions remain visible to staff but do not enter new patient drafts.
 
 ## Frontend Sections
 
 The frontend is split by section:
 
-- `pages/auth`: landing and login/signup pages
+- `pages/auth`: landing, legal notice, login, and three-step signup pages
 - `pages/user`: user overview, assessment form, symptom drawer, reports, history, profile, recent assessments
-- `pages/admin`: admin overview, assessment table, rules, questions, datasets
+- `pages/admin`: clinical operations overview, full-width assessment table, operational safety rules, managed assessment questions, and read-only staff profile
 - `components`: shared layout, care-preparation guide, and reusable UI pieces
 - `types.ts`, `api.ts`, `data.ts`, `utils.ts`: shared TypeScript contracts and helpers
 
@@ -347,8 +363,8 @@ npm run build
 
 Validated on `PMS_Test2`:
 
-- Backend Spring context, risk engine, and mock AI insight tests passed with H2 test profile
-- Frontend section and care-prep guide test suite passed
+- Backend Spring context, patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
+- Frontend patient/staff auth, section, and care-prep guide test suite passed
 - Frontend TypeScript and Vite production build passed
 - Runtime PostgreSQL path documented for local PostgreSQL, no Docker
 
@@ -366,12 +382,22 @@ Current implementation and next phases:
 4. A provider-backed implementation can be added later, configured only through environment variables such as `AI_MODE`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`.
 5. Report summary generation and assessment insight refresh logic stay behind backend endpoints.
 6. AI-style output returns care summary, explanation, possible directions, urgent warning, monitoring plan, doctor questions, trusted source links, and four to seven follow-up questions.
-7. The existing rule engine remains the safety layer. AI can improve wording and ask better follow-up questions, but it must not independently diagnose disease, prescribe medicine, or make emergency decisions.
+7. The existing rule engine remains the safety layer. Protected hard-coded red flags cannot be disabled or lowered. Staff-created operational rules are additive score floors only. AI can improve wording and ask better follow-up questions, but it must not independently diagnose disease, prescribe medicine, or make emergency decisions.
 8. Tests now cover the risk engine, red-flag urgent warnings, mock AI structured output, and frontend rendering of the care-prep guide.
 
 The production AI version should follow strict safety rules. The prompt and backend validation must tell the AI that PMS is only a health-awareness assistant. It must avoid disease diagnosis, medication instructions, dosage advice, emergency triage promises, or statements that replace a doctor. If the user enters severe symptoms such as chest pain, breathing difficulty, fainting, confusion, heavy bleeding, or sudden weakness, the system should show safe guidance to seek urgent professional care. Real patient data should not be used with an AI provider until privacy, consent, logging, retention, and compliance requirements are designed properly.
 
 This plan keeps the current project stable while making the AI upgrade clear: mock logic stays only for development and tests, real AI lives behind the backend, and medical-safety boundaries remain part of the system design.
+
+## Privacy And Production Review
+
+PMS currently records a privacy-notice acknowledgment and terms acceptance for the project workflow. It does not claim hospital, HIPAA, or regulatory status. A production health application would need a dedicated privacy and legal review, including data retention, breach response, logging, access controls, and any applicable notice requirements.
+
+Useful official references:
+
+- [HHS HIPAA covered entities guidance](https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html)
+- [HHS Notice of Privacy Practices guidance](https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/privacy-practices-for-protected-health-information/index.html)
+- [FTC Health Breach Notification Rule guidance](https://www.ftc.gov/business-guidance/resources/complying-ftcs-health-breach-notification-rule)
 
 ## Security Scope
 
@@ -379,8 +405,11 @@ Included for prototype:
 
 - Password hashing
 - Simple token authentication
+- Separate patient and staff login paths
+- Adult patient-only public registration
+- Stored privacy-notice and terms acknowledgments
 - Role-based admin checks
-- User-owned assessment filtering
+- User-owned pending drafts and completed-assessment filtering
 - Frontend and backend validation
 - Synthetic demo seed data
 

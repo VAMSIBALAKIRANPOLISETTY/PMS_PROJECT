@@ -1,4 +1,6 @@
-import { ArrowRight, FileText, HeartPulse, LogIn, Mail, MessageSquareText, ShieldCheck, Stethoscope } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, HeartPulse, LogIn, Mail, MessageSquareText, ShieldCheck, Stethoscope } from "lucide-react";
+import { PublicLegalPage } from "./PublicLegalPage";
 
 const navItems = ["Home", "How it works", "Safety", "Contact"];
 const trustItems = ["Awareness only", "No diagnosis", "Doctor-ready summary"];
@@ -8,10 +10,10 @@ const landingMetrics = [
   { label: "Medical claim", value: "None" },
 ];
 const serviceCards = [
-  { title: "Describe symptoms", text: "Visitors learn how PMS helps organize symptoms before a consultation." },
-  { title: "Prepare reports", text: "Report simplification is explained without exposing patient details." },
-  { title: "Answer follow-ups", text: "Short guided questions help users prepare better notes for a doctor." },
-  { title: "Track safely", text: "History is presented as a benefit, not as account data on the landing page." },
+  { title: "Describe symptoms", text: "Organize the symptoms that matter most before your consultation." },
+  { title: "Prepare reports", text: "Bring report notes together so important details are easier to discuss." },
+  { title: "Answer follow-ups", text: "Use guided questions to prepare clearer notes for your doctor." },
+  { title: "Track changes", text: "Review your assessment history and notice changes over time." },
 ];
 const storySteps = [
   "Create a private account",
@@ -24,12 +26,14 @@ const safetyCards = [
   { title: "Doctor-first guidance", text: "Every result encourages users to consult a qualified professional for real medical decisions." },
 ];
 const contactCards = [
-  { title: "support", text: "this section for demo questions" },
-  { title: "Consent", text: "Patient consent is the voluntary agreement of a patient to undergo medical treatment or procedures after receiving adequate information." },
-  { title: "Feedback", text: "Collect feedback about landing copy" },
+  { title: "Account support", text: "support@pmshealth.example | Monday-Friday, 9:00 AM-5:00 PM IST" },
+  { title: "Privacy and consent", text: "privacy@pmshealth.example | Review how your information supports care preparation." },
+  { title: "Feedback", text: "Send product feedback to support@pmshealth.example so the experience can keep improving." },
 ];
 
 export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => void }) {
+  const [legalPage, setLegalPage] = useState<"privacy" | "terms" | null>(null);
+
   function scrollToSection(sectionId: string) {
     if (sectionId === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -38,20 +42,16 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
   }
 
+  if (legalPage) {
+    return <PublicLegalPage page={legalPage} onBack={() => setLegalPage(null)} />;
+  }
+
   return (
     <div className="landing-page" data-section="landing">
-      <div className="dynamic-ui-background" aria-hidden="true">
-        <div className="floating-ui-card card-a"><HeartPulse size={22} /><strong>Health awareness</strong><span>Before care</span></div>
-        <div className="floating-ui-card card-b"><FileText size={22} /><strong>Safe summary</strong><span>No diagnosis</span></div>
-        <div className="floating-ui-card card-c"><Stethoscope size={22} /><strong>Doctor-ready</strong><span>Better notes</span></div>
-        <div className="data-ribbon ribbon-one" />
-        <div className="data-ribbon ribbon-two" />
-      </div>
-
       <header className="landing-nav">
         <div className="brand-row">
           <div className="brand-mark"><HeartPulse size={24} /></div>
-          <div><strong>PMS Health</strong><span>Assessment system</span></div>
+          <div><strong>PMS Health</strong><span>Care preparation</span></div>
         </div>
         <nav className="landing-links" aria-label="Landing navigation">
           {navItems.map((item) => {
@@ -84,10 +84,10 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
         </div>
 
         <div className="landing-public-preview">
-          <span className="eyebrow">Public website content</span>
+          <span className="eyebrow">Prepare for your consultation</span>
           <h2>Prepare notes, understand context, stay safe.</h2>
           <p>
-            PMS does not diagnose. It gives visitors a clear explanation of what the system does
+            PMS Health helps you organize the details that can make a medical conversation more useful.
           </p>
           <div className="public-preview-grid">
             <span>Symptoms</span>
@@ -100,12 +100,12 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
 
       <section className="landing-details-section" id="landing-details">
         <div className="public-story-card">
-          <p className="eyebrow">Public landing content</p>
+          <p className="eyebrow">How PMS Health supports you</p>
           <h2>Prepare better, decide safely.</h2>
           <p>
-            PMS does not diagnose. It gives visitors a clear explanation of what
-            the system does, what it does not do, and why a doctor should remain
-            the final source of medical guidance.
+            Organize symptoms, prepare report notes, and answer guided questions
+            before speaking with a qualified medical professional. PMS Health
+            supports preparation while your doctor remains the source of medical guidance.
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
       <section className="landing-safety-section" id="landing-safety">
         <div className="section-title">
           <div>
-            <p className="eyebrow">Safety page</p>
+            <p className="eyebrow">Safety guidance</p>
             <h2>Built for awareness, not medical decision-making.</h2>
           </div>
           <ShieldCheck size={28} />
@@ -149,14 +149,19 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
 
       <section className="landing-contact-section" id="landing-contact">
         <div className="contact-copy">
-          <p className="eyebrow">Contact page</p>
-          <h2>Questions about the PMS</h2>
+          <p className="eyebrow">Support and privacy</p>
+          <h2>Prepare with confidence.</h2>
           <p>
-            Personal health records stay inside authenticated user screens.
+            Keep your health information in your private workspace and use PMS Health
+            to prepare for conversations with qualified medical professionals.
           </p>
           <div className="hero-actions">
             <button className="primary-button" onClick={() => onAuth("signup")}>Create account<ArrowRight size={18} /></button>
             <button className="ghost-button" onClick={() => onAuth("login")}><LogIn size={18} />Login</button>
+          </div>
+          <div className="legal-links">
+            <button onClick={() => setLegalPage("privacy")}>Privacy and consent</button>
+            <button onClick={() => setLegalPage("terms")}>Terms of use</button>
           </div>
         </div>
         <div className="landing-contact-grid">
@@ -168,6 +173,7 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
             </article>
           ))}
         </div>
+        <div className="support-boundary">Support contacts are for account, privacy, and feedback questions only. For medical emergencies, contact local emergency services immediately.</div>
       </section>
     </div>
   );

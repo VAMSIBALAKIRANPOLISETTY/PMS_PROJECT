@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, authHeaders } from "./api";
 import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { emptyAnalytics } from "./data";
 import { MainContent } from "./MainContent";
 import { AuthPage } from "./pages/auth/AuthPage";
+import type { AuthMode } from "./pages/auth/AuthPage";
 import { LandingPage } from "./pages/auth/LandingPage";
 import type { Analytics, Assessment, DesignId, Mode, Notify, Page, Question, Rule, User } from "./types";
 
 export function App() {
   const [stage, setStage] = useState<"landing" | "auth" | "app">("landing");
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [token, setToken] = useState(localStorage.getItem("pms-token") ?? "");
   const [user, setUser] = useState<User | null>(null);
-  const [mode, setMode] = useState<Mode>("user");
   const [page, setPage] = useState<Page>("overview");
   const [design, setDesign] = useState<DesignId>((localStorage.getItem("pms-design") as DesignId) || "clinical");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,7 +48,6 @@ export function App() {
     localStorage.setItem("pms-token", nextToken);
     setToken(nextToken);
     setUser(nextUser);
-    setMode(nextUser.role === "ADMIN" ? "admin" : "user");
     setPage("overview");
     setStage("app");
     await refresh(nextToken, nextUser);
@@ -78,7 +77,7 @@ export function App() {
     setStage("landing");
   }
 
-  const currentMode = useMemo(() => user?.role === "ADMIN" ? mode : "user", [mode, user]);
+  const currentMode: Mode = user?.role === "ADMIN" ? "admin" : "user";
 
   if (stage === "landing") {
     return <LandingPage onAuth={(nextMode) => { setAuthMode(nextMode); setStage("auth"); }} />;
@@ -91,8 +90,8 @@ export function App() {
     <div className="app-shell">
       <Sidebar mode={currentMode} page={page} setPage={setPage} open={sidebarOpen} setOpen={setSidebarOpen} />
       <main>
-        <Topbar mode={currentMode} setMode={(nextMode) => { setMode(nextMode); setPage("overview"); }} design={design} setDesign={setDesign} onMenu={() => setSidebarOpen(true)} user={user} onLogout={logout} />
-        <MainContent mode={currentMode} page={page} setPage={setPage} user={user} token={token} assessments={assessments} analytics={analytics} rules={rules} questions={questions} refresh={refresh} design={design} setDesign={setDesign} updateUser={updateUser} notify={notify} />
+        <Topbar design={design} setDesign={setDesign} onMenu={() => setSidebarOpen(true)} user={user} onLogout={logout} />
+        <MainContent mode={currentMode} page={page} setPage={setPage} user={user} token={token} assessments={assessments} analytics={analytics} rules={rules} questions={questions} refresh={refresh} updateUser={updateUser} notify={notify} />
       </main>
       {toast && <div className={`toast-notification ${toast.tone}`} role="status">{toast.message}</div>}
     </div>

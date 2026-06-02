@@ -1,9 +1,8 @@
 import { ArrowRight, ClipboardList, FileText, Filter, HeartPulse, ShieldCheck, Upload, UserRoundCheck } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { DesignPicker } from "../../components/DesignPicker";
 import { RiskPill } from "../../components/RiskPill";
 import { StatCard } from "../../components/StatCard";
-import type { Assessment, DesignId, Notify, Page, User } from "../../types";
+import type { Assessment, Notify, Page, User } from "../../types";
 import { displayRisk, trendFromAssessments } from "../../utils";
 import { ProfileSetupPrompt } from "./ProfileSetupPrompt";
 import { RecentAssessments } from "./RecentAssessments";
@@ -13,25 +12,22 @@ interface UserOverviewProps {
   token: string;
   assessments: Assessment[];
   setPage: (page: Page) => void;
-  design: DesignId;
-  setDesign: (design: DesignId) => void;
   updateUser: (user: User) => void;
   notify: Notify;
 }
 
-export function UserOverview({ user, token, assessments, setPage, design, setDesign, updateUser, notify }: UserOverviewProps) {
+export function UserOverview({ user, token, assessments, setPage, updateUser, notify }: UserOverviewProps) {
   const latest = assessments[0];
   const trendData = trendFromAssessments(assessments);
   const profileCompletion = user.profileCompletion ?? 0;
   return (
-    <>
-      <div className="page-grid" data-section="user-overview">
-        {profileCompletion < 100 && <ProfileSetupPrompt user={user} token={token} updateUser={updateUser} notify={notify} />}
+    <div className="page-grid" data-section="user-overview">
+        {!user.profileSetupComplete && <ProfileSetupPrompt user={user} token={token} updateUser={updateUser} notify={notify} />}
         <div className="hero-panel">
           <div>
             <p className="eyebrow">Today</p>
             <h2>{latest ? `Good morning, ${user.fullName}. Your latest assessment is ${displayRisk(latest.riskLevel).toLowerCase()} risk.` : `Welcome, ${user.fullName}. Start your first health assessment.`}</h2>
-            <p>{latest ? latest.reasons[0] : "Your assessments, follow-up questions, and trends will appear after you create records."}</p>
+            <p>{latest ? latest.reasons[0] : "Start an assessment to prepare a clear summary for your next medical conversation."}</p>
             <div className="hero-actions">
               <button className="primary-button" onClick={() => setPage("assessment")}>Start assessment<ArrowRight size={18} /></button>
               <button className="ghost-button" onClick={() => setPage("reports")}><Upload size={18} />Upload report</button>
@@ -47,8 +43,8 @@ export function UserOverview({ user, token, assessments, setPage, design, setDes
         <div className="stats-grid">
           <StatCard icon={ClipboardList} label="Assessments" value={assessments.length} delta="your records" />
           <StatCard icon={UserRoundCheck} label="Profile setup" value={`${profileCompletion}%`} delta="health history" />
-          <StatCard icon={FileText} label="Reports stored" value="0" delta="PDF module" />
-          <StatCard icon={ShieldCheck} label="Consent status" value="Active" delta="awareness only" />
+          <StatCard icon={FileText} label="Reports prepared" value="0" delta="uploaded reports" />
+          <StatCard icon={ShieldCheck} label="Safety guidance" value="Active" delta="care awareness" />
         </div>
         <section className="panel wide">
           <div className="section-title"><div><p className="eyebrow">Tracking</p><h2>Risk and temperature trend</h2></div><button className="icon-button" title="Filter"><Filter size={18} /></button></div>
@@ -65,8 +61,6 @@ export function UserOverview({ user, token, assessments, setPage, design, setDes
           </ResponsiveContainer>
         </section>
         <RecentAssessments assessments={assessments} />
-      </div>
-      <DesignPicker design={design} setDesign={setDesign} />
-    </>
+    </div>
   );
 }

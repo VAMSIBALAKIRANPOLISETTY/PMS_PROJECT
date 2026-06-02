@@ -3,8 +3,9 @@ import type { LucideIcon } from "lucide-react";
 export type Role = "USER" | "ADMIN";
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type AiMode = "MOCK" | "PROVIDER";
+export type AssessmentStatus = "PENDING_FOLLOW_UP" | "COMPLETED";
 export type Mode = "user" | "admin";
-export type Page = "overview" | "assessment" | "reports" | "history" | "profile" | "assessments" | "rules" | "questions" | "datasets";
+export type Page = "overview" | "assessment" | "reports" | "history" | "profile" | "assessments" | "rules" | "questions";
 export type DesignId = "clinical" | "paper" | "vital";
 
 export interface User {
@@ -25,6 +26,7 @@ export interface User {
   mentalHealthHistory?: string;
   sleepQuality?: string;
   profileCompletion?: number;
+  profileSetupComplete?: boolean;
 }
 
 export interface Assessment {
@@ -40,30 +42,31 @@ export interface Assessment {
   chronicCondition?: string;
   riskScore: number;
   riskLevel: RiskLevel;
+  status: AssessmentStatus;
   reasons: string[];
   suggestions: string[];
   followUpQuestions: string[];
   followUpAnswers: string[];
-  careSummary: string;
-  explanation: string;
+  careSummary?: string | null;
+  explanation?: string | null;
   possibleDirections: string[];
   urgentWarning?: string | null;
   monitoringPlan: string[];
   doctorPrepQuestions: string[];
   trustedSourceLinks: string[];
-  aiMode: AiMode;
+  aiMode?: AiMode | null;
   createdAt: string;
 }
 
 export interface CarePrepGuideData {
-  careSummary: string;
-  explanation: string;
+  careSummary?: string | null;
+  explanation?: string | null;
   possibleDirections: string[];
   urgentWarning?: string | null;
   monitoringPlan: string[];
   doctorPrepQuestions: string[];
   trustedSourceLinks: string[];
-  aiMode: AiMode;
+  aiMode?: AiMode | null;
 }
 
 export interface ReportFollowUpResponse {
@@ -100,8 +103,15 @@ export interface Question {
 export interface Rule {
   id: number;
   conditionLabel: string;
+  primarySymptom?: string | null;
+  secondarySymptom?: string | null;
+  minSeverity?: number | null;
+  minDurationDays?: number | null;
+  chronicConditionKeyword?: string | null;
   riskLevel: RiskLevel;
   score: number;
+  urgent?: boolean;
+  active?: boolean;
   explanation: string;
 }
 

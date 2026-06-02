@@ -3,6 +3,7 @@ import axios from "axios";
 import { Edit3, Save } from "lucide-react";
 import { api, authHeaders } from "../../api";
 import type { Notify, User } from "../../types";
+import { cmToFeetInches, feetInchesToCm, formatHeight } from "../../utils";
 
 interface ProfileProps {
   user: User;
@@ -15,6 +16,10 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
   const initials = user.fullName.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
+  const initialImperial = cmToFeetInches(user.heightCm);
+  const [heightUnit, setHeightUnit] = useState<"cm" | "imperial">("cm");
+  const [heightFeet, setHeightFeet] = useState(initialImperial.feet);
+  const [heightInches, setHeightInches] = useState(initialImperial.inches);
   const [form, setForm] = useState({
     fullName: user.fullName,
     age: user.age ?? 24,
@@ -33,7 +38,10 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
   async function saveProfile() {
     setMessage("");
     try {
-      const response = await api.put("/auth/profile", form, { headers: authHeaders(token) });
+      const response = await api.put("/auth/profile", {
+        ...form,
+        heightCm: heightUnit === "cm" ? form.heightCm : feetInchesToCm(heightFeet, heightInches),
+      }, { headers: authHeaders(token) });
       updateUser(response.data);
       setEditing(false);
       notify("Profile updated successfully.");
@@ -47,14 +55,21 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
     <section className="panel profile-panel" data-section="profile">
       <div className="profile-header">
         <div className="avatar">{initials}</div>
-        <div><p className="eyebrow">Patient profile</p><h2>{user.fullName}</h2><p>Age {user.age ?? "not set"} | {user.sex ?? "not set"} | {user.heightCm ?? 0} cm | {user.weightKg ?? 0} kg</p></div>
+        <div><p className="eyebrow">Patient profile</p><h2>{user.fullName}</h2><p>Age {user.age ?? "not set"} | {user.sex ?? "not set"} | {formatHeight(user.heightCm)} | {user.weightKg ?? 0} kg</p></div>
         <button className="ghost-button" onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Edit profile"}<Edit3 size={17} /></button>
       </div>
       {editing ? (
         <div className="form-grid profile-edit-form">
           <label>Full name<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} /></label>
           <label>Age<input type="number" min="1" max="120" value={form.age} onChange={(event) => setForm({ ...form, age: Number(event.target.value) })} /></label>
-          <label>Height cm<input type="number" min="30" max="260" step="0.1" value={form.heightCm} onChange={(event) => setForm({ ...form, heightCm: Number(event.target.value) })} /></label>
+          <div className="height-field">
+            <div className="field-heading"><span>Height</span><div className="segmented compact"><button type="button" className={heightUnit === "cm" ? "active" : ""} onClick={() => switchHeightUnit("cm")}>cm</button><button type="button" className={heightUnit === "imperial" ? "active" : ""} onClick={() => switchHeightUnit("imperial")}>ft + in</button></div></div>
+            {heightUnit === "cm" ? (
+              <input type="number" aria-label="Height cm" min="30" max="260" step="0.1" value={form.heightCm} onChange={(event) => setForm({ ...form, heightCm: Number(event.target.value) })} />
+            ) : (
+              <div className="imperial-height-grid"><input type="number" aria-label="Height feet" placeholder="Feet" min="1" max="8" value={heightFeet} onChange={(event) => setHeightFeet(event.target.value)} /><input type="number" aria-label="Height inches" placeholder="Inches" min="0" max="11" value={heightInches} onChange={(event) => setHeightInches(event.target.value)} /></div>
+            )}
+          </div>
           <label>Weight kg<input type="number" min="2" max="350" step="0.1" value={form.weightKg} onChange={(event) => setForm({ ...form, weightKg: Number(event.target.value) })} /></label>
           <label>Sex<select value={form.sex} onChange={(event) => setForm({ ...form, sex: event.target.value })}><option>Female</option><option>Male</option><option>Intersex</option><option>Prefer not to say</option></select></label>
           <label>Allergies<input value={form.allergies} onChange={(event) => setForm({ ...form, allergies: event.target.value })} /></label>
@@ -70,20 +85,31 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
       ) : (
         <div className="profile-grid">
           {[
-            user.allergies ?? "No known allergies",
-            user.chronicConditions ?? "No chronic condition",
-            user.medications ?? "No medicines set",
-            user.familyHistory ?? "Family history not set",
-            user.mentalHealthHistory ?? "Mental health history not set",
-            user.sleepQuality ?? "Sleep quality not set",
-            user.lifestyle ?? "Lifestyle not set",
-            user.email,
-            `Username: ${user.username}`,
-            `Role: ${user.role}`,
-            `Profile completion: ${user.profileCompletion ?? 0}%`,
-          ].map((item) => <span key={item}>{item}</span>)}
+            ["Allergies", user.allergies ?? "No known allergies"],
+            ["Chronic conditions", user.chronicConditions ?? "No chronic condition"],
+            ["Medications", user.medications ?? "No medicines set"],
+            ["Family history", user.familyHistory ?? "Family history not set"],
+            ["Mental health history", user.mentalHealthHistory ?? "Mental health history not set"],
+            ["Sleep quality", user.sleepQuality ?? "Sleep quality not set"],
+            ["Lifestyle", user.lifestyle ?? "Lifestyle not set"],
+            ["Email", user.email],
+            ["Username", `@${user.username}`],
+            ["Profile completion", `${user.profileCompletion ?? 0}%`],
+          ].map(([label, value]) => <div className="profile-detail" key={label}><small>{label}</small><strong>{value}</strong></div>)}
         </div>
       )}
     </section>
   );
+
+  function switchHeightUnit(nextUnit: "cm" | "imperial") {
+    if (nextUnit === heightUnit) return;
+    if (nextUnit === "imperial") {
+      const imperial = cmToFeetInches(form.heightCm);
+      setHeightFeet(imperial.feet);
+      setHeightInches(imperial.inches);
+    } else {
+      setForm({ ...form, heightCm: feetInchesToCm(heightFeet, heightInches) });
+    }
+    setHeightUnit(nextUnit);
+  }
 }

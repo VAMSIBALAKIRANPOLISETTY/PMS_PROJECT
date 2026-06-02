@@ -27,6 +27,12 @@ public class AssessmentController {
         return assessmentService.listFor(user);
     }
 
+    @GetMapping("/pending")
+    public AssessmentResponse pending(@RequestHeader("Authorization") String authHeader) {
+        AppUser user = authService.requireUser(authHeader);
+        return assessmentService.pendingFor(user);
+    }
+
     @PostMapping
     public AssessmentResponse create(
             @RequestHeader("Authorization") String authHeader,
@@ -44,5 +50,14 @@ public class AssessmentController {
     ) {
         AppUser user = authService.requireUser(authHeader);
         return assessmentService.answerFollowUps(user, assessmentId, request);
+    }
+
+    @DeleteMapping("/{assessmentId}/draft")
+    public void discardDraft(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long assessmentId
+    ) {
+        AppUser user = authService.requireUser(authHeader);
+        assessmentService.discardDraft(user, assessmentId);
     }
 }

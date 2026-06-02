@@ -1,6 +1,5 @@
 import {
   ClipboardList,
-  Database,
   FileText,
   LayoutDashboard,
   LineChart,
@@ -16,14 +15,20 @@ export const designOptions: { id: DesignId; name: string; note: string }[] = [
   { id: "vital", name: "Vital Signal", note: "Energetic product UI with green, plum, and amber status cues." },
 ];
 
-export const possibleSymptoms = [
-  "Abdominal pain", "Acidity", "Allergic reaction", "Anxiety", "Back pain", "Body pain", "Breathing difficulty",
-  "Chest pain", "Chills", "Constipation", "Cough", "Dehydration", "Diarrhea", "Dizziness", "Ear pain", "Eye redness",
-  "Fatigue", "Fever", "Frequent urination", "Headache", "High blood pressure", "Joint pain", "Loss of appetite",
-  "Low blood sugar", "Migraine", "Nausea", "Neck pain", "Palpitations", "Rash", "Runny nose", "Shortness of breath",
-  "Sore throat", "Stomach cramps", "Sweating", "Swelling", "Throat pain", "Tooth pain", "Vomiting", "Weakness",
-  "Wheezing", "Vision problem",
+export const symptomGroups = [
+  { category: "General", symptoms: ["Chills", "Dehydration", "Fatigue", "Fever", "Heavy bleeding", "Loss of appetite", "Low blood sugar", "Severe weakness", "Sweating", "Swelling", "Weakness"] },
+  { category: "Respiratory", symptoms: ["Breathing difficulty", "Congestion", "Cough", "Shortness of breath", "Sore throat", "Wheezing"] },
+  { category: "Cardiovascular", symptoms: ["Chest pain", "Chest pressure", "High blood pressure", "Palpitations"] },
+  { category: "Digestive", symptoms: ["Abdominal pain", "Acidity", "Constipation", "Diarrhea", "Nausea", "Stomach cramps", "Vomiting"] },
+  { category: "Neurological", symptoms: ["Confusion", "Dizziness", "Fainting", "Headache", "Migraine", "Seizure", "Vision problem"] },
+  { category: "Musculoskeletal", symptoms: ["Back pain", "Body pain", "Joint pain", "Neck pain", "Muscle cramps"] },
+  { category: "Skin and allergy", symptoms: ["Allergic reaction", "Itching", "Rash", "Skin redness"] },
+  { category: "ENT and eye", symptoms: ["Ear pain", "Eye redness", "Runny nose", "Throat pain", "Tooth pain"] },
+  { category: "Urinary", symptoms: ["Frequent urination", "Painful urination"] },
+  { category: "Mental wellbeing", symptoms: ["Anxiety", "Low mood", "Panic symptoms", "Sleep difficulty"] },
 ];
+
+export const possibleSymptoms = symptomGroups.flatMap((group) => group.symptoms);
 
 export const userNav: NavItem[] = [
   ["overview", "Overview", LayoutDashboard],
@@ -38,7 +43,7 @@ export const adminNav: NavItem[] = [
   ["assessments", "Assessments", ClipboardList],
   ["rules", "Rules", Settings2],
   ["questions", "Questions", MessageSquareText],
-  ["datasets", "Datasets", Database],
+  ["profile", "Profile", UserRound],
 ];
 
 export const emptyAnalytics: Analytics = {

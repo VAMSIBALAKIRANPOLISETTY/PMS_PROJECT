@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CarePrepGuide } from "../components/CarePrepGuide";
@@ -7,8 +7,8 @@ import { DesignPicker } from "../components/DesignPicker";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
 import { AdminOverview } from "../pages/admin/AdminOverview";
+import { AdminProfile } from "../pages/admin/AdminProfile";
 import { AssessmentTable } from "../pages/admin/AssessmentTable";
-import { Datasets } from "../pages/admin/Datasets";
 import { Questions } from "../pages/admin/Questions";
 import { Rules } from "../pages/admin/Rules";
 import { AuthPage } from "../pages/auth/AuthPage";
@@ -16,11 +16,14 @@ import { LandingPage } from "../pages/auth/LandingPage";
 import { AssessmentForm } from "../pages/user/AssessmentForm";
 import { History } from "../pages/user/History";
 import { Profile } from "../pages/user/Profile";
+import { ProfileSetupPrompt } from "../pages/user/ProfileSetupPrompt";
 import { RecentAssessments } from "../pages/user/RecentAssessments";
 import { Reports } from "../pages/user/Reports";
 import { SymptomDrawer } from "../pages/user/SymptomDrawer";
 import { UserOverview } from "../pages/user/UserOverview";
 import type { Analytics, Assessment, Question, Rule, User } from "../types";
+import { api } from "../api";
+import { feetInchesToCm, formatHeight } from "../utils";
 
 vi.mock("recharts", () => {
   const Chart = ({ children }: { children?: ReactNode }) => <div data-testid="chart">{children}</div>;
@@ -54,6 +57,7 @@ const user: User = {
   heightCm: 162,
   weightKg: 58,
   profileCompletion: 100,
+  profileSetupComplete: true,
 };
 
 const admin: User = {
@@ -78,6 +82,7 @@ const assessment: Assessment = {
   chronicCondition: "None",
   riskScore: 52,
   riskLevel: "MEDIUM",
+  status: "COMPLETED",
   reasons: ["Fever lasting several days"],
   suggestions: ["Monitor symptoms"],
   followUpQuestions: ["Any chills?", "Any body pain?", "Any new severe symptom?", "Any chronic conditions?"],
@@ -105,57 +110,119 @@ const analytics: Analytics = {
 const rule: Rule = {
   id: 1,
   conditionLabel: "High fever",
+  primarySymptom: "Fever",
   riskLevel: "HIGH",
   score: 30,
-  explanation: "Temperature is above safe demo threshold.",
+  active: true,
+  explanation: "Temperature is above the configured review threshold.",
 };
 
 const question: Question = {
   id: 1,
   symptomKey: "fever",
-  prompt: "How long have you had fever?",
-  inputType: "text",
+  prompt: "Has your fever continued for more than three days?",
+  inputType: "choice",
   active: true,
 };
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("section rendering", () => {
-  it("renders landing section", () => {
-    render(<LandingPage onAuth={vi.fn()} />);
+  it("renders landing section without floating background cards", () => {
+    const view = render(<LandingPage onAuth={vi.fn()} />);
     expect(screen.getByText("PMS Health")).toBeInTheDocument();
     expect(screen.getAllByText("Create account").length).toBeGreaterThan(0);
     expect(screen.getByText("Built for awareness, not medical decision-making.")).toBeInTheDocument();
-    expect(screen.getByText("Questions about the PMS")).toBeInTheDocument();
+    expect(screen.getByText("Prepare with confidence.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Privacy and consent" }));
+    expect(screen.getByText("Understand how your information supports care preparation.")).toBeInTheDocument();
+    expect(view.container.querySelector(".dynamic-ui-background")).not.toBeInTheDocument();
   });
 
-  it("renders auth section", () => {
+  it("renders patient login with a separate staff login path", () => {
     render(<AuthPage initialMode="login" onSuccess={vi.fn()} onBack={vi.fn()} />);
     expect(screen.getByText("Login to your health workspace")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Staff login" }));
+    expect(screen.getByText("Login to the clinical operations workspace")).toBeInTheDocument();
+  });
+
+  it("renders patient-only signup without a role selector", () => {
+    render(<AuthPage initialMode="signup" onSuccess={vi.fn()} onBack={vi.fn()} />);
+    expect(screen.getByText("Create your personal health workspace")).toBeInTheDocument();
+    expect(screen.queryByText("Role")).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("name@example.com")).toHaveValue("");
+    expect(screen.getByPlaceholderText("18 or older")).toHaveValue(null);
+    fireEvent.click(screen.getByRole("button", { name: "ft + in" }));
+    expect(screen.getByPlaceholderText("Feet")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Inches")).toBeInTheDocument();
+  });
+
+  it("shows privacy and terms steps before account creation", () => {
+    render(<AuthPage initialMode="signup" onSuccess={vi.fn()} onBack={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "patient@example.com" } });
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "patientname" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Patient Name" } });
+    fireEvent.change(screen.getByLabelText("Age"), { target: { value: "29" } });
+    fireEvent.change(screen.getByLabelText("Height cm"), { target: { value: "170" } });
+    fireEvent.change(screen.getByLabelText("Weight kg"), { target: { value: "68" } });
+    fireEvent.change(screen.getByLabelText("Sex"), { target: { value: "Prefer not to say" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("Review how your information is used.")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("I reviewed and accept the PMS Health privacy notice."));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("Accept the terms before creating your account.")).toBeInTheDocument();
   });
 
   it("renders layout controls", () => {
-    render(<Topbar mode="admin" setMode={vi.fn()} design="clinical" setDesign={vi.fn()} onMenu={vi.fn()} user={admin} onLogout={vi.fn()} />);
-    expect(screen.getByText("Admin Web Dashboard")).toBeInTheDocument();
+    render(<Topbar design="clinical" setDesign={vi.fn()} onMenu={vi.fn()} user={admin} onLogout={vi.fn()} />);
+    expect(screen.getByText("Clinical operations")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "User" })).not.toBeInTheDocument();
     render(<Sidebar mode="user" page="overview" setPage={vi.fn()} open={false} setOpen={vi.fn()} />);
     expect(screen.getByText("Assessment")).toBeInTheDocument();
+    render(<Sidebar mode="admin" page="overview" setPage={vi.fn()} open={false} setOpen={vi.fn()} />);
+    expect(screen.getAllByText("Profile").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Quality review")).not.toBeInTheDocument();
   });
 
-  it("renders user overview and design picker", () => {
-    render(<UserOverview user={user} token="token" assessments={[assessment]} setPage={vi.fn()} design="clinical" setDesign={vi.fn()} updateUser={vi.fn()} notify={vi.fn()} />);
+  it("renders user overview without the large appearance panel", () => {
+    render(<UserOverview user={user} token="token" assessments={[assessment]} setPage={vi.fn()} updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText(/latest assessment is medium risk/i)).toBeInTheDocument();
-    expect(screen.getByText("Select a design direction")).toBeInTheDocument();
+    expect(screen.queryByText("Choose your workspace theme")).not.toBeInTheDocument();
   });
 
   it("renders assessment and symptom drawer sections", () => {
     render(<AssessmentForm token="token" onCreated={vi.fn()} notify={vi.fn()} />);
-    expect(screen.getByText("Health assessment")).toBeInTheDocument();
-    expect(screen.getByText("Possible symptoms")).toBeInTheDocument();
+    expect(screen.getByText("Tell us how you feel")).toBeInTheDocument();
+    expect(screen.getByText("Add symptoms")).toBeInTheDocument();
+    expect(screen.getByText("Drop symptoms here")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Example: 2")).toHaveValue(null);
     render(<SymptomDrawer selected={["Fever"]} onSelect={vi.fn()} />);
     expect(screen.getAllByText("Fever").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cardiovascular").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Chest pressure").length).toBeGreaterThan(0);
   });
+
+  it("keeps the care guide hidden until every draft follow-up is answered", async () => {
+    const draft = { ...assessment, status: "PENDING_FOLLOW_UP" as const, careSummary: null, explanation: null };
+    vi.spyOn(api, "get").mockResolvedValue({ data: draft });
+    vi.spyOn(api, "post").mockResolvedValue({ data: assessment });
+    render(<AssessmentForm token="token" onCreated={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText("0/4 answered")).toBeInTheDocument());
+    expect(screen.queryByText("Summary")).not.toBeInTheDocument();
+    for (let index = 0; index < 4; index += 1) {
+      await waitFor(() => expect(screen.getByText(`Question ${index + 1} of 4`)).toBeInTheDocument());
+      fireEvent.click(screen.getByRole("button", { name: "No" }));
+      const action = screen.getByRole("button", { name: index < 3 ? "Next" : "Prepare guide" });
+      await waitFor(() => expect(action).toBeEnabled());
+      fireEvent.click(action);
+    }
+    await waitFor(() => expect(screen.getByText("Summary")).toBeInTheDocument());
+  }, 10000);
 
   it("renders reports, history, profile, and recent assessments", () => {
     render(<Reports token="token" notify={vi.fn()} />);
@@ -164,8 +231,35 @@ describe("section rendering", () => {
     expect(screen.getByText("Assessment timeline")).toBeInTheDocument();
     render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
+    expect(screen.getByText("Allergies")).toBeInTheDocument();
+    expect(screen.getByText("Chronic conditions")).toBeInTheDocument();
     render(<RecentAssessments assessments={[assessment]} />);
     expect(screen.getByText("Recent assessments")).toBeInTheDocument();
+  });
+
+  it("opens a complete assessment report from history", () => {
+    render(<History assessments={[assessment]} />);
+    fireEvent.click(screen.getByRole("button", { name: /15 May \| Fever/i }));
+    expect(screen.getByText("ASM-10 care-preparation record")).toBeInTheDocument();
+    expect(screen.getByText("Follow-up answers")).toBeInTheDocument();
+  });
+
+  it("uses blank dynamic profile questions and preserves reviewed answers", () => {
+    const incompleteUser = { ...user, allergies: undefined, chronicConditions: undefined, profileCompletion: 42, profileSetupComplete: false };
+    render(<ProfileSetupPrompt user={incompleteUser} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
+    const select = screen.getByRole("combobox");
+    expect(select).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Next question" })).toBeDisabled();
+    fireEvent.change(select, { target: { value: "No known allergies" } });
+    expect(screen.getByRole("button", { name: "Next question" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Next question" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("combobox")).toHaveValue("No known allergies");
+  });
+
+  it("converts and formats patient height in both units", () => {
+    expect(feetInchesToCm(5, 4)).toBe(162.6);
+    expect(formatHeight(162)).toBe("162 cm (5 ft 4 in)");
   });
 
   it("renders care-preparation guide sections", () => {
@@ -175,19 +269,43 @@ describe("section rendering", () => {
     expect(screen.getByText("Possible directions to discuss")).toBeInTheDocument();
     expect(screen.getByText("What to do next")).toBeInTheDocument();
     expect(screen.getByText("Doctor questions")).toBeInTheDocument();
+    expect(screen.getByText("Personalized guidance")).toBeInTheDocument();
   });
 
-  it("renders admin overview and admin sections", () => {
+  it("renders admin overview, management sections, and staff profile", () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
     render(<AdminOverview analytics={analytics} assessments={[assessment]} setPage={vi.fn()} />);
     expect(screen.getByText("Common symptoms")).toBeInTheDocument();
     render(<AssessmentTable assessments={[assessment]} />);
-    expect(screen.getAllByText("Monitoring").length).toBeGreaterThan(0);
-    render(<Rules rules={[rule]} />);
-    expect(screen.getByText("Rule engine logic")).toBeInTheDocument();
-    render(<Questions questions={[question]} />);
-    expect(screen.getByText("Question bank")).toBeInTheDocument();
-    render(<Datasets />);
-    expect(screen.getByText("Testing dataset plan")).toBeInTheDocument();
+    expect(screen.getAllByText("Care review").length).toBeGreaterThan(0);
+    render(<Rules token="token" rules={[rule]} refresh={refresh} notify={vi.fn()} />);
+    expect(screen.getByText("Safety rule review")).toBeInTheDocument();
+    render(<Questions token="token" questions={[question]} refresh={refresh} notify={vi.fn()} />);
+    expect(screen.getByText("Assessment question bank")).toBeInTheDocument();
+    render(<AdminProfile user={admin} />);
+    expect(screen.getByText("Staff profile")).toBeInTheDocument();
+    expect(screen.queryByText("Quality review")).not.toBeInTheDocument();
+  });
+
+  it("submits structured staff safety rules", async () => {
+    const post = vi.spyOn(api, "post").mockResolvedValue({ data: rule });
+    render(<Rules token="token" rules={[]} refresh={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add rule" }));
+    fireEvent.change(screen.getByLabelText("Rule name"), { target: { value: "Persistent fever review" } });
+    fireEvent.change(screen.getByLabelText("Primary symptom"), { target: { value: "Fever" } });
+    fireEvent.change(screen.getByLabelText("Explanation"), { target: { value: "Persistent fever should be reviewed." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save safety rule" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/admin/rules", expect.objectContaining({ primarySymptom: "Fever" }), expect.anything()));
+  });
+
+  it("submits managed assessment questions", async () => {
+    const post = vi.spyOn(api, "post").mockResolvedValue({ data: question });
+    render(<Questions token="token" questions={[]} refresh={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Create question" }));
+    fireEvent.change(screen.getByLabelText("Use for symptom"), { target: { value: "Fever" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "Has the fever become worse since yesterday?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save assessment question" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/admin/questions", expect.objectContaining({ symptomKey: "Fever" }), expect.anything()));
   });
 
   it("renders design picker directly", () => {

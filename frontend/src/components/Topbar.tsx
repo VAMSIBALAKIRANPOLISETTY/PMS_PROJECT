@@ -1,10 +1,8 @@
 import { Bell, ChevronDown, Menu, Sparkles } from "lucide-react";
 import { designOptions } from "../data";
-import type { DesignId, Mode, User } from "../types";
+import type { DesignId, User } from "../types";
 
 interface TopbarProps {
-  mode: Mode;
-  setMode: (mode: Mode) => void;
   design: DesignId;
   setDesign: (design: DesignId) => void;
   onMenu: () => void;
@@ -12,20 +10,16 @@ interface TopbarProps {
   onLogout: () => void;
 }
 
-export function Topbar({ mode, setMode, design, setDesign, onMenu, user, onLogout }: TopbarProps) {
-  const canUseAdmin = user.role === "ADMIN";
+export function Topbar({ design, setDesign, onMenu, user, onLogout }: TopbarProps) {
+  const isStaff = user.role === "ADMIN";
   return (
     <header className="topbar">
       <button className="icon-button mobile-only" onClick={onMenu} title="Menu"><Menu size={20} /></button>
       <div>
-        <p className="eyebrow">Logged in as {user.fullName}</p>
-        <h1>{mode === "admin" ? "Admin Web Dashboard" : "User PWA Workspace"}</h1>
+        <p className="eyebrow">{isStaff ? "Staff workspace" : "Patient workspace"} | {user.fullName}</p>
+        <h1>{isStaff ? "Clinical operations" : "My health overview"}</h1>
       </div>
       <div className="top-actions">
-        <div className="segmented">
-          <button className={mode === "user" ? "active" : ""} onClick={() => setMode("user")}>User</button>
-          <button disabled={!canUseAdmin} className={mode === "admin" ? "active" : ""} onClick={() => canUseAdmin && setMode("admin")}>Admin</button>
-        </div>
         <label className="select-shell">
           <Sparkles size={16} />
           <select value={design} onChange={(event) => setDesign(event.target.value as DesignId)}>

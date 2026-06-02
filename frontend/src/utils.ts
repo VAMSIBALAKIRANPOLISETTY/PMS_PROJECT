@@ -10,6 +10,25 @@ export function clampNumber(value: string | number, min: number, max: number, fa
   return Math.min(max, Math.max(min, parsed));
 }
 
+export function feetInchesToCm(feet: string | number, inches: string | number) {
+  const parsedFeet = Number(feet);
+  const parsedInches = Number(inches);
+  if (!Number.isFinite(parsedFeet) || !Number.isFinite(parsedInches)) return 0;
+  return Math.round(((parsedFeet * 12) + parsedInches) * 2.54 * 10) / 10;
+}
+
+export function cmToFeetInches(cm?: number) {
+  if (!cm || !Number.isFinite(cm)) return { feet: "", inches: "" };
+  const totalInches = Math.round(cm / 2.54);
+  return { feet: String(Math.floor(totalInches / 12)), inches: String(totalInches % 12) };
+}
+
+export function formatHeight(cm?: number) {
+  if (!cm || !Number.isFinite(cm)) return "Height not set";
+  const imperial = cmToFeetInches(cm);
+  return `${cm} cm (${imperial.feet} ft ${imperial.inches} in)`;
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(new Date(value));
 }

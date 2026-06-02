@@ -1,6 +1,7 @@
 package com.pms.backend.dto;
 
 import com.pms.backend.model.RiskLevel;
+import com.pms.backend.model.AssessmentStatus;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +33,7 @@ public class AssessmentDtos {
             String chronicCondition,
             Integer riskScore,
             RiskLevel riskLevel,
+            AssessmentStatus status,
             List<String> reasons,
             List<String> suggestions,
             List<String> followUpQuestions,
