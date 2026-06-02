@@ -128,7 +128,7 @@ describe("section rendering", () => {
     expect(screen.getByText("PMS Health")).toBeInTheDocument();
     expect(screen.getAllByText("Create account").length).toBeGreaterThan(0);
     expect(screen.getByText("Built for awareness, not medical decision-making.")).toBeInTheDocument();
-    expect(screen.getByText("Questions about the PMS project?")).toBeInTheDocument();
+    expect(screen.getByText("Questions about the PMS")).toBeInTheDocument();
   });
 
   it("renders auth section", () => {
