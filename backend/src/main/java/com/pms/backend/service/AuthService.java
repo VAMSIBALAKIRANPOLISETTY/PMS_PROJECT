@@ -2,6 +2,7 @@ package com.pms.backend.service;
 
 import com.pms.backend.dto.AuthDtos.AuthResponse;
 import com.pms.backend.dto.AuthDtos.LoginRequest;
+import com.pms.backend.dto.AuthDtos.ProfileUpdateRequest;
 import com.pms.backend.dto.AuthDtos.RegisterRequest;
 import com.pms.backend.dto.AuthDtos.UserResponse;
 import com.pms.backend.model.AppUser;
@@ -38,10 +39,10 @@ public class AuthService {
         user.setFullName(request.fullName().trim());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(request.role() == Role.ADMIN ? Role.ADMIN : Role.USER);
-        user.setAge(24);
-        user.setGender("Not set");
-        user.setHeightCm(0.0);
-        user.setWeightKg(0.0);
+        user.setAge(request.age());
+        user.setGender(clean(request.sex(), "Not set"));
+        user.setHeightCm(request.heightCm());
+        user.setWeightKg(request.weightKg());
         userRepository.save(user);
         return makeAuthResponse(user);
     }
@@ -89,8 +90,29 @@ public class AuthService {
                 user.getWeightKg(),
                 user.getAllergies(),
                 user.getChronicConditions(),
-                user.getLifestyle()
+                user.getLifestyle(),
+                user.getMedications(),
+                user.getFamilyHistory(),
+                user.getMentalHealthHistory(),
+                user.getSleepQuality(),
+                profileCompletion(user)
         );
+    }
+
+    public UserResponse updateProfile(AppUser user, ProfileUpdateRequest request) {
+        user.setFullName(request.fullName().trim());
+        user.setAge(request.age());
+        user.setHeightCm(request.heightCm());
+        user.setWeightKg(request.weightKg());
+        user.setGender(clean(request.sex(), "Not set"));
+        user.setAllergies(clean(request.allergies(), "No known allergies"));
+        user.setChronicConditions(clean(request.chronicConditions(), "None"));
+        user.setLifestyle(clean(request.lifestyle(), "Moderate activity"));
+        user.setMedications(clean(request.medications(), "None"));
+        user.setFamilyHistory(clean(request.familyHistory(), "Not set"));
+        user.setMentalHealthHistory(clean(request.mentalHealthHistory(), "Not set"));
+        user.setSleepQuality(clean(request.sleepQuality(), "Not set"));
+        return toUserResponse(userRepository.save(user));
     }
 
     private Optional<AppUser> findByEmailOrUsername(String identifier) {
@@ -103,5 +125,31 @@ public class AuthService {
         String token = UUID.randomUUID().toString();
         tokenStore.put(token, user.getId());
         return new AuthResponse(token, toUserResponse(user));
+    }
+
+    private int profileCompletion(AppUser user) {
+        int completed = 0;
+        int total = 12;
+        if (hasValue(user.getFullName())) completed++;
+        if (user.getAge() != null && user.getAge() > 0) completed++;
+        if (user.getHeightCm() != null && user.getHeightCm() > 0) completed++;
+        if (user.getWeightKg() != null && user.getWeightKg() > 0) completed++;
+        if (hasValue(user.getGender()) && !"not set".equalsIgnoreCase(user.getGender())) completed++;
+        if (hasValue(user.getAllergies())) completed++;
+        if (hasValue(user.getChronicConditions())) completed++;
+        if (hasValue(user.getLifestyle())) completed++;
+        if (hasValue(user.getMedications())) completed++;
+        if (hasValue(user.getFamilyHistory()) && !"not set".equalsIgnoreCase(user.getFamilyHistory())) completed++;
+        if (hasValue(user.getMentalHealthHistory()) && !"not set".equalsIgnoreCase(user.getMentalHealthHistory())) completed++;
+        if (hasValue(user.getSleepQuality()) && !"not set".equalsIgnoreCase(user.getSleepQuality())) completed++;
+        return Math.round((completed * 100f) / total);
+    }
+
+    private boolean hasValue(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private String clean(String value, String fallback) {
+        return hasValue(value) ? value.trim() : fallback;
     }
 }

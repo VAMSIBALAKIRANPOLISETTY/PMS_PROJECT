@@ -6,7 +6,7 @@ import { emptyAnalytics } from "./data";
 import { MainContent } from "./MainContent";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { LandingPage } from "./pages/auth/LandingPage";
-import type { Analytics, Assessment, DesignId, Mode, Page, Question, Rule, User } from "./types";
+import type { Analytics, Assessment, DesignId, Mode, Notify, Page, Question, Rule, User } from "./types";
 
 export function App() {
   const [stage, setStage] = useState<"landing" | "auth" | "app">("landing");
@@ -21,6 +21,7 @@ export function App() {
   const [analytics, setAnalytics] = useState<Analytics>(emptyAnalytics);
   const [rules, setRules] = useState<Rule[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [toast, setToast] = useState<{ message: string; tone: "success" | "warning" | "danger" } | null>(null);
 
   useEffect(() => {
     document.body.dataset.theme = design;
@@ -53,6 +54,15 @@ export function App() {
     await refresh(nextToken, nextUser);
   }
 
+  const notify: Notify = (message, tone = "success") => {
+    setToast({ message, tone });
+    window.setTimeout(() => setToast(null), 4200);
+  };
+
+  function updateUser(nextUser: User) {
+    setUser(nextUser);
+  }
+
   useEffect(() => {
     if (!token) return;
     api.get("/auth/me", { headers: authHeaders(token) })
@@ -82,8 +92,9 @@ export function App() {
       <Sidebar mode={currentMode} page={page} setPage={setPage} open={sidebarOpen} setOpen={setSidebarOpen} />
       <main>
         <Topbar mode={currentMode} setMode={(nextMode) => { setMode(nextMode); setPage("overview"); }} design={design} setDesign={setDesign} onMenu={() => setSidebarOpen(true)} user={user} onLogout={logout} />
-        <MainContent mode={currentMode} page={page} setPage={setPage} user={user} token={token} assessments={assessments} analytics={analytics} rules={rules} questions={questions} refresh={refresh} design={design} setDesign={setDesign} />
+        <MainContent mode={currentMode} page={page} setPage={setPage} user={user} token={token} assessments={assessments} analytics={analytics} rules={rules} questions={questions} refresh={refresh} design={design} setDesign={setDesign} updateUser={updateUser} notify={notify} />
       </main>
+      {toast && <div className={`toast-notification ${toast.tone}`} role="status">{toast.message}</div>}
     </div>
   );
 }
