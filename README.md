@@ -183,6 +183,7 @@ PMS/
 
   docs/
     architecture.md
+    testing-guide.md
 ```
 
 ## Database Setup Without Docker
@@ -248,6 +249,34 @@ Health check:
 ```text
 http://localhost:8080/api/health
 ```
+
+## Swagger / OpenAPI
+
+Swagger is built into the Spring Boot backend so all endpoints can be viewed and tested from one page.
+
+Start the backend, then open:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+OpenAPI files:
+
+```text
+http://localhost:8080/v3/api-docs
+http://localhost:8080/v3/api-docs.yaml
+```
+
+Recommended Swagger flow:
+
+1. Run `GET /api/health` first.
+2. Login as a patient using `POST /api/auth/login`, or login as staff using `POST /api/auth/staff-login`.
+3. Copy the returned `token`.
+4. Click Swagger `Authorize`.
+5. Enter `Bearer <token>`.
+6. Test patient endpoints with a patient token and admin endpoints with a staff token.
+
+Swagger documents the PMS API as a care-preparation API only. It does not change endpoint behavior, and it does not make PMS a diagnosis, prescription, or emergency service.
 
 ## Run Frontend
 
@@ -445,15 +474,18 @@ cd backend
 .\mvnw.cmd test "-Dspring.profiles.active=test"
 
 cd ..\frontend
-npm test
+npm test -- --run
 npm run build
 ```
+
+A detailed manual testing guide is available at `docs/testing-guide.md`. It covers IntelliJ setup, Swagger testing, patient and staff API flows, browser testing, white-box testing, black-box testing, negative testing, security-focused checks, and suggested learning/course pointers.
 
 ## Current Tested Status
 
 Validated on `PMS_Test2`:
 
 - Backend Spring context, patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
+- Backend controller/API tests cover OpenAPI docs, patient assessment flow, staff authorization boundaries, admin rules, admin questions, missing-token checks, underage signup, invalid follow-up answers, and draft discard behavior
 - Frontend patient/staff auth, section, and care-prep guide test suite passed
 - Frontend TypeScript and Vite production build passed
 - Runtime PostgreSQL path documented for local PostgreSQL, no Docker

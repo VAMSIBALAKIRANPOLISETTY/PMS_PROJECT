@@ -1,5 +1,6 @@
 package com.pms.backend.controller;
 
+import com.pms.backend.config.OpenApiConfig;
 import com.pms.backend.dto.AssessmentDtos.ReportFollowUpRequest;
 import com.pms.backend.dto.AssessmentDtos.ReportFollowUpResponse;
 import com.pms.backend.dto.AssessmentDtos.ReportInsightRequest;
@@ -7,12 +8,18 @@ import com.pms.backend.dto.AssessmentDtos.ReportInsightResponse;
 import com.pms.backend.model.AppUser;
 import com.pms.backend.service.AiInsightService;
 import com.pms.backend.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/reports")
+@Tag(name = "Reports", description = "Report follow-up prompts and report-based care-preparation insight generation.")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class ReportInsightController {
     private final AuthService authService;
     private final AiInsightService aiInsightService;
@@ -22,9 +29,10 @@ public class ReportInsightController {
         this.aiInsightService = aiInsightService;
     }
 
+    @Operation(summary = "Generate report follow-ups", description = "Returns follow-up questions that add context before a report care-preparation guide is generated.")
     @PostMapping("/follow-ups")
     public ReportFollowUpResponse followUps(
-            @RequestHeader("Authorization") String authHeader,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
             @Valid @RequestBody ReportFollowUpRequest request
     ) {
         authService.requireUser(authHeader);
@@ -32,9 +40,10 @@ public class ReportInsightController {
         return new ReportFollowUpResponse(request.reportName(), questions, "MOCK");
     }
 
+    @Operation(summary = "Generate report insight", description = "Creates a structured, non-diagnostic care-preparation guide from report notes and answered follow-ups.")
     @PostMapping("/insight")
     public ReportInsightResponse insight(
-            @RequestHeader("Authorization") String authHeader,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
             @Valid @RequestBody ReportInsightRequest request
     ) {
         AppUser user = authService.requireUser(authHeader);

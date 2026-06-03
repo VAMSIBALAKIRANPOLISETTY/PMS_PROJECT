@@ -23,6 +23,7 @@ flowchart TD
 
 - Java Spring Boot
 - Spring Web MVC
+- Springdoc OpenAPI / Swagger UI for local endpoint review
 - Spring Data JPA
 - Bean Validation
 - PostgreSQL for local runtime
@@ -37,6 +38,7 @@ flowchart TD
 - Protected built-in red flags plus upward-only operational safety rules
 - Symptom-matched active staff questions for future assessment drafts
 - Admin analytics, rule management, question management, and read-only staff profile
+- OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
 ## Frontend
 
@@ -79,5 +81,6 @@ src/
 ## Test Coverage
 
 - Backend Spring context test with H2 profile
+- Backend controller tests for OpenAPI paths, patient API flow, staff authorization, admin rules/questions, and negative API cases
 - Frontend section render tests for auth, user, admin, and layout sections
 - Frontend TypeScript and production build validation

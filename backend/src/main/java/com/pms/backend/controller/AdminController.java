@@ -1,5 +1,6 @@
 package com.pms.backend.controller;
 
+import com.pms.backend.config.OpenApiConfig;
 import com.pms.backend.dto.AdminDtos.ActiveRequest;
 import com.pms.backend.dto.AdminDtos.QuestionRequest;
 import com.pms.backend.dto.AdminDtos.QuestionResponse;
@@ -13,12 +14,18 @@ import com.pms.backend.repository.AdminRuleRepository;
 import com.pms.backend.repository.HealthQuestionRepository;
 import com.pms.backend.service.AnalyticsService;
 import com.pms.backend.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
+@Tag(name = "Admin", description = "Clinical operations endpoints for staff-only analytics, operational safety rules, and managed questions.")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class AdminController {
     private final AuthService authService;
     private final AnalyticsService analyticsService;
@@ -37,20 +44,23 @@ public class AdminController {
         this.ruleRepository = ruleRepository;
     }
 
+    @Operation(tags = {"Admin Analytics"}, summary = "Get clinical operations analytics", description = "Returns staff-only totals, risk mix, and common completed-assessment symptom counts.")
     @GetMapping("/analytics")
-    public AnalyticsResponse analytics(@RequestHeader("Authorization") String authHeader) {
+    public AnalyticsResponse analytics(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
         authService.requireAdmin(authHeader);
         return analyticsService.getAnalytics();
     }
 
+    @Operation(tags = {"Admin Questions"}, summary = "List managed assessment questions", description = "Returns active and inactive follow-up prompts that staff can manage for future assessment drafts.")
     @GetMapping("/questions")
-    public List<QuestionResponse> questions(@RequestHeader("Authorization") String authHeader) {
+    public List<QuestionResponse> questions(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
         authService.requireAdmin(authHeader);
         return questionRepository.findAllByOrderBySymptomKeyAsc().stream().map(this::toQuestionResponse).toList();
     }
 
+    @Operation(tags = {"Admin Questions"}, summary = "Create managed assessment question", description = "Creates a Yes / No / Not sure compatible question for a symptom or General category.")
     @PostMapping("/questions")
-    public QuestionResponse addQuestion(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody QuestionRequest request) {
+    public QuestionResponse addQuestion(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @Valid @RequestBody QuestionRequest request) {
         authService.requireAdmin(authHeader);
         HealthQuestion question = new HealthQuestion();
         question.setSymptomKey(request.symptomKey().trim());
@@ -60,9 +70,10 @@ public class AdminController {
         return toQuestionResponse(questionRepository.save(question));
     }
 
+    @Operation(tags = {"Admin Questions"}, summary = "Activate or pause a managed question", description = "Changes whether a question can join future assessment drafts.")
     @PatchMapping("/questions/{questionId}/active")
     public QuestionResponse updateQuestionActive(
-            @RequestHeader("Authorization") String authHeader,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
             @PathVariable Long questionId,
             @Valid @RequestBody ActiveRequest request
     ) {
@@ -73,14 +84,16 @@ public class AdminController {
         return toQuestionResponse(questionRepository.save(question));
     }
 
+    @Operation(tags = {"Admin Rules"}, summary = "List operational safety rules", description = "Returns active and inactive upward-only staff rules for future assessment review.")
     @GetMapping("/rules")
-    public List<RuleResponse> rules(@RequestHeader("Authorization") String authHeader) {
+    public List<RuleResponse> rules(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
         authService.requireAdmin(authHeader);
         return ruleRepository.findAll().stream().map(this::toRuleResponse).toList();
     }
 
+    @Operation(tags = {"Admin Rules"}, summary = "Create operational safety rule", description = "Creates an additive rule that may raise a future assessment score floor when all configured conditions match.")
     @PostMapping("/rules")
-    public RuleResponse addRule(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody RuleRequest request) {
+    public RuleResponse addRule(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @Valid @RequestBody RuleRequest request) {
         authService.requireAdmin(authHeader);
         AdminRule rule = new AdminRule();
         rule.setConditionLabel(request.conditionLabel().trim());
@@ -97,9 +110,10 @@ public class AdminController {
         return toRuleResponse(ruleRepository.save(rule));
     }
 
+    @Operation(tags = {"Admin Rules"}, summary = "Activate or pause an operational rule", description = "Changes whether a staff-created rule affects future assessments. Protected built-in urgent safeguards remain active.")
     @PatchMapping("/rules/{ruleId}/active")
     public RuleResponse updateRuleActive(
-            @RequestHeader("Authorization") String authHeader,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
             @PathVariable Long ruleId,
             @Valid @RequestBody ActiveRequest request
     ) {
