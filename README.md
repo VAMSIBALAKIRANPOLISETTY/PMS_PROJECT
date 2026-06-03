@@ -40,6 +40,94 @@ PMS_Test2
 
 This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
 
+## Professional Demonstration Deck
+
+An editable five-slide PowerPoint deck for classroom or manager demonstration is included in the project root:
+
+```text
+PMS-Health-Professional-Demonstration.pptx
+```
+
+The deck covers the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. It also clearly states that the current AI behavior is mock AI only.
+
+## Importing The Project On Another System
+
+Use these steps when opening the project on a new laptop or lab system:
+
+```powershell
+git clone https://github.com/VAMSIBALAKIRANPOLISETTY/PMS_PROJECT.git
+cd PMS_PROJECT
+git checkout PMS_Test2
+```
+
+Backend import in IntelliJ IDEA:
+
+1. Open IntelliJ IDEA.
+2. Choose `File > Open` and select the `backend` folder, or open the project root and select the backend Maven project.
+3. Let IntelliJ import Maven dependencies from `backend/pom.xml`.
+4. Select a JDK 17 or newer SDK.
+5. Create the local PostgreSQL database using the SQL commands in this README.
+6. Run the Spring Boot application from the main backend application class, or use:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Frontend import in VS Code:
+
+1. Open the `frontend` folder in VS Code.
+2. Install dependencies and start Vite:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Presentation import:
+
+- Open `PMS-Health-Professional-Demonstration.pptx` directly in Microsoft PowerPoint.
+- For Google Slides, use `File > Import slides` or upload the PPTX to Google Drive and open it with Google Slides. The deck is built with editable text and shapes, so labels and diagrams can be adjusted for the final demo.
+
+## System Architecture
+
+PMS follows a layered full-stack architecture:
+
+```text
+React + TypeScript Frontend
+  -> Vite API Proxy
+  -> Spring Boot REST API
+  -> Backend Services
+       - AuthService
+       - AssessmentService
+       - RiskEngineService
+       - AiInsightService
+       - ReportInsightController
+  -> JPA Repositories
+  -> PostgreSQL
+```
+
+The frontend is responsible for public pages, patient screens, staff screens, form validation, authenticated API calls, and rendering the care-preparation guide. It does not own medical-safety decisions and it does not contact any AI provider.
+
+The Vite development server proxies `/api` calls to the Spring Boot backend. Spring Boot owns authentication, role separation, assessment drafts, follow-up finalization, report insights, staff rule management, staff question management, analytics, and all persistence logic. JPA repositories store users, assessments, rules, questions, and related records in PostgreSQL for normal local runtime. Backend tests use the H2 profile so automated checks can run without a PostgreSQL server.
+
+The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
+
+## AI Usage Clarification
+
+Short answer for professor or manager demo: **PMS currently uses mock AI, not real external AI.**
+
+- No external AI API is called in the current branch.
+- The frontend never stores AI provider keys and never sends requests directly to an AI provider.
+- `AiInsightService` is the backend interface for AI-style care-preparation output.
+- `MockAiInsightService` is the active implementation for predictable demo and test output.
+- The mock service generates plain-language care summaries, explanations, possible directions, monitoring notes, doctor-prep questions, trusted source links, and report insight wording.
+- `RiskEngineService` remains the safety source of truth. Protected red flags and urgent warnings are rule-based before AI-style wording is generated.
+- A real AI provider can be added later through a backend-only provider adapter using environment variables such as `AI_MODE`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`.
+
+This means PMS demonstrates the complete AI integration architecture without sending real health data to an external model. In a production version, provider configuration, prompt validation, output validation, privacy review, logging rules, retention rules, and security controls would need to be designed before real patient data is used.
+
 ## Required Software
 
 Install these on the development system:
