@@ -40,15 +40,16 @@ PMS_Test2
 
 This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
 
-## Professional Demonstration Deck
+## Presentation Decks
 
-An editable five-slide PowerPoint deck for classroom or manager demonstration is included in the project root:
+Two editable PowerPoint decks are included in the project root:
 
 ```text
 PMS-Health-Professional-Demonstration.pptx
+PMS-Health-Normal-Presentation.pptx
 ```
 
-The deck covers the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. It also clearly states that the current AI behavior is mock AI only.
+`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. Both also clearly state that the current AI behavior is mock AI only.
 
 ## Importing The Project On Another System
 
@@ -88,6 +89,7 @@ npm run dev
 Presentation import:
 
 - Open `PMS-Health-Professional-Demonstration.pptx` directly in Microsoft PowerPoint.
+- Open `PMS-Health-Normal-Presentation.pptx` if you want the simpler classroom-style version.
 - For Google Slides, use `File > Import slides` or upload the PPTX to Google Drive and open it with Google Slides. The deck is built with editable text and shapes, so labels and diagrams can be adjusted for the final demo.
 
 ## System Architecture
