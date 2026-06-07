@@ -1128,6 +1128,15 @@ main { min-width: 0; padding: 28px; }
   padding-left: 18px;
 }
 
+.care-guide-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.care-guide-toggle {
+  width: fit-content;
+}
+
 .source-list a {
   color: var(--accent);
   font-weight: 800;
@@ -1197,7 +1206,9 @@ main { min-width: 0; padding: 28px; }
 
 .result-panel .care-guide-header,
 .result-panel .score-ring.compact,
-.result-panel .urgent-warning {
+.result-panel .urgent-warning,
+.result-panel .care-guide-summary,
+.result-panel .care-guide-actions {
   grid-column: 1 / -1;
 }
 

@@ -16,7 +16,7 @@ The risk engine is deliberately simple, explainable, and controlled. It does not
 
 The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons, and CSS custom properties. The current branch refactors the earlier single-file frontend into component and section files. This makes the code easier to understand, test, and extend. Authentication pages live under `pages/auth`, user-facing sections live under `pages/user`, admin-facing sections live under `pages/admin`, and shared interface elements live under `components`. The public landing page now keeps only public product information on the first screens, with Home, How It Works, Safety, and Contact sections. User profile details, admin information, assessment history, and private health data remain inside authenticated screens only. Shared TypeScript types, API helpers, static data, and formatting utilities are separated into `types.ts`, `api.ts`, `data.ts`, and `utils.ts`.
 
-The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The current AI layer is a backend-owned mock `AiInsightService`; the frontend does not call AI providers or store AI keys.
+The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The AI layer is backend-owned through `AiInsightService`: mock mode remains the default for safe demos and tests, while `PMS_Test3` adds an optional OpenAI provider adapter that only runs when backend environment variables are configured. The frontend does not call AI providers or store AI keys.
 
 Authentication in this prototype uses a simple token-based approach. After patient login, staff login, or patient signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
 
@@ -24,7 +24,7 @@ The system avoids Docker by design in the current branch. It is intended to run 
 
 Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile, public registration creates adult patient accounts with acknowledgment metadata, patient and staff login paths remain isolated, draft assessments stay outside completed analytics, red-flag warnings remain immediate, risk rules remain predictable, and mock insight output stays structured. Frontend testing uses Vitest and Testing Library to render every major section and verify the legal signup steps, blank intake controls, grouped symptom library, pending follow-up gate, labeled profile fields, and completed care-preparation guide. The project also supports a production frontend build using TypeScript and Vite.
 
-Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, backend-owned mock AI care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production AI provider adapter, a production security model, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
+Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, backend-owned AI-style care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production privacy review for real AI use, a production security model, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
 
 ## Medical Disclaimer
 
@@ -35,10 +35,10 @@ This application does not provide medical diagnosis, treatment, prescription, or
 Use this branch for continuing development:
 
 ```text
-PMS_Test2
+PMS_Test3
 ```
 
-This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
+This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, compact summary-first care-preparation results, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, optional backend-only OpenAI provider configuration, report insight endpoints, validation, and a componentized frontend structure.
 
 ## Presentation Decks
 
@@ -49,7 +49,7 @@ PMS-Health-Professional-Demonstration.pptx
 PMS-Health-Normal-Presentation.pptx
 ```
 
-`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. Both also clearly state that the current AI behavior is mock AI only.
+`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. For `PMS_Test3`, the demo answer is: mock AI remains the default, and real OpenAI calls are optional backend-only behavior when configured.
 
 ## Importing The Project On Another System
 
@@ -58,7 +58,7 @@ Use these steps when opening the project on a new laptop or lab system:
 ```powershell
 git clone https://github.com/VAMSIBALAKIRANPOLISETTY/PMS_PROJECT.git
 cd PMS_PROJECT
-git checkout PMS_Test2
+git checkout PMS_Test3
 ```
 
 Backend import in IntelliJ IDEA:
@@ -104,7 +104,9 @@ React + TypeScript Frontend
        - AuthService
        - AssessmentService
        - RiskEngineService
-       - AiInsightService
+       - ConfiguredAiInsightService
+       - MockAiInsightService
+       - OpenAiInsightClient
        - ReportInsightController
   -> JPA Repositories
   -> PostgreSQL
@@ -116,19 +118,23 @@ The Vite development server proxies `/api` calls to the Spring Boot backend. Spr
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
+`ConfiguredAiInsightService` is the single Spring bean for AI-style care-preparation wording. In the default `mock` mode it delegates to `MockAiInsightService`. In provider mode, it can call `OpenAiInsightClient`, which uses the OpenAI Responses API with Structured Outputs and validates the returned fields before PMS displays them. Any missing configuration, provider error, timeout, invalid JSON, or validation failure falls back to mock output.
+
 ## AI Usage Clarification
 
-Short answer for professor or manager demo: **PMS currently uses mock AI, not real external AI.**
+Short answer for professor or manager demo: **PMS uses mock AI by default. `PMS_Test3` has started real AI integration, but OpenAI runs only when backend provider configuration is supplied.**
 
-- No external AI API is called in the current branch.
+- No external AI API is called in the default local/demo setup.
 - The frontend never stores AI provider keys and never sends requests directly to an AI provider.
 - `AiInsightService` is the backend interface for AI-style care-preparation output.
-- `MockAiInsightService` is the active implementation for predictable demo and test output.
-- The mock service generates plain-language care summaries, explanations, possible directions, monitoring notes, doctor-prep questions, trusted source links, and report insight wording.
+- `ConfiguredAiInsightService` is the active backend bean. It uses `MockAiInsightService` unless provider mode is explicitly configured.
+- `MockAiInsightService` generates predictable plain-language care summaries, explanations, possible directions, monitoring notes, doctor-prep questions, trusted source links, and report insight wording for demos and tests.
+- `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when `AI_MODE=provider`, `AI_PROVIDER=openai`, and `AI_API_KEY` are configured on the backend.
 - `RiskEngineService` remains the safety source of truth. Protected red flags and urgent warnings are rule-based before AI-style wording is generated.
-- A real AI provider can be added later through a backend-only provider adapter using environment variables such as `AI_MODE`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`.
+- AI-generated text cannot create or lower urgent warnings. Assessment urgent warnings stay rule-owned, and report urgent scanning remains Java-owned.
+- If provider configuration is missing, times out, returns invalid JSON, or fails validation, PMS falls back to mock output and returns `aiMode=MOCK`.
 
-This means PMS demonstrates the complete AI integration architecture without sending real health data to an external model. In a production version, provider configuration, prompt validation, output validation, privacy review, logging rules, retention rules, and security controls would need to be designed before real patient data is used.
+This means PMS can demonstrate the full AI integration architecture without sending real health data to an external model during normal demo/testing. In a production version, provider configuration, prompt validation, output validation, privacy review, logging rules, retention rules, and security controls would need to be designed before real patient data is used.
 
 ## Required Software
 
@@ -221,10 +227,23 @@ $env:DATABASE_USERNAME="pms_user"
 $env:DATABASE_PASSWORD="pms_password"
 $env:CORS_ORIGIN="http://localhost:5173"
 $env:AI_MODE="mock"
-$env:AI_PROVIDER=""
+$env:AI_PROVIDER="openai"
 $env:AI_API_KEY=""
-$env:AI_MODEL=""
+$env:AI_MODEL="gpt-4o-mini"
+$env:AI_TIMEOUT_SECONDS="20"
+$env:AI_BASE_URL="https://api.openai.com/v1"
 ```
+
+To try real OpenAI wording locally, keep PostgreSQL and the backend running and set backend-only variables before starting Spring Boot:
+
+```powershell
+$env:AI_MODE="provider"
+$env:AI_PROVIDER="openai"
+$env:AI_API_KEY="sk-your-key-here"
+$env:AI_MODEL="gpt-4o-mini"
+```
+
+Do not put provider keys in frontend files, browser storage, screenshots, or GitHub commits. Real patient data should not be sent to an external provider until privacy, consent, logging, retention, and security requirements are reviewed.
 
 ## Run Backend
 
@@ -328,7 +347,7 @@ Use this flow when presenting the project:
 4. Open the assessment page. Select up to five symptoms from the grouped symptom drawer, choose severity, enter duration, choose temperature availability, and select chronic-condition context.
 5. Click Prepare care guide. Explain that the backend saves a resumable pending draft and runs rule-based safety checks immediately.
 6. Answer every follow-up card using Yes, No, or Not sure, with an optional note. Mention that red-flag warnings can appear before the guide and are never delayed by the questions.
-7. Submit the answers and show the completed result sections: Summary, Why this matters, Possible directions to discuss, What to do next, Doctor questions, and Trusted sources.
+7. Submit the answers and show the compact result first: risk, score, urgent warning if present, and Summary. Click `View full care details` to expand Why this matters, Possible directions to discuss, What to do next, Doctor questions, and Trusted sources.
 8. Open Reports. Upload a PDF name, paste report notes or abnormal values, answer follow-up cards, and generate the report care-prep guide.
 9. Open History and click an assessment record to show the reusable full care-preparation report drawer.
 10. Log out, use the separate Staff login link, and sign in with the demo admin account. Show analytics, full-width assessment records, the same report drawer, upward-only safety-rule management, managed assessment questions, and the read-only staff profile.
@@ -336,7 +355,7 @@ Use this flow when presenting the project:
 Suggested short explanation:
 
 ```text
-PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then a mock AI insight service creates plain-language care-preparation output. The user receives directions, monitoring notes, doctor questions, and trusted source links instead of only a Low, Medium, or High label.
+PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then the AI insight layer creates plain-language care-preparation output. By default that layer is mock for predictable demos; with backend-only OpenAI configuration it can use a real provider for wording. The user receives a compact summary first and can expand directions, monitoring notes, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
 ```
 
 ## Where Key Functions Are Used
@@ -345,9 +364,11 @@ PMS helps users organize symptoms, health history, and report notes before they 
 - `AssessmentService`: saves pending intake drafts, resumes or discards patient-owned drafts, finalizes completed records after follow-up answers, and keeps unfinished drafts outside normal history.
 - `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, protected urgent warnings, upward-only operational rule matches, and symptom-matched managed questions.
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
-- `MockAiInsightService`: current development/mock implementation that generates care summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and report insights.
+- `ConfiguredAiInsightService`: single active Spring AI service. It selects mock mode by default, calls OpenAI only when backend provider configuration is valid, strips AI urgent warnings, and falls back safely.
+- `MockAiInsightService`: development/test implementation that generates care summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and report insights.
+- `OpenAiInsightClient`: optional provider client that calls the OpenAI Responses API with Structured Outputs and validates the structured care-prep fields before use.
 - `ReportInsightController`: exposes backend report follow-up and report insight endpoints.
-- `CarePrepGuide`: shared React component that renders the structured care-preparation result for both assessments and reports.
+- `CarePrepGuide`: shared React component that renders a compact summary-first care-preparation result for assessments and reports, with a button to expand or hide full details.
 - `AssessmentReportDrawer`: shared React component that opens completed patient and staff assessment records without leaving the current screen.
 - `AssessmentForm`: collects symptoms, severity, duration, temperature availability, chronic condition, follow-up answers, and displays the care-prep guide.
 - `Reports`: collects report file name, pasted report notes, report follow-up answers, and displays the report care-prep guide.
@@ -361,7 +382,7 @@ PMS helps users organize symptoms, health history, and report notes before they 
   No. It gives care-preparation guidance only. It does not diagnose, prescribe medicine, or replace a doctor.
 
 - Where is AI used?
-  AI is represented through the backend `AiInsightService`. Currently the app uses `MockAiInsightService` for predictable demo output. A real provider can be added later behind the backend using environment variables.
+  AI is represented through the backend `AiInsightService`. The default demo path uses `MockAiInsightService` for predictable output. `PMS_Test3` also includes an optional OpenAI provider path behind the backend, enabled only with `AI_MODE=provider`, `AI_PROVIDER=openai`, and `AI_API_KEY`.
 
 - Why use rules plus AI instead of only AI?
   Health safety needs predictable guardrails. Rule-based red-flag checks handle urgent warnings first, and AI-style output only improves explanation and wording.
@@ -379,10 +400,10 @@ PMS helps users organize symptoms, health history, and report notes before they 
   Spring Boot, Spring Data JPA, PostgreSQL for local runtime, H2 for tests, React TypeScript, Vite, Recharts, and CSS.
 
 - How would real AI be added later?
-  Add a provider-backed implementation of `AiInsightService`, configure `AI_MODE`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`, validate structured JSON output, and keep the existing rule engine as the safety layer.
+  The first provider-backed path is now in place through `OpenAiInsightClient`. To use it, configure backend-only environment variables, keep Structured Outputs validation enabled, and keep the existing rule engine as the safety layer. A production version still needs privacy, consent, retention, logging, and security review.
 
 - What is the current limitation?
-  It is a capstone MVP using mock AI output and synthetic/demo data. It is not ready for real patient data or production medical use.
+  It is a capstone MVP using mock AI by default and synthetic/demo data. Optional OpenAI wording is available only when configured, but the project is not ready for real patient data or production medical use.
 
 ## API Endpoints
 
@@ -482,34 +503,34 @@ A detailed manual testing guide is available at `docs/testing-guide.md`. It cove
 
 ## Current Tested Status
 
-Validated on `PMS_Test2`:
+Validated on `PMS_Test3` after this branch update:
 
-- Backend Spring context, patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
+- Backend Spring context, patient/staff authentication, risk engine, mock AI insight tests, configured AI fallback tests, and OpenAI structured-output client tests passed with H2 test profile
 - Backend controller/API tests cover OpenAPI docs, patient assessment flow, staff authorization boundaries, admin rules, admin questions, missing-token checks, underage signup, invalid follow-up answers, and draft discard behavior
-- Frontend patient/staff auth, section, and care-prep guide test suite passed
+- Frontend patient/staff auth, section, compact care-prep guide, and expanded drawer test suite passed
 - Frontend TypeScript and Vite production build passed
 - Runtime PostgreSQL path documented for local PostgreSQL, no Docker
 
 ## Current AI And Future Provider Plan
 
-The current project does not call a real external AI model. It uses controlled prototype logic: the backend risk engine is rule-based, and the backend-owned `MockAiInsightService` generates care-preparation wording for assessments and reports. This is intentional for the current branch because it keeps the system predictable, testable, and safe while the main full-stack structure is being completed.
+The default project setup does not call a real external AI model. It uses controlled prototype logic: the backend risk engine is rule-based, and the backend-owned `MockAiInsightService` generates care-preparation wording for assessments and reports. This remains intentional for demos and automated tests because it keeps the system predictable, testable, and safe while the main full-stack structure is being completed.
 
-The mock insight behavior has been moved behind backend endpoints. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. The Spring Boot backend calls the internal `AiInsightService`, which currently has a local mock implementation for tests and development.
+`PMS_Test3` starts the real AI integration behind the backend. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. Spring Boot calls the internal `ConfiguredAiInsightService`, which uses mock mode by default and can call OpenAI only when provider environment variables are present.
 
 Current implementation and next phases:
 
 1. Backend DTOs now expose structured care-prep fields so model-style output is predictable.
 2. `AiInsightService` now owns assessment and report insight generation in the backend service layer.
 3. `MockAiInsightService` is used for tests and development so automated checks do not require internet or paid API access.
-4. A provider-backed implementation can be added later, configured only through environment variables such as `AI_MODE`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`.
+4. `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when `AI_MODE=provider`, `AI_PROVIDER=openai`, `AI_API_KEY`, and `AI_MODEL` are configured.
 5. Report summary generation and assessment insight refresh logic stay behind backend endpoints.
 6. AI-style output returns care summary, explanation, possible directions, urgent warning, monitoring plan, doctor questions, trusted source links, and four to seven follow-up questions.
 7. The existing rule engine remains the safety layer. Protected hard-coded red flags cannot be disabled or lowered. Staff-created operational rules are additive score floors only. AI can improve wording and ask better follow-up questions, but it must not independently diagnose disease, prescribe medicine, or make emergency decisions.
-8. Tests now cover the risk engine, red-flag urgent warnings, mock AI structured output, and frontend rendering of the care-prep guide.
+8. Tests now cover the risk engine, red-flag urgent warnings, mock AI structured output, provider fallback, OpenAI structured-output parsing, and compact/expanded frontend rendering of the care-prep guide.
 
-The production AI version should follow strict safety rules. The prompt and backend validation must tell the AI that PMS is only a health-awareness assistant. It must avoid disease diagnosis, medication instructions, dosage advice, emergency triage promises, or statements that replace a doctor. If the user enters severe symptoms such as chest pain, breathing difficulty, fainting, confusion, heavy bleeding, or sudden weakness, the system should show safe guidance to seek urgent professional care. Real patient data should not be used with an AI provider until privacy, consent, logging, retention, and compliance requirements are designed properly.
+The production AI version should follow strict safety rules. The prompt and backend validation must tell the AI that PMS is only a health-awareness assistant. It must avoid disease diagnosis, medication instructions, dosage advice, emergency triage promises, or statements that replace a doctor. If the user enters severe symptoms such as chest pain, breathing difficulty, fainting, confusion, heavy bleeding, or sudden weakness, the system should show safe guidance to seek urgent professional care from Java-owned rule logic. Real patient data should not be used with an AI provider until privacy, consent, logging, retention, and compliance requirements are designed properly.
 
-This plan keeps the current project stable while making the AI upgrade clear: mock logic stays only for development and tests, real AI lives behind the backend, and medical-safety boundaries remain part of the system design.
+This plan keeps the current project stable while making the AI upgrade clear: mock logic stays as the default for development and tests, real AI lives behind the backend, and medical-safety boundaries remain part of the system design.
 
 ## Privacy And Production Review
 

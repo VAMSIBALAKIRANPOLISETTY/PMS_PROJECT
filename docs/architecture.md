@@ -9,6 +9,9 @@ flowchart TD
   D --> F["Rule-Based Risk Engine"]
   D --> G["Token Auth"]
   D --> H["JPA Repositories"]
+  D --> I["Configured AI Insight Service"]
+  I --> J["Mock AI fallback"]
+  I --> K["Optional OpenAI Responses API"]
 ```
 
 ## Runtime Shape
@@ -37,8 +40,12 @@ flowchart TD
 - Completed-only patient history and staff analytics
 - Protected built-in red flags plus upward-only operational safety rules
 - Symptom-matched active staff questions for future assessment drafts
+- Summary-first care-preparation results with expandable detail sections
+- Backend-owned `ConfiguredAiInsightService` with default mock output and optional OpenAI provider mode
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
+
+The frontend never calls OpenAI and never stores provider keys. In provider mode, the backend `OpenAiInsightClient` calls the OpenAI Responses API with Structured Outputs. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall back to mock output.
 
 ## Frontend
 
@@ -73,6 +80,7 @@ src/
 - Grouped searchable symptom drawer
 - Rule-based Low, Medium, High risk output
 - Resumable pending intake followed by required follow-up cards and completed care guide
+- Compact summary-first result view with a full-details toggle
 - Assessment history, reusable completed-report drawer, and labeled profile views
 - Clinical operations analytics overview
 - Full-width staff care review, operational safety-rule management, managed questions, and read-only staff profile
@@ -82,5 +90,7 @@ src/
 
 - Backend Spring context test with H2 profile
 - Backend controller tests for OpenAPI paths, patient API flow, staff authorization, admin rules/questions, and negative API cases
+- Backend AI tests for mock default mode, provider fallback, rule-owned urgent warnings, and OpenAI structured-output parsing
 - Frontend section render tests for auth, user, admin, and layout sections
+- Frontend care-guide tests for compact summary, expanded details, urgent warning visibility, and drawer expanded mode
 - Frontend TypeScript and production build validation

@@ -7,6 +7,8 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 - Confirm public pages, patient flows, staff flows, and API endpoints work together.
 - Confirm safety rules and red-flag warnings are rule-based and cannot be downgraded.
 - Confirm mock AI output stays structured, safe, and non-diagnostic.
+- Confirm optional OpenAI provider mode is backend-only, validates structured output, and falls back safely.
+- Confirm completed results show a compact summary first and reveal long details only after the user expands them.
 - Confirm role boundaries: patients use patient endpoints, staff use admin endpoints.
 - Confirm negative cases fail safely without exposing stack traces.
 
@@ -93,7 +95,7 @@ Bearer <token>
 7. Run `POST /api/assessments` with one to five symptoms.
 8. Copy the returned assessment `id` and answer every returned follow-up question using `Yes`, `No`, or `Not sure`.
 9. Run `POST /api/assessments/{id}/follow-ups`.
-10. Confirm the completed response includes summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and status `COMPLETED`.
+10. Confirm the completed response includes summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, `aiMode`, and status `COMPLETED`.
 11. Run `GET /api/assessments` and confirm the completed item appears in history.
 
 Recommended staff flow:
@@ -141,7 +143,7 @@ Check these screens:
 - Login: patient login and Staff login link.
 - Patient overview: profile setup progress and no large Appearance panel.
 - Profile setup: every card requires a current answer and disappears after final save.
-- Assessment: symptom drawer, severity, duration, temperature availability, chronic condition, follow-up cards, completed care guide.
+- Assessment: symptom drawer, severity, duration, temperature availability, chronic condition, follow-up cards, compact completed care guide, and `View full care details` toggle.
 - History: clicking a record opens the full assessment report drawer.
 - Reports: report follow-ups and report care-preparation guide.
 - Staff overview: analytics, compact charts, risk mix, full-width care review.
@@ -157,6 +159,8 @@ White-box testing checks internal logic with knowledge of the code:
 - `AssessmentService`: draft creation, pending resume, discard behavior, follow-up answer validation, completed care guide generation, completed-only history.
 - `RiskEngineService`: low, medium, high, red flags, urgent warnings, follow-up refinement, custom rules raising only.
 - `MockAiInsightService`: safe wording, structured fields, no diagnosis or prescription claims.
+- `ConfiguredAiInsightService`: mock default mode, provider configuration checks, mock fallback, and rule-owned urgent warnings.
+- `OpenAiInsightClient`: OpenAI Responses API request shape, Structured Outputs parsing, invalid provider response handling, and timeout/error fallback through the configured service.
 - Admin rules/questions: create, activate, pause, and future assessment matching behavior.
 
 Good techniques:
@@ -192,6 +196,8 @@ Use Swagger or Postman to check:
 - Error responses contain a user-safe message, not stack traces.
 - API keys are never present in frontend code or browser storage.
 - Mock AI output does not diagnose, prescribe, or make emergency promises.
+- Optional provider output cannot create or soften urgent warnings.
+- If `AI_MODE=provider` is used without `AI_API_KEY`, the response still succeeds with `aiMode=MOCK`.
 - Protected red-flag wording remains rule-based.
 
 Compare this checklist with the OWASP API Security Top 10 topics: broken object-level authorization, broken authentication, unrestricted resource consumption, broken function-level authorization, sensitive data exposure, and unsafe API consumption.
@@ -252,4 +258,4 @@ Use this short script before a professor or manager demo:
 6. Login as patient, create an assessment, answer follow-ups, and verify the completed care guide.
 7. Open frontend and repeat the same flow visually.
 8. Login as staff and verify analytics, care review, rule creation, and question creation.
-9. Explain clearly: rules control safety, mock AI improves wording, PMS does not diagnose or prescribe.
+9. Explain clearly: rules control safety, mock AI is the default wording layer, optional OpenAI wording is backend-only, and PMS does not diagnose or prescribe.

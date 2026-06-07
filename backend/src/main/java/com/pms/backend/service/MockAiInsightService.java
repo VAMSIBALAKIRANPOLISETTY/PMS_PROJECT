@@ -7,9 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import org.springframework.stereotype.Service;
 
-@Service
 public class MockAiInsightService implements AiInsightService {
     @Override
     public CarePrepInsight forAssessment(AppUser user, Assessment assessment, RiskEngineService.RiskResult result) {
