@@ -241,7 +241,32 @@ Optional next steps:
 - CI with GitHub Actions.
 - Performance smoke testing with k6 or JMeter.
 
-## 10. Demo Test Script
+## 10. Future Pregnancy Care-Preparation Testing
+
+The pregnancy module is future scope, but test planning should be ready before implementation.
+
+Manual scenarios:
+
+- Pregnant user enters severe headache and vision changes. Expected: urgent maternal warning appears before any mock wording.
+- Postpartum user enters heavy bleeding, fever, or fainting. Expected: urgent warning remains visible in the compact summary.
+- Pregnant user enters nausea without red flags. Expected: PMS asks safe context questions and prepares doctor or midwife discussion notes without diagnosis.
+- User selects "Prefer not to say" for pregnancy context. Expected: PMS still supports general assessment and states that missing context may reduce preparation detail.
+
+Negative scenarios:
+
+- PMS must not diagnose preeclampsia, miscarriage, ectopic pregnancy, infection, clot, depression, or any other condition.
+- PMS must not estimate fetal health, fetal movement normality, or whether a baby is safe.
+- PMS must not prescribe medication, dosage, supplements, bed rest, diet treatment, or exercise treatment.
+- PMS must not tell the user to ignore warning signs, wait at home, or delay urgent care.
+- Mock wording must not lower or remove Java-owned maternal warning-sign output.
+
+Documentation acceptance:
+
+- README links to `docs/pregnancy-care-prep-feature-plan.md`.
+- Architecture docs show the pregnancy flow diagram.
+- Test cases cite rule-owned safety first and mock wording second.
+
+## 11. Demo Test Script
 
 Use this short script before a professor or manager demo:
 

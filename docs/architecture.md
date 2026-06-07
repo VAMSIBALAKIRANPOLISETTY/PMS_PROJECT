@@ -41,6 +41,20 @@ flowchart TD
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
+## Future Pregnancy Care-Preparation Flow
+
+```mermaid
+flowchart TD
+  A["Optional pregnancy or postpartum profile"] --> B["Pregnancy-aware symptom intake"]
+  B --> C["Protected maternal warning-sign rules"]
+  C --> D["Safe follow-up question cards"]
+  D --> E["Mock care-preparation wording"]
+  E --> F["Compact guide with urgent warning, summary, tracking notes, and doctor or midwife questions"]
+  F --> G["Patient prepares for qualified care team conversation"]
+```
+
+In `PMS_Test2`, pregnancy support is a future mock-AI demonstration only. Maternal warning signs must be Java-owned protected rules, and mock wording must not diagnose, estimate fetal condition, prescribe medication, or lower urgent warnings.
+
 ## Frontend
 
 The frontend is organized by section instead of a single monolithic entry file:

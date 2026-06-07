@@ -116,6 +116,8 @@ The Vite development server proxies `/api` calls to the Spring Boot backend. By 
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
+Detailed diagrams and architecture notes are available at `docs/architecture.md`. Future pregnancy care-preparation architecture is described in `docs/pregnancy-care-prep-feature-plan.md`.
+
 ## AI Usage Clarification
 
 Short answer for professor or manager demo: **PMS currently uses mock AI, not real external AI.**
@@ -183,6 +185,7 @@ PMS/
 
   docs/
     architecture.md
+    pregnancy-care-prep-feature-plan.md
     testing-guide.md
 ```
 
@@ -339,11 +342,18 @@ Use this flow when presenting the project:
 8. Open Reports. Upload a PDF name, paste report notes or abnormal values, answer follow-up cards, and generate the report care-prep guide.
 9. Open History and click an assessment record to show the reusable full care-preparation report drawer.
 10. Log out, use the separate Staff login link, and sign in with the demo admin account. Show analytics, full-width assessment records, the same report drawer, upward-only safety-rule management, managed assessment questions, and the read-only staff profile.
+11. Explain future pregnancy support as a safe care-preparation extension: PMS could collect pregnancy or postpartum context, check protected maternal warning signs with rules, and help users prepare questions for a doctor or midwife without diagnosing.
 
 Suggested short explanation:
 
 ```text
 PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then a mock AI insight service creates plain-language care-preparation output. The user receives a compact summary first and can expand directions, monitoring notes, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
+```
+
+Pregnancy-focused future scope:
+
+```text
+PMS can be extended to support pregnant and postpartum users by collecting optional pregnancy context, checking urgent maternal warning signs with protected rules, and preparing a clear summary for a doctor or midwife. In PMS_Test2 this would remain mock AI wording only; all maternal safety decisions would stay rule-based.
 ```
 
 ## Where Key Functions Are Used
@@ -378,6 +388,9 @@ PMS helps users organize symptoms, health history, and report notes before they 
 
 - Why do reports ask follow-up questions?
   Report values need context. The system asks about symptoms, abnormal values, medicines, chronic conditions, and doctor review before creating a safe preparation guide.
+
+- How can PMS help pregnant women in the future?
+  PMS can add optional pregnancy and postpartum context, pregnancy-aware symptom groups, protected maternal warning-sign rules, and doctor or midwife preparation notes. It would not diagnose pregnancy complications, estimate fetal condition, prescribe medicine, or replace urgent care.
 
 - How is user privacy handled in this prototype?
   Adult signup records the accepted privacy-notice and terms versions with timestamps. Normal users can see only their own completed assessments, and unfinished drafts stay private. Admin users can view completed records for demo analytics. This is still a capstone prototype, not a HIPAA-certified production system.
@@ -485,7 +498,7 @@ npm test -- --run
 npm run build
 ```
 
-A detailed manual testing guide is available at `docs/testing-guide.md`. It covers IntelliJ setup, Swagger testing, patient and staff API flows, browser testing, white-box testing, black-box testing, negative testing, security-focused checks, and suggested learning/course pointers.
+A detailed manual testing guide is available at `docs/testing-guide.md`. It covers IntelliJ setup, Swagger testing, patient and staff API flows, browser testing, white-box testing, black-box testing, pregnancy future-scope testing, negative testing, security-focused checks, and suggested learning/course pointers.
 
 ## Current Tested Status
 
@@ -516,7 +529,22 @@ Current implementation and next phases:
 
 The production AI version should follow strict safety rules. The prompt and backend validation must tell the AI that PMS is only a health-awareness assistant. It must avoid disease diagnosis, medication instructions, dosage advice, emergency triage promises, or statements that replace a doctor. If the user enters severe symptoms such as chest pain, breathing difficulty, fainting, confusion, heavy bleeding, or sudden weakness, the system should show safe guidance to seek urgent professional care. Real patient data should not be used with an AI provider until privacy, consent, logging, retention, and compliance requirements are designed properly.
 
-This plan keeps the current project stable while making the AI upgrade clear: mock logic stays only for development and tests, real AI lives behind the backend, and medical-safety boundaries remain part of the system design.
+This plan keeps the current project stable while making the AI upgrade clear: mock logic stays active for development and tests in `PMS_Test2`, any future real AI would live behind the backend, and medical-safety boundaries remain part of the system design.
+
+## Pregnancy Care-Preparation Future Plan
+
+A dedicated future-plan document is available at `docs/pregnancy-care-prep-feature-plan.md`.
+
+The pregnancy extension would help pregnant and postpartum users prepare for care by collecting optional pregnancy context, organizing symptoms, checking protected maternal warning signs, and generating a compact care-preparation summary for a doctor or midwife conversation. It would not diagnose pregnancy complications, estimate fetal condition, provide fetal monitoring, prescribe medication, replace prenatal care, or replace emergency services.
+
+The plan is based on official and reputable maternal-health resources:
+
+- [CDC Hear Her urgent maternal warning signs](https://www.cdc.gov/hearher/maternal-warning-signs/index.html)
+- [WHO antenatal care recommendations](https://www.who.int/publications/i/item/9789241549912/)
+- [ACOG pregnancy patient education](https://www.acog.org/womens-health/pregnancy/during-pregnancy)
+- [March of Dimes pregnancy resources](https://www.marchofdimes.org/find-support/topics/pregnancy)
+
+For `PMS_Test2`, pregnancy-support wording remains a future mock-AI demonstration only. The rule engine would own maternal warning signs, urgent warnings, and all safety boundaries.
 
 ## Privacy And Production Review
 
