@@ -48,6 +48,7 @@ export function AssessmentReportDrawer({ assessment, onClose }: AssessmentReport
           riskScore={assessment.riskScore}
           reasons={assessment.reasons}
           suggestions={assessment.suggestions}
+          defaultExpanded
         />
 
         <section className="care-section">

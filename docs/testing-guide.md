@@ -7,6 +7,7 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 - Confirm public pages, patient flows, staff flows, and API endpoints work together.
 - Confirm safety rules and red-flag warnings are rule-based and cannot be downgraded.
 - Confirm mock AI output stays structured, safe, and non-diagnostic.
+- Confirm completed results show a compact summary first and reveal long details only after the user expands them.
 - Confirm role boundaries: patients use patient endpoints, staff use admin endpoints.
 - Confirm negative cases fail safely without exposing stack traces.
 
@@ -141,7 +142,7 @@ Check these screens:
 - Login: patient login and Staff login link.
 - Patient overview: profile setup progress and no large Appearance panel.
 - Profile setup: every card requires a current answer and disappears after final save.
-- Assessment: symptom drawer, severity, duration, temperature availability, chronic condition, follow-up cards, completed care guide.
+- Assessment: symptom drawer, severity, duration, temperature availability, chronic condition, follow-up cards, compact completed care guide, and `View full care details` toggle.
 - History: clicking a record opens the full assessment report drawer.
 - Reports: report follow-ups and report care-preparation guide.
 - Staff overview: analytics, compact charts, risk mix, full-width care review.
@@ -252,4 +253,4 @@ Use this short script before a professor or manager demo:
 6. Login as patient, create an assessment, answer follow-ups, and verify the completed care guide.
 7. Open frontend and repeat the same flow visually.
 8. Login as staff and verify analytics, care review, rule creation, and question creation.
-9. Explain clearly: rules control safety, mock AI improves wording, PMS does not diagnose or prescribe.
+9. Explain clearly: rules control safety, mock AI improves wording, compact summaries keep results readable, and PMS does not diagnose or prescribe.

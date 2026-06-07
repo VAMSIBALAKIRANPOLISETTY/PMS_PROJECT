@@ -2,7 +2,7 @@
 
 Patient workspace + clinical operations capstone prototype built with **Java Spring Boot**, **React + TypeScript**, and **PostgreSQL**.
 
-This system helps users enter symptoms, optional temperature details, reports, and health history, then gives a safe care-preparation guide with risk level, reasons, possible directions, monitoring notes, doctor questions, and follow-up questions. It does **not** diagnose disease, prescribe medicine, or replace a doctor.
+This system helps users enter symptoms, optional temperature details, reports, and health history, then gives a safe care-preparation guide with a compact summary first and expandable full details for reasons, possible directions, monitoring notes, doctor questions, and follow-up questions. It does **not** diagnose disease, prescribe medicine, or replace a doctor.
 
 ## Detailed Project Description
 
@@ -38,7 +38,7 @@ Use this branch for continuing development:
 PMS_Test2
 ```
 
-This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
+This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, compact summary-first care-preparation results, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, report insight endpoints, validation, and a componentized frontend structure.
 
 ## Presentation Decks
 
@@ -112,7 +112,7 @@ React + TypeScript Frontend
 
 The frontend is responsible for public pages, patient screens, staff screens, form validation, authenticated API calls, and rendering the care-preparation guide. It does not own medical-safety decisions and it does not contact any AI provider.
 
-The Vite development server proxies `/api` calls to the Spring Boot backend. Spring Boot owns authentication, role separation, assessment drafts, follow-up finalization, report insights, staff rule management, staff question management, analytics, and all persistence logic. JPA repositories store users, assessments, rules, questions, and related records in PostgreSQL for normal local runtime. Backend tests use the H2 profile so automated checks can run without a PostgreSQL server.
+The Vite development server proxies `/api` calls to the Spring Boot backend. By default it targets `http://localhost:8080`, and `VITE_API_PROXY_TARGET` can override the backend URL for side-by-side branch testing. Spring Boot owns authentication, role separation, assessment drafts, follow-up finalization, report insights, staff rule management, staff question management, analytics, and all persistence logic. JPA repositories store users, assessments, rules, questions, and related records in PostgreSQL for normal local runtime. Backend tests use the H2 profile so automated checks can run without a PostgreSQL server.
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
@@ -300,6 +300,13 @@ The Vite proxy forwards `/api` requests to:
 http://localhost:8080
 ```
 
+For side-by-side branch testing, override the proxy target before starting Vite:
+
+```powershell
+$env:VITE_API_PROXY_TARGET="http://localhost:8082"
+npm run dev -- --host 127.0.0.1 --port 5172
+```
+
 ## Demo Accounts
 
 The backend seeds these accounts when the database is empty:
@@ -328,7 +335,7 @@ Use this flow when presenting the project:
 4. Open the assessment page. Select up to five symptoms from the grouped symptom drawer, choose severity, enter duration, choose temperature availability, and select chronic-condition context.
 5. Click Prepare care guide. Explain that the backend saves a resumable pending draft and runs rule-based safety checks immediately.
 6. Answer every follow-up card using Yes, No, or Not sure, with an optional note. Mention that red-flag warnings can appear before the guide and are never delayed by the questions.
-7. Submit the answers and show the completed result sections: Summary, Why this matters, Possible directions to discuss, What to do next, Doctor questions, and Trusted sources.
+7. Submit the answers and show the compact result first: risk, score, urgent warning if present, and Summary. Click `View full care details` to expand Why this matters, Possible directions to discuss, What to do next, Doctor questions, and Trusted sources.
 8. Open Reports. Upload a PDF name, paste report notes or abnormal values, answer follow-up cards, and generate the report care-prep guide.
 9. Open History and click an assessment record to show the reusable full care-preparation report drawer.
 10. Log out, use the separate Staff login link, and sign in with the demo admin account. Show analytics, full-width assessment records, the same report drawer, upward-only safety-rule management, managed assessment questions, and the read-only staff profile.
@@ -336,7 +343,7 @@ Use this flow when presenting the project:
 Suggested short explanation:
 
 ```text
-PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then a mock AI insight service creates plain-language care-preparation output. The user receives directions, monitoring notes, doctor questions, and trusted source links instead of only a Low, Medium, or High label.
+PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then a mock AI insight service creates plain-language care-preparation output. The user receives a compact summary first and can expand directions, monitoring notes, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
 ```
 
 ## Where Key Functions Are Used
@@ -347,7 +354,7 @@ PMS helps users organize symptoms, health history, and report notes before they 
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
 - `MockAiInsightService`: current development/mock implementation that generates care summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and report insights.
 - `ReportInsightController`: exposes backend report follow-up and report insight endpoints.
-- `CarePrepGuide`: shared React component that renders the structured care-preparation result for both assessments and reports.
+- `CarePrepGuide`: shared React component that renders compact summary-first care-preparation results for assessments and reports, with a button to expand or hide full details.
 - `AssessmentReportDrawer`: shared React component that opens completed patient and staff assessment records without leaving the current screen.
 - `AssessmentForm`: collects symptoms, severity, duration, temperature availability, chronic condition, follow-up answers, and displays the care-prep guide.
 - `Reports`: collects report file name, pasted report notes, report follow-up answers, and displays the report care-prep guide.
@@ -486,7 +493,7 @@ Validated on `PMS_Test2`:
 
 - Backend Spring context, patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
 - Backend controller/API tests cover OpenAPI docs, patient assessment flow, staff authorization boundaries, admin rules, admin questions, missing-token checks, underage signup, invalid follow-up answers, and draft discard behavior
-- Frontend patient/staff auth, section, and care-prep guide test suite passed
+- Frontend patient/staff auth, section, compact care-prep guide, and expanded drawer test suite passed
 - Frontend TypeScript and Vite production build passed
 - Runtime PostgreSQL path documented for local PostgreSQL, no Docker
 

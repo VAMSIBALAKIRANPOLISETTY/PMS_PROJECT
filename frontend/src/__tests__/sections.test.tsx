@@ -265,11 +265,29 @@ describe("section rendering", () => {
   it("renders care-preparation guide sections", () => {
     render(<CarePrepGuide insight={assessment} riskLevel={assessment.riskLevel} riskScore={assessment.riskScore} reasons={assessment.reasons} suggestions={assessment.suggestions} />);
     expect(screen.getByText("Summary")).toBeInTheDocument();
+    expect(screen.getByText("PMS reviewed fever and weakness as a care-preparation guide.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /View full care details/i })).toBeInTheDocument();
+    expect(screen.queryByText("Why this matters")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /View full care details/i }));
     expect(screen.getByText("Why this matters")).toBeInTheDocument();
     expect(screen.getByText("Possible directions to discuss")).toBeInTheDocument();
     expect(screen.getByText("What to do next")).toBeInTheDocument();
     expect(screen.getByText("Doctor questions")).toBeInTheDocument();
     expect(screen.getByText("Personalized guidance")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Hide full care details/i }));
+    expect(screen.queryByText("Why this matters")).not.toBeInTheDocument();
+  });
+
+  it("keeps urgent warnings visible while care details are collapsed", () => {
+    render(<CarePrepGuide insight={{ ...assessment, urgentWarning: "Seek urgent care for breathing difficulty." }} riskLevel="HIGH" riskScore={92} />);
+    expect(screen.getByText("Seek urgent care for breathing difficulty.")).toBeInTheDocument();
+    expect(screen.queryByText("Why this matters")).not.toBeInTheDocument();
+  });
+
+  it("renders drawer-style care guides expanded by default", () => {
+    render(<CarePrepGuide insight={assessment} riskLevel={assessment.riskLevel} riskScore={assessment.riskScore} defaultExpanded />);
+    expect(screen.getByText("Why this matters")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Hide full care details/i })).toBeInTheDocument();
   });
 
   it("renders admin overview, management sections, and staff profile", () => {

@@ -17,7 +17,7 @@ flowchart TD
 - Backend runs on `http://localhost:8080`
 - PostgreSQL runs locally on `localhost:5432`
 - Docker is not part of the runtime or setup
-- Vite proxies `/api` calls to the backend
+- Vite proxies `/api` calls to the backend and can use `VITE_API_PROXY_TARGET` for alternate local backend ports
 
 ## Backend
 
@@ -37,6 +37,7 @@ flowchart TD
 - Completed-only patient history and staff analytics
 - Protected built-in red flags plus upward-only operational safety rules
 - Symptom-matched active staff questions for future assessment drafts
+- Compact summary-first care-preparation result display with expandable detail sections
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
@@ -73,6 +74,7 @@ src/
 - Grouped searchable symptom drawer
 - Rule-based Low, Medium, High risk output
 - Resumable pending intake followed by required follow-up cards and completed care guide
+- Summary-first result view with a full-details toggle
 - Assessment history, reusable completed-report drawer, and labeled profile views
 - Clinical operations analytics overview
 - Full-width staff care review, operational safety-rule management, managed questions, and read-only staff profile
@@ -83,4 +85,5 @@ src/
 - Backend Spring context test with H2 profile
 - Backend controller tests for OpenAPI paths, patient API flow, staff authorization, admin rules/questions, and negative API cases
 - Frontend section render tests for auth, user, admin, and layout sections
+- Frontend care-guide tests for compact summary, expanded details, urgent warning visibility, and drawer expanded mode
 - Frontend TypeScript and production build validation
