@@ -92,6 +92,7 @@ const assessment: Assessment = {
   possibleDirections: ["Discuss fever pattern, exposure history, and weakness with a clinician."],
   urgentWarning: null,
   monitoringPlan: ["Track symptoms and temperature twice a day."],
+  careTips: ["Bring a symptom timeline to the clinician conversation."],
   doctorPrepQuestions: ["What symptoms should I mention first?"],
   trustedSourceLinks: ["MedlinePlus evaluating health information: https://medlineplus.gov/evaluatinghealthinformation.html"],
   aiMode: "MOCK",
@@ -272,8 +273,11 @@ describe("section rendering", () => {
     expect(screen.getByText("Why this matters")).toBeInTheDocument();
     expect(screen.getByText("Possible directions to discuss")).toBeInTheDocument();
     expect(screen.getByText("What to do next")).toBeInTheDocument();
+    expect(screen.getByText("Care tips")).toBeInTheDocument();
+    expect(screen.getByText("Bring a symptom timeline to the clinician conversation.")).toBeInTheDocument();
     expect(screen.getByText("Doctor questions")).toBeInTheDocument();
     expect(screen.getByText("Personalized guidance")).toBeInTheDocument();
+    expect(screen.getByText("Guidance support: Mock guidance")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Hide full care details/i }));
     expect(screen.queryByText("Why this matters")).not.toBeInTheDocument();
   });
@@ -324,6 +328,21 @@ describe("section rendering", () => {
     fireEvent.change(screen.getByLabelText("Question"), { target: { value: "Has the fever become worse since yesterday?" } });
     fireEvent.click(screen.getByRole("button", { name: "Save assessment question" }));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/admin/questions", expect.objectContaining({ symptomKey: "Fever" }), expect.anything()));
+  });
+
+  it("suggests and saves paused AI question drafts", async () => {
+    const post = vi.spyOn(api, "post")
+      .mockResolvedValueOnce({ data: { symptomKey: "Fever", suggestions: ["Is the fever worse today?", "Did this begin suddenly?"], aiMode: "OLLAMA" } })
+      .mockResolvedValue({ data: question });
+    render(<Questions token="token" questions={[]} refresh={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Suggest with AI/i }));
+    fireEvent.change(screen.getByLabelText("Use for symptom"), { target: { value: "Fever" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generate draft questions" }));
+    await waitFor(() => expect(screen.getByText("Is the fever worse today?")).toBeInTheDocument());
+    expect(screen.getByText("Draft source: Gemma 4 31B")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save selected as paused questions" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/admin/questions/suggest", expect.objectContaining({ symptomKey: "Fever" }), expect.anything()));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/admin/questions", expect.objectContaining({ prompt: "Is the fever worse today?", active: false }), expect.anything()));
   });
 
   it("renders design picker directly", () => {

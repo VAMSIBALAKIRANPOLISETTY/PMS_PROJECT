@@ -7,11 +7,12 @@ flowchart TD
   B --> D["Spring Boot API"]
   D --> E["Local PostgreSQL"]
   D --> F["Rule-Based Risk Engine"]
-  D --> G["Token Auth"]
+  D --> G["JWT Auth"]
   D --> H["JPA Repositories"]
   D --> I["Configured AI Insight Service"]
   I --> J["Mock AI fallback"]
-  I --> K["Optional OpenAI Responses API"]
+  I --> K["Ollama Gemma 4 31B"]
+  I --> L["OpenAI fallback"]
 ```
 
 ## Runtime Shape
@@ -41,11 +42,37 @@ flowchart TD
 - Protected built-in red flags plus upward-only operational safety rules
 - Symptom-matched active staff questions for future assessment drafts
 - Summary-first care-preparation results with expandable detail sections
-- Backend-owned `ConfiguredAiInsightService` with default mock output and optional OpenAI provider mode
+- Backend-owned `ConfiguredAiInsightService` with default mock output and optional Ollama -> OpenAI -> mock provider mode
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
-The frontend never calls OpenAI and never stores provider keys. In provider mode, the backend `OpenAiInsightClient` calls the OpenAI Responses API with Structured Outputs. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall back to mock output.
+The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then `MockAiInsightService`. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
+
+## JWT Authentication Flow
+
+```mermaid
+sequenceDiagram
+  participant Browser as React browser
+  participant Auth as AuthController
+  participant Service as AuthService
+  participant JWT as JwtService
+  participant DB as UserRepository
+
+  Browser->>Auth: POST login, staff-login, or register
+  Auth->>Service: Validate credentials or registration
+  Service->>DB: Load or save user
+  Service->>JWT: Create signed JWT
+  JWT-->>Service: Access token
+  Service-->>Browser: AuthResponse { token, user }
+  Browser->>Auth: Authorization: Bearer token
+  Auth->>Service: requireUser or requireAdmin
+  Service->>JWT: Verify signature, issuer, expiry, subject
+  JWT-->>Service: User id
+  Service->>DB: Load current user and role
+  Service-->>Auth: Authorized user or safe rejection
+```
+
+JWT keeps the browser contract simple while removing the old in-memory token map. The token proves the login session until expiry, but PMS still loads the current user from the database and checks the database role for staff-only actions.
 
 ## Future Pregnancy Care-Preparation Flow
 
@@ -56,13 +83,15 @@ flowchart TD
   C --> D["Safe follow-up question cards"]
   D --> E["Configured AI insight service"]
   E --> F["Mock wording by default"]
-  E --> G["Optional OpenAI wording after rule decisions"]
-  F --> H["Compact guide with urgent warning, summary, tracking notes, and doctor or midwife questions"]
-  G --> H
-  H --> I["Patient prepares for qualified care team conversation"]
+  E --> G["Optional Ollama Gemma wording after rule decisions"]
+  E --> H["OpenAI fallback wording"]
+  F --> I["Compact guide with urgent warning, summary, tracking notes, and doctor or midwife questions"]
+  G --> I
+  H --> I
+  I --> J["Patient prepares for qualified care team conversation"]
 ```
 
-In `PMS_Test3`, pregnancy support remains future scope. Maternal warning signs must be Java-owned protected rules. Optional OpenAI wording may improve readability only after rule decisions are complete and must never diagnose, estimate fetal condition, prescribe medication, or lower urgent warnings.
+In `PMS_Test3`, pregnancy support remains future scope. Maternal warning signs must be Java-owned protected rules. Optional Ollama/OpenAI wording may improve readability only after rule decisions are complete and must never diagnose, estimate fetal condition, prescribe medication, or lower urgent warnings.
 
 ## Frontend
 
@@ -107,7 +136,7 @@ src/
 
 - Backend Spring context test with H2 profile
 - Backend controller tests for OpenAPI paths, patient API flow, staff authorization, admin rules/questions, and negative API cases
-- Backend AI tests for mock default mode, provider fallback, rule-owned urgent warnings, and OpenAI structured-output parsing
+- Backend AI tests for mock default mode, Ollama -> OpenAI -> mock fallback, rule-owned urgent warnings, and provider structured-output parsing
 - Frontend section render tests for auth, user, admin, and layout sections
 - Frontend care-guide tests for compact summary, expanded details, urgent warning visibility, and drawer expanded mode
 - Frontend TypeScript and production build validation

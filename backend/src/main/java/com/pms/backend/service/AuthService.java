@@ -8,11 +8,8 @@ import com.pms.backend.dto.AuthDtos.UserResponse;
 import com.pms.backend.model.AppUser;
 import com.pms.backend.model.Role;
 import com.pms.backend.repository.UserRepository;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,11 +18,12 @@ public class AuthService {
     static final String PRIVACY_NOTICE_VERSION = "2026-06-02";
     static final String TERMS_VERSION = "2026-06-02";
     private final UserRepository userRepository;
+    private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final Map<String, Long> tokenStore = new ConcurrentHashMap<>();
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -87,14 +85,7 @@ public class AuthService {
     }
 
     public AppUser requireUser(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Login required.");
-        }
-        String token = authHeader.substring("Bearer ".length());
-        Long userId = tokenStore.get(token);
-        if (userId == null) {
-            throw new IllegalArgumentException("Invalid or expired token.");
-        }
+        Long userId = jwtService.userIdFromBearer(authHeader);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
     }
@@ -154,9 +145,7 @@ public class AuthService {
     }
 
     private AuthResponse makeAuthResponse(AppUser user) {
-        String token = UUID.randomUUID().toString();
-        tokenStore.put(token, user.getId());
-        return new AuthResponse(token, toUserResponse(user));
+        return new AuthResponse(jwtService.createToken(user), toUserResponse(user));
     }
 
     private int profileCompletion(AppUser user) {

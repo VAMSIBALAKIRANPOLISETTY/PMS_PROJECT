@@ -19,7 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-class OpenAiInsightClientTests {
+class OllamaInsightClientTests {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private HttpServer server;
     private String capturedAuthorization;
@@ -33,61 +33,61 @@ class OpenAiInsightClientTests {
     }
 
     @Test
-    void parsesStructuredResponsesOutput() throws Exception {
-        startServer(200, openAiResponse(validStructuredOutput()));
-        OpenAiInsightClient client = client();
+    void parsesStructuredChatOutput() throws Exception {
+        startServer(200, ollamaResponse(validStructuredOutput()));
+        OllamaInsightClient client = client();
 
         var insight = client.forAssessment(patient(), assessment(), riskResult());
 
-        assertEquals("OPENAI", insight.aiMode());
-        assertEquals("Provider summary for PMS care preparation and clinician conversation planning.", insight.careSummary());
+        assertEquals("OLLAMA", insight.aiMode());
+        assertEquals("Ollama summary for PMS care preparation and clinician conversation planning.", insight.careSummary());
         assertNull(insight.urgentWarning());
         assertEquals(List.of("Track symptom changes and temperature readings."), insight.monitoringPlan());
         assertEquals(List.of("Bring a symptom timeline to the clinician conversation."), insight.careTips());
-        assertEquals("Bearer test-key", capturedAuthorization);
-        assertTrue(capturedBody.contains("\"model\":\"gpt-4o-mini\""));
-        assertTrue(capturedBody.contains("\"json_schema\""));
+        assertEquals("Bearer test-ollama-key", capturedAuthorization);
+        assertTrue(capturedBody.contains("\"model\":\"gemma4:31b\""));
+        assertTrue(capturedBody.contains("\"stream\":false"));
+        assertTrue(capturedBody.contains("\"format\""));
         assertTrue(capturedBody.contains("\"temperature\":0.2"));
         assertTrue(capturedBody.contains("The backend rule engine owns all risk scoring and urgent warnings."));
     }
 
     @Test
-    void rejectsProviderResponseWithoutOutputText() throws Exception {
-        startServer(200, "{\"output\":[{\"content\":[{\"type\":\"refusal\",\"refusal\":\"cannot answer\"}]}]}");
-        OpenAiInsightClient client = client();
+    void parsesQuestionSuggestions() throws Exception {
+        startServer(200, ollamaResponse("""
+                {"questions":["Is the fever worse today?","Did this begin suddenly?"]}
+                """));
+        OllamaInsightClient client = client();
+
+        var suggestions = client.suggestQuestions("Fever", "duration");
+
+        assertEquals("OLLAMA", suggestions.aiMode());
+        assertEquals(List.of("Is the fever worse today?", "Did this begin suddenly?"), suggestions.questions());
+    }
+
+    @Test
+    void rejectsMissingMessageContent() throws Exception {
+        startServer(200, "{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}");
+        OllamaInsightClient client = client();
 
         assertThrows(IllegalStateException.class, () -> client.forAssessment(patient(), assessment(), riskResult()));
     }
 
     @Test
     void rejectsNonSuccessfulProviderStatus() throws Exception {
-        startServer(503, "{\"error\":{\"message\":\"temporarily unavailable\"}}");
-        OpenAiInsightClient client = client();
+        startServer(503, "{\"error\":\"model unavailable\"}");
+        OllamaInsightClient client = client();
 
         assertThrows(IllegalStateException.class, () -> client.forAssessment(patient(), assessment(), riskResult()));
     }
 
-    @Test
-    void parsesQuestionSuggestions() throws Exception {
-        startServer(200, openAiResponse("""
-                {"questions":["Is the fever worse today?","Did this begin suddenly?"]}
-                """));
-        OpenAiInsightClient client = client();
-
-        var suggestions = client.suggestQuestions("Fever", "duration");
-
-        assertEquals("OPENAI", suggestions.aiMode());
-        assertEquals(List.of("Is the fever worse today?", "Did this begin suddenly?"), suggestions.questions());
-        assertTrue(capturedBody.contains("\"name\":\"pms_question_suggestions\""));
-    }
-
-    private OpenAiInsightClient client() {
-        return new OpenAiInsightClient("http://localhost:" + server.getAddress().getPort(), "test-key", "gpt-4o-mini", Duration.ofSeconds(3));
+    private OllamaInsightClient client() {
+        return new OllamaInsightClient("http://localhost:" + server.getAddress().getPort(), "test-ollama-key", "gemma4:31b", Duration.ofSeconds(3), 0.2);
     }
 
     private void startServer(int status, String responseBody) throws IOException {
         server = HttpServer.create(new InetSocketAddress(0), 0);
-        server.createContext("/responses", exchange -> respond(exchange, status, responseBody));
+        server.createContext("/chat", exchange -> respond(exchange, status, responseBody));
         server.start();
     }
 
@@ -101,17 +101,17 @@ class OpenAiInsightClientTests {
         exchange.close();
     }
 
-    private String openAiResponse(String structuredOutput) throws IOException {
+    private String ollamaResponse(String structuredOutput) throws IOException {
         return """
-                {"output":[{"content":[{"type":"output_text","text":%s}]}]}
+                {"message":{"role":"assistant","content":%s},"done":true}
                 """.formatted(objectMapper.writeValueAsString(structuredOutput));
     }
 
     private String validStructuredOutput() {
         return """
                 {
-                  "careSummary": "Provider summary for PMS care preparation and clinician conversation planning.",
-                  "explanation": "Provider explanation stays non-diagnostic and explains why these symptoms should be organized before care.",
+                  "careSummary": "Ollama summary for PMS care preparation and clinician conversation planning.",
+                  "explanation": "Ollama explanation stays non-diagnostic and explains why these symptoms should be organized before care.",
                   "possibleDirections": ["Discuss symptom pattern and duration with a clinician."],
                   "urgentWarning": "This warning should be removed by backend service code.",
                   "monitoringPlan": ["Track symptom changes and temperature readings."],

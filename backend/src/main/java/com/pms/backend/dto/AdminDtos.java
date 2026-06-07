@@ -16,6 +16,17 @@ public class AdminDtos {
             Boolean active
     ) {}
 
+    public record QuestionSuggestionRequest(
+            @NotBlank @Size(max = 80) String symptomKey,
+            @Size(max = 240) String focus
+    ) {}
+
+    public record QuestionSuggestionResponse(
+            String symptomKey,
+            java.util.List<String> suggestions,
+            String aiMode
+    ) {}
+
     public record ActiveRequest(@NotNull Boolean active) {}
 
     public record RuleResponse(

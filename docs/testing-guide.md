@@ -7,7 +7,7 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 - Confirm public pages, patient flows, staff flows, and API endpoints work together.
 - Confirm safety rules and red-flag warnings are rule-based and cannot be downgraded.
 - Confirm mock AI output stays structured, safe, and non-diagnostic.
-- Confirm optional OpenAI provider mode is backend-only, validates structured output, and falls back safely.
+- Confirm optional provider mode is backend-only, tries Ollama first, uses OpenAI as fallback, validates structured output, and falls back safely to mock.
 - Confirm completed results show a compact summary first and reveal long details only after the user expands them.
 - Confirm role boundaries: patients use patient endpoints, staff use admin endpoints.
 - Confirm negative cases fail safely without exposing stack traces.
@@ -19,14 +19,16 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 3. Reload Maven when IntelliJ asks, or open the Maven panel and click Reload.
 4. Select JDK 17 or newer from `File > Project Structure > Project SDK`.
 5. Open `backend/src/main/java/com/pms/backend/BackendApplication.java`.
-6. Run the application from the green Run button, or use:
+6. Optional but recommended: add `JWT_SECRET`, `AI_MODE`, and any provider keys to the Run Configuration environment variables instead of hard-coding them.
+7. Run the application from the green Run button, or use:
 
 ```powershell
 cd backend
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
 .\mvnw.cmd spring-boot:run
 ```
 
-7. Verify the backend is running:
+8. Verify the backend is running:
 
 ```text
 http://localhost:8080/api/health
@@ -83,7 +85,7 @@ Recommended patient flow:
 }
 ```
 
-3. Copy the returned `token`.
+3. Copy the returned JWT `token`.
 4. Click Swagger `Authorize`.
 5. Enter:
 
@@ -97,6 +99,15 @@ Bearer <token>
 9. Run `POST /api/assessments/{id}/follow-ups`.
 10. Confirm the completed response includes summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, `aiMode`, and status `COMPLETED`.
 11. Run `GET /api/assessments` and confirm the completed item appears in history.
+
+JWT checks in Swagger:
+
+- Use the copied token with `GET /api/auth/me`. Expected: current user is returned.
+- Remove the token and run `GET /api/auth/me`. Expected: 4xx response.
+- Enter `Bearer not-a-jwt`. Expected: 4xx response with a safe error message.
+- Use a patient token on `GET /api/admin/analytics`. Expected: forbidden.
+- Use a staff token on `POST /api/assessments`. Expected: rejected because patient access is required.
+- Restart the backend and reuse an unexpired token signed with the same `JWT_SECRET`. Expected: token still works because validation is stateless.
 
 Recommended staff flow:
 
@@ -116,7 +127,8 @@ Recommended staff flow:
 6. Run `PATCH /api/admin/rules/{id}/active` to pause or activate it.
 7. Run `GET /api/admin/questions`.
 8. Run `POST /api/admin/questions` with a General or symptom-specific Yes/No-style prompt.
-9. Run `PATCH /api/admin/questions/{id}/active` to pause or activate it.
+9. Run `POST /api/admin/questions/suggest` to prepare AI draft prompts for staff review.
+10. Run `PATCH /api/admin/questions/{id}/active` to pause or activate it.
 
 ## 5. Manual Browser Test Flow
 
@@ -149,6 +161,7 @@ Check these screens:
 - Staff overview: analytics, compact charts, risk mix, full-width care review.
 - Staff rules: create rule, activate/deactivate rule.
 - Staff questions: create question, activate/deactivate question.
+- Staff AI questions: suggest drafts, save selected drafts as paused, then activate only after review.
 - Staff profile: read-only profile information.
 
 ## 6. White-Box Testing Pointers
@@ -159,7 +172,8 @@ White-box testing checks internal logic with knowledge of the code:
 - `AssessmentService`: draft creation, pending resume, discard behavior, follow-up answer validation, completed care guide generation, completed-only history.
 - `RiskEngineService`: low, medium, high, red flags, urgent warnings, follow-up refinement, custom rules raising only.
 - `MockAiInsightService`: safe wording, structured fields, no diagnosis or prescription claims.
-- `ConfiguredAiInsightService`: mock default mode, provider configuration checks, mock fallback, and rule-owned urgent warnings.
+- `ConfiguredAiInsightService`: mock default mode, provider-chain configuration checks, Ollama -> OpenAI -> mock fallback, and rule-owned urgent warnings.
+- `OllamaInsightClient`: Ollama Cloud chat request shape, `gemma4:31b` model configuration, structured JSON parsing, invalid provider response handling, and timeout/error fallback through the configured service.
 - `OpenAiInsightClient`: OpenAI Responses API request shape, Structured Outputs parsing, invalid provider response handling, and timeout/error fallback through the configured service.
 - Admin rules/questions: create, activate, pause, and future assessment matching behavior.
 
@@ -188,6 +202,8 @@ Black-box testing checks behavior from the user or API perspective without readi
 Use Swagger or Postman to check:
 
 - Missing bearer token returns a 4xx response for private endpoints.
+- Malformed JWT returns a safe 4xx response.
+- Expired JWT and wrong-signature JWT cases are covered by backend tests.
 - Patient token is rejected from `/api/admin/**`.
 - Staff token is rejected from patient-only draft creation.
 - One patient cannot finalize or discard another patient's draft.
@@ -197,8 +213,20 @@ Use Swagger or Postman to check:
 - API keys are never present in frontend code or browser storage.
 - Mock AI output does not diagnose, prescribe, or make emergency promises.
 - Optional provider output cannot create or soften urgent warnings.
-- If `AI_MODE=provider` is used without `AI_API_KEY`, the response still succeeds with `aiMode=MOCK`.
+- If `AI_MODE=provider` is used without `OLLAMA_API_KEY`, `OPENAI_API_KEY`, or legacy `AI_API_KEY`, the response still succeeds with `aiMode=MOCK`.
+- If Ollama fails while OpenAI is configured, the response can return `aiMode=OPENAI`.
+- If Ollama succeeds, the response can return `aiMode=OLLAMA`.
 - Protected red-flag wording remains rule-based.
+
+JWT automated test checklist:
+
+- Login/register returns a three-part JWT.
+- Valid JWT works for `GET /api/auth/me`.
+- Missing, malformed, expired, and wrong-signature JWTs are rejected.
+- Patient JWT is rejected from admin endpoints.
+- Staff JWT is rejected from patient assessment creation.
+- Backend restart does not invalidate unexpired tokens when `JWT_SECRET` remains the same.
+- `JWT_SECRET` never appears in frontend source, browser storage, screenshots, or committed documentation examples as a real secret.
 
 Compare this checklist with the OWASP API Security Top 10 topics: broken object-level authorization, broken authentication, unrestricted resource consumption, broken function-level authorization, sensitive data exposure, and unsafe API consumption.
 
@@ -252,7 +280,7 @@ The pregnancy module is future scope, but test planning should be ready before i
 
 Manual scenarios:
 
-- Pregnant user enters severe headache and vision changes. Expected: urgent maternal warning appears before mock or OpenAI wording.
+- Pregnant user enters severe headache and vision changes. Expected: urgent maternal warning appears before mock, Ollama, or OpenAI wording.
 - Postpartum user enters heavy bleeding, fever, or fainting. Expected: urgent warning remains visible in the compact summary.
 - Pregnant user enters nausea without red flags. Expected: PMS asks safe context questions and prepares doctor or midwife discussion notes without diagnosis.
 - User selects "Prefer not to say" for pregnancy context. Expected: PMS still supports general assessment and states that missing context may reduce preparation detail.
@@ -264,13 +292,14 @@ Negative scenarios:
 - PMS must not prescribe medication, dosage, supplements, bed rest, diet treatment, or exercise treatment.
 - PMS must not tell the user to ignore warning signs, wait at home, or delay urgent care.
 - Mock or provider wording must not lower or remove Java-owned maternal warning-sign output.
+- Ollama provider failures must fall back to OpenAI or mock wording without changing urgent warnings.
 - OpenAI provider failures must fall back to mock wording without changing urgent warnings.
 
 Documentation acceptance:
 
 - README links to `docs/pregnancy-care-prep-feature-plan.md`.
 - Architecture docs show the pregnancy flow diagram.
-- Test cases cite rule-owned safety first and optional OpenAI wording second.
+- Test cases cite rule-owned safety first and optional provider wording second.
 
 ## 11. Demo Test Script
 
@@ -284,4 +313,4 @@ Use this short script before a professor or manager demo:
 6. Login as patient, create an assessment, answer follow-ups, and verify the completed care guide.
 7. Open frontend and repeat the same flow visually.
 8. Login as staff and verify analytics, care review, rule creation, and question creation.
-9. Explain clearly: rules control safety, mock AI is the default wording layer, optional OpenAI wording is backend-only, and PMS does not diagnose or prescribe.
+9. Explain clearly: rules control safety, mock AI is the default wording layer, optional Ollama/OpenAI wording is backend-only, and PMS does not diagnose or prescribe.

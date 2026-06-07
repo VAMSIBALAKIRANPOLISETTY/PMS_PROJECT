@@ -43,6 +43,7 @@ public class AssessmentDtos {
             List<String> possibleDirections,
             String urgentWarning,
             List<String> monitoringPlan,
+            List<String> careTips,
             List<String> doctorPrepQuestions,
             List<String> trustedSourceLinks,
             String aiMode,
@@ -74,6 +75,7 @@ public class AssessmentDtos {
             List<String> possibleDirections,
             String urgentWarning,
             List<String> monitoringPlan,
+            List<String> careTips,
             List<String> doctorPrepQuestions,
             List<String> trustedSourceLinks,
             String aiMode

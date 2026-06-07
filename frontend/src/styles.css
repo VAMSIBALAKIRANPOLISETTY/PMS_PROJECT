@@ -1078,6 +1078,14 @@ main { min-width: 0; padding: 28px; }
   margin: 0;
 }
 
+.ai-mode-label {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .score-ring.compact {
   min-height: 110px;
 }
@@ -1778,6 +1786,13 @@ main { min-width: 0; padding: 28px; }
   line-height: 1.55;
 }
 
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .rule-card-heading span {
   color: var(--text);
   font-weight: 800;
@@ -1805,6 +1820,15 @@ main { min-width: 0; padding: 28px; }
 
 .admin-editor-form .full {
   grid-column: 1 / -1;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 10px;
+}
+
+.suggestion-list .agreement-check {
+  margin: 0;
 }
 
 .question-list div {

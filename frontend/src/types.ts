@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type Role = "USER" | "ADMIN";
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
-export type AiMode = "MOCK" | "PROVIDER";
+export type AiMode = "MOCK" | "OLLAMA" | "OPENAI" | "PROVIDER";
 export type AssessmentStatus = "PENDING_FOLLOW_UP" | "COMPLETED";
 export type Mode = "user" | "admin";
 export type Page = "overview" | "assessment" | "reports" | "history" | "profile" | "assessments" | "rules" | "questions";
@@ -52,6 +52,7 @@ export interface Assessment {
   possibleDirections: string[];
   urgentWarning?: string | null;
   monitoringPlan: string[];
+  careTips: string[];
   doctorPrepQuestions: string[];
   trustedSourceLinks: string[];
   aiMode?: AiMode | null;
@@ -64,6 +65,7 @@ export interface CarePrepGuideData {
   possibleDirections: string[];
   urgentWarning?: string | null;
   monitoringPlan: string[];
+  careTips?: string[];
   doctorPrepQuestions: string[];
   trustedSourceLinks: string[];
   aiMode?: AiMode | null;
@@ -113,6 +115,12 @@ export interface Rule {
   urgent?: boolean;
   active?: boolean;
   explanation: string;
+}
+
+export interface QuestionSuggestionResponse {
+  symptomKey: string;
+  suggestions: string[];
+  aiMode: AiMode;
 }
 
 export type NavItem = [Page, string, LucideIcon];

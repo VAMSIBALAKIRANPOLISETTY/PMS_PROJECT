@@ -4,6 +4,8 @@ import com.pms.backend.config.OpenApiConfig;
 import com.pms.backend.dto.AdminDtos.ActiveRequest;
 import com.pms.backend.dto.AdminDtos.QuestionRequest;
 import com.pms.backend.dto.AdminDtos.QuestionResponse;
+import com.pms.backend.dto.AdminDtos.QuestionSuggestionRequest;
+import com.pms.backend.dto.AdminDtos.QuestionSuggestionResponse;
 import com.pms.backend.dto.AdminDtos.RuleRequest;
 import com.pms.backend.dto.AdminDtos.RuleResponse;
 import com.pms.backend.dto.AssessmentDtos.AnalyticsResponse;
@@ -12,6 +14,7 @@ import com.pms.backend.model.HealthQuestion;
 import com.pms.backend.model.RiskLevel;
 import com.pms.backend.repository.AdminRuleRepository;
 import com.pms.backend.repository.HealthQuestionRepository;
+import com.pms.backend.service.AiInsightService;
 import com.pms.backend.service.AnalyticsService;
 import com.pms.backend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,17 +34,20 @@ public class AdminController {
     private final AnalyticsService analyticsService;
     private final HealthQuestionRepository questionRepository;
     private final AdminRuleRepository ruleRepository;
+    private final AiInsightService aiInsightService;
 
     public AdminController(
             AuthService authService,
             AnalyticsService analyticsService,
             HealthQuestionRepository questionRepository,
-            AdminRuleRepository ruleRepository
+            AdminRuleRepository ruleRepository,
+            AiInsightService aiInsightService
     ) {
         this.authService = authService;
         this.analyticsService = analyticsService;
         this.questionRepository = questionRepository;
         this.ruleRepository = ruleRepository;
+        this.aiInsightService = aiInsightService;
     }
 
     @Operation(tags = {"Admin Analytics"}, summary = "Get clinical operations analytics", description = "Returns staff-only totals, risk mix, and common completed-assessment symptom counts.")
@@ -68,6 +74,17 @@ public class AdminController {
         question.setInputType("choice");
         question.setActive(request.active() == null || request.active());
         return toQuestionResponse(questionRepository.save(question));
+    }
+
+    @Operation(tags = {"Admin Questions"}, summary = "Suggest managed assessment questions with AI", description = "Returns inactive draft prompts for staff review. Suggestions are not saved until staff creates selected questions.")
+    @PostMapping("/questions/suggest")
+    public QuestionSuggestionResponse suggestQuestions(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody QuestionSuggestionRequest request
+    ) {
+        authService.requireAdmin(authHeader);
+        AiInsightService.QuestionSet suggestions = aiInsightService.suggestQuestions(request.symptomKey(), request.focus());
+        return new QuestionSuggestionResponse(request.symptomKey().trim(), suggestions.questions(), suggestions.aiMode());
     }
 
     @Operation(tags = {"Admin Questions"}, summary = "Activate or pause a managed question", description = "Changes whether a question can join future assessment drafts.")

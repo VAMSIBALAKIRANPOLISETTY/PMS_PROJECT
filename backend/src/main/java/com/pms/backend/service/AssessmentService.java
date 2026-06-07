@@ -58,7 +58,7 @@ public class AssessmentService {
         assessment.setRiskScore(result.score());
         assessment.setRiskLevel(result.level());
         assessment.setReasons(result.reasons());
-        assessment.setFollowUpQuestions(result.followUps());
+        assessment.setFollowUpQuestions(mergeFollowUps(result.followUps(), aiInsightService.assessmentFollowUps(user, assessment, result).questions()));
         assessment.setSuggestions(result.suggestions());
         assessment.setStatus(AssessmentStatus.PENDING_FOLLOW_UP);
         assessment.setUrgentWarning(result.urgentWarning());
@@ -148,6 +148,7 @@ public class AssessmentService {
                 assessment.getPossibleDirections(),
                 assessment.getUrgentWarning(),
                 assessment.getMonitoringPlan(),
+                assessment.getCareTips(),
                 assessment.getDoctorPrepQuestions(),
                 assessment.getTrustedSourceLinks(),
                 assessment.getAiMode(),
@@ -165,6 +166,7 @@ public class AssessmentService {
         assessment.setPossibleDirections(insight.possibleDirections());
         assessment.setUrgentWarning(result.urgentWarning() != null ? result.urgentWarning() : insight.urgentWarning());
         assessment.setMonitoringPlan(insight.monitoringPlan());
+        assessment.setCareTips(insight.careTips());
         assessment.setDoctorPrepQuestions(insight.doctorPrepQuestions());
         assessment.setTrustedSourceLinks(insight.trustedSourceLinks());
         assessment.setAiMode(insight.aiMode());
@@ -176,6 +178,17 @@ public class AssessmentService {
                 .filter(value -> !value.isBlank())
                 .limit(5)
                 .toList()));
+    }
+
+    private List<String> mergeFollowUps(List<String> required, List<String> aiCandidates) {
+        List<String> merged = new ArrayList<>(new LinkedHashSet<>(required == null ? List.of() : required));
+        for (String candidate : aiCandidates == null ? List.<String>of() : aiCandidates) {
+            String value = candidate == null ? "" : candidate.trim();
+            if (!value.isBlank() && merged.size() < 7 && !merged.contains(value)) {
+                merged.add(value);
+            }
+        }
+        return merged.stream().limit(7).toList();
     }
 
     private boolean completed(Assessment assessment) {

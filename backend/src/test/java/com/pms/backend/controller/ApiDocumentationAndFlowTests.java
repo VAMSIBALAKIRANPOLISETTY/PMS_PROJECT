@@ -44,6 +44,7 @@ class ApiDocumentationAndFlowTests {
                 .andExpect(jsonPath("$.info.title").value("PMS Health API"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.bearerFormat").value("JWT"))
                 .andExpect(jsonPath("$.paths['/api/health']").exists())
                 .andExpect(jsonPath("$.paths['/api/auth/register']").exists())
                 .andExpect(jsonPath("$.paths['/api/auth/login']").exists())

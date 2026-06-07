@@ -41,6 +41,7 @@ class AuthServiceTests {
         ));
 
         assertEquals(Role.USER, response.user().role());
+        assertEquals(3, response.token().split("\\.").length);
         assertFalse(response.user().profileSetupComplete());
         assertTrue(response.user().profileCompletion() < 100);
     }
@@ -116,6 +117,15 @@ class AuthServiceTests {
         var response = authService.staffLogin(new LoginRequest("admin@example.com", "password123"));
 
         assertEquals(Role.ADMIN, response.user().role());
+        assertEquals(3, response.token().split("\\.").length);
+    }
+
+    @Test
+    void bearerJwtAuthenticatesUserAfterLogin() {
+        var response = authService.login(new LoginRequest("user@example.com", "password123"));
+        var user = authService.requireUser("Bearer " + response.token());
+
+        assertEquals(response.user().id(), user.getId());
     }
 
     @Test

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,8 +35,8 @@ public class ReportInsightController {
             @Valid @RequestBody ReportFollowUpRequest request
     ) {
         authService.requireUser(authHeader);
-        List<String> questions = aiInsightService.reportFollowUps(request.reportName());
-        return new ReportFollowUpResponse(request.reportName(), questions, "MOCK");
+        AiInsightService.QuestionSet questions = aiInsightService.reportFollowUps(request.reportName());
+        return new ReportFollowUpResponse(request.reportName(), questions.questions(), questions.aiMode());
     }
 
     @Operation(summary = "Generate report insight", description = "Creates a structured, non-diagnostic care-preparation guide from report notes and answered follow-ups.")
@@ -50,13 +49,14 @@ public class ReportInsightController {
         AiInsightService.CarePrepInsight insight = aiInsightService.forReport(user, request.reportName(), request.reportText(), request.answers());
         return new ReportInsightResponse(
                 request.reportName(),
-                aiInsightService.reportFollowUps(request.reportName()),
+                aiInsightService.reportFollowUps(request.reportName()).questions(),
                 request.answers(),
                 insight.careSummary(),
                 insight.explanation(),
                 insight.possibleDirections(),
                 insight.urgentWarning(),
                 insight.monitoringPlan(),
+                insight.careTips(),
                 insight.doctorPrepQuestions(),
                 insight.trustedSourceLinks(),
                 insight.aiMode()

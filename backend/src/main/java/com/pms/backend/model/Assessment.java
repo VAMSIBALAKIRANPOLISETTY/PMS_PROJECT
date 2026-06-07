@@ -64,6 +64,10 @@ public class Assessment {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Column(length = 700)
+    private List<String> careTips = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(length = 700)
     private List<String> doctorPrepQuestions = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -116,6 +120,8 @@ public class Assessment {
     public void setUrgentWarning(String urgentWarning) { this.urgentWarning = urgentWarning; }
     public List<String> getMonitoringPlan() { return monitoringPlan; }
     public void setMonitoringPlan(List<String> monitoringPlan) { this.monitoringPlan = monitoringPlan; }
+    public List<String> getCareTips() { return careTips; }
+    public void setCareTips(List<String> careTips) { this.careTips = careTips; }
     public List<String> getDoctorPrepQuestions() { return doctorPrepQuestions; }
     public void setDoctorPrepQuestions(List<String> doctorPrepQuestions) { this.doctorPrepQuestions = doctorPrepQuestions; }
     public List<String> getTrustedSourceLinks() { return trustedSourceLinks; }

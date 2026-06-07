@@ -22,6 +22,6 @@ public class OpenApiConfig {
                         .name(BEARER_AUTH)
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
-                        .bearerFormat("PMS token")));
+                        .bearerFormat("JWT")));
     }
 }

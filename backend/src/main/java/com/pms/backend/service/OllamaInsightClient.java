@@ -11,14 +11,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OpenAiInsightClient {
-    private static final String RESPONSE_SCHEMA_NAME = "pms_care_prep_insight";
-    private static final String QUESTION_SCHEMA_NAME = "pms_question_suggestions";
+public class OllamaInsightClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient;
     private final String endpoint;
@@ -27,15 +24,11 @@ public class OpenAiInsightClient {
     private final Duration timeout;
     private final double temperature;
 
-    public OpenAiInsightClient(String baseUrl, String apiKey, String model, Duration timeout) {
-        this(baseUrl, apiKey, model, timeout, 0.2);
-    }
-
-    public OpenAiInsightClient(String baseUrl, String apiKey, String model, Duration timeout, double temperature) {
-        this.endpoint = normalizedBaseUrl(baseUrl) + "/responses";
+    public OllamaInsightClient(String baseUrl, String apiKey, String model, Duration timeout, double temperature) {
+        this.endpoint = normalizedBaseUrl(baseUrl) + "/chat";
         this.apiKey = apiKey == null ? "" : apiKey.trim();
-        this.model = hasText(model) ? model.trim() : "gpt-4o-mini";
-        this.timeout = timeout == null ? Duration.ofSeconds(20) : timeout;
+        this.model = hasText(model) ? model.trim() : "gemma4:31b";
+        this.timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
         this.temperature = temperature;
         this.httpClient = HttpClient.newBuilder().connectTimeout(this.timeout).build();
     }
@@ -175,48 +168,79 @@ public class OpenAiInsightClient {
 
     private AiInsightService.CarePrepInsight requestInsight(String input) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(endpoint))
-                    .timeout(timeout)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody(input))))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("OpenAI returned HTTP " + response.statusCode());
-            }
-            String outputText = outputText(response.body());
-            ProviderInsight providerInsight = objectMapper.readValue(outputText, ProviderInsight.class);
+            String content = send(chatBody(systemInstructions(), input, responseSchema()));
+            ProviderInsight providerInsight = objectMapper.readValue(content, ProviderInsight.class);
             return toCarePrepInsight(providerInsight);
         } catch (IOException exception) {
-            throw new IllegalStateException("OpenAI response could not be read");
+            throw new IllegalStateException("Ollama response could not be read");
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("OpenAI request was interrupted");
+            throw new IllegalStateException("Ollama request was interrupted");
         }
     }
 
-    private Map<String, Object> requestBody(String input) {
+    private AiInsightService.QuestionSet requestQuestions(String input, int maxItems) {
+        try {
+            String content = send(chatBody(questionInstructions(), input, questionSchema(maxItems)));
+            ProviderQuestions providerQuestions = objectMapper.readValue(content, ProviderQuestions.class);
+            return new AiInsightService.QuestionSet(requireList(providerQuestions.questions(), "questions", maxItems), "OLLAMA");
+        } catch (IOException exception) {
+            throw new IllegalStateException("Ollama question response could not be read");
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Ollama question request was interrupted");
+        }
+    }
+
+    private String send(Map<String, Object> body) throws IOException, InterruptedException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .timeout(timeout)
+                .header("Content-Type", "application/json");
+        if (!apiKey.isBlank()) {
+            builder.header("Authorization", "Bearer " + apiKey);
+        }
+        HttpResponse<String> response = httpClient.send(
+                builder.POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body))).build(),
+                HttpResponse.BodyHandlers.ofString()
+        );
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException("Ollama returned HTTP " + response.statusCode());
+        }
+        return messageContent(response.body());
+    }
+
+    private Map<String, Object> chatBody(String instructions, String input, Map<String, Object> schema) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
-        body.put("instructions", """
+        body.put("messages", List.of(
+                Map.of("role", "system", "content", instructions),
+                Map.of("role", "user", "content", input)
+        ));
+        body.put("stream", false);
+        body.put("format", schema);
+        body.put("options", Map.of("temperature", temperature));
+        return body;
+    }
+
+    private String systemInstructions() {
+        return """
                 You write safe PMS Health care-preparation guidance.
                 Do not diagnose disease, prescribe medicine, provide dosages, or replace urgent medical care.
                 Use plain language for a normal patient.
                 The backend rule engine owns all risk scoring and urgent warnings.
                 Set urgentWarning to null. Do not create, remove, or soften urgent warnings.
                 Return only the requested structured fields.
-                """);
-        body.put("input", input);
-        body.put("temperature", temperature);
-        body.put("text", Map.of("format", Map.of(
-                "type", "json_schema",
-                "name", RESPONSE_SCHEMA_NAME,
-                "strict", true,
-                "schema", responseSchema()
-        )));
-        return body;
+                """;
+    }
+
+    private String questionInstructions() {
+        return """
+                You write PMS Health follow-up question drafts.
+                Every question must be answerable with Yes, No, or Not sure.
+                Do not diagnose disease, prescribe medicine, provide dosages, or replace urgent medical care.
+                Return only the requested structured fields.
+                """;
     }
 
     private Map<String, Object> responseSchema() {
@@ -247,50 +271,6 @@ public class OpenAiInsightClient {
         return schema;
     }
 
-    private AiInsightService.QuestionSet requestQuestions(String input, int maxItems) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(endpoint))
-                    .timeout(timeout)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(questionRequestBody(input, maxItems))))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("OpenAI returned HTTP " + response.statusCode());
-            }
-            String outputText = outputText(response.body());
-            ProviderQuestions providerQuestions = objectMapper.readValue(outputText, ProviderQuestions.class);
-            return new AiInsightService.QuestionSet(requireList(providerQuestions.questions(), "questions", maxItems), "OPENAI");
-        } catch (IOException exception) {
-            throw new IllegalStateException("OpenAI question response could not be read");
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("OpenAI question request was interrupted");
-        }
-    }
-
-    private Map<String, Object> questionRequestBody(String input, int maxItems) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", model);
-        body.put("instructions", """
-                You write PMS Health follow-up question drafts.
-                Every question must be answerable with Yes, No, or Not sure.
-                Do not diagnose disease, prescribe medicine, provide dosages, or replace urgent medical care.
-                Return only the requested structured fields.
-                """);
-        body.put("input", input);
-        body.put("temperature", temperature);
-        body.put("text", Map.of("format", Map.of(
-                "type", "json_schema",
-                "name", QUESTION_SCHEMA_NAME,
-                "strict", true,
-                "schema", questionSchema(maxItems)
-        )));
-        return body;
-    }
-
     private Map<String, Object> questionSchema(int maxItems) {
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put("questions", stringArraySchema(1, maxItems));
@@ -311,74 +291,53 @@ public class OpenAiInsightClient {
         return schema;
     }
 
-    private String outputText(String responseBody) throws JsonProcessingException {
-        JsonNode root = objectMapper.readTree(responseBody);
-        if (root.path("output_text").isTextual() && !root.path("output_text").asText().isBlank()) {
-            return root.path("output_text").asText();
+    private String messageContent(String responseBody) throws JsonProcessingException {
+        JsonNode content = objectMapper.readTree(responseBody).path("message").path("content");
+        if (!content.isTextual() || content.asText().isBlank()) {
+            throw new IllegalStateException("Ollama response did not include message content");
         }
-
-        List<String> chunks = new ArrayList<>();
-        for (JsonNode output : root.path("output")) {
-            for (JsonNode content : output.path("content")) {
-                JsonNode text = content.path("text");
-                if (text.isTextual() && !text.asText().isBlank()) {
-                    chunks.add(text.asText());
-                }
-            }
-        }
-        String combined = String.join("", chunks).trim();
-        if (combined.isBlank()) {
-            throw new IllegalStateException("OpenAI response did not include output text");
-        }
-        return combined;
+        return content.asText();
     }
 
     private AiInsightService.CarePrepInsight toCarePrepInsight(ProviderInsight insight) {
-        String careSummary = requireText(insight.careSummary(), "careSummary");
-        String explanation = requireText(insight.explanation(), "explanation");
-        List<String> possibleDirections = requireList(insight.possibleDirections(), "possibleDirections", 5);
-        List<String> monitoringPlan = requireList(insight.monitoringPlan(), "monitoringPlan", 5);
-        List<String> careTips = requireList(insight.careTips(), "careTips", 5);
-        List<String> doctorPrepQuestions = requireList(insight.doctorPrepQuestions(), "doctorPrepQuestions", 7);
-        List<String> trustedSourceLinks = requireList(insight.trustedSourceLinks(), "trustedSourceLinks", 5);
         return new AiInsightService.CarePrepInsight(
-                careSummary,
-                explanation,
-                possibleDirections,
+                requireText(insight.careSummary(), "careSummary"),
+                requireText(insight.explanation(), "explanation"),
+                requireList(insight.possibleDirections(), "possibleDirections", 5),
                 null,
-                monitoringPlan,
-                careTips,
-                doctorPrepQuestions,
-                trustedSourceLinks,
-                "OPENAI"
+                requireList(insight.monitoringPlan(), "monitoringPlan", 5),
+                requireList(insight.careTips(), "careTips", 5),
+                requireList(insight.doctorPrepQuestions(), "doctorPrepQuestions", 7),
+                requireList(insight.trustedSourceLinks(), "trustedSourceLinks", 5),
+                "OLLAMA"
         );
     }
 
     private String requireText(String value, String field) {
         if (!hasText(value)) {
-            throw new IllegalStateException("OpenAI output missing " + field);
+            throw new IllegalStateException("Ollama output missing " + field);
         }
         return value.trim();
     }
 
     private List<String> requireList(List<String> values, String field, int limit) {
         if (values == null) {
-            throw new IllegalStateException("OpenAI output missing " + field);
+            throw new IllegalStateException("Ollama output missing " + field);
         }
         List<String> cleaned = values.stream()
-                .filter(OpenAiInsightClient::hasText)
+                .filter(OllamaInsightClient::hasText)
                 .map(String::trim)
                 .distinct()
                 .limit(limit)
                 .toList();
         if (cleaned.isEmpty()) {
-            throw new IllegalStateException("OpenAI output missing " + field);
+            throw new IllegalStateException("Ollama output missing " + field);
         }
         return cleaned;
     }
 
     private static String normalizedBaseUrl(String baseUrl) {
-        String value = hasText(baseUrl) ? baseUrl.trim() : "https://api.openai.com/v1";
+        String value = hasText(baseUrl) ? baseUrl.trim() : "https://ollama.com/api";
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 

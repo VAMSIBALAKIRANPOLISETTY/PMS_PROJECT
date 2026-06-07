@@ -16,15 +16,15 @@ The risk engine is deliberately simple, explainable, and controlled. It does not
 
 The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons, and CSS custom properties. The current branch refactors the earlier single-file frontend into component and section files. This makes the code easier to understand, test, and extend. Authentication pages live under `pages/auth`, user-facing sections live under `pages/user`, admin-facing sections live under `pages/admin`, and shared interface elements live under `components`. The public landing page now keeps only public product information on the first screens, with Home, How It Works, Safety, and Contact sections. User profile details, admin information, assessment history, and private health data remain inside authenticated screens only. Shared TypeScript types, API helpers, static data, and formatting utilities are separated into `types.ts`, `api.ts`, `data.ts`, and `utils.ts`.
 
-The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The AI layer is backend-owned through `AiInsightService`: mock mode remains the default for safe demos and tests, while `PMS_Test3` adds an optional OpenAI provider adapter that only runs when backend environment variables are configured. The frontend does not call AI providers or store AI keys.
+The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The AI layer is backend-owned through `AiInsightService`: mock mode remains the default for safe demos and tests, while `PMS_Test3` can use Ollama Gemma 4 31B first, OpenAI second, and mock output last when backend environment variables are configured. The frontend does not call AI providers or store AI keys.
 
-Authentication in this prototype uses a simple token-based approach. After patient login, staff login, or patient signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
+Authentication uses signed JWT access tokens. After patient login, staff login, or patient signup, the backend returns a JWT in the existing `token` field and the frontend sends it in the `Authorization: Bearer <token>` header. The JWT subject is the user ID, and signed claims include role, username, and email. The backend validates token signature, expiry, issuer, and user existence on every protected request. Admin access still checks the current database role, not only the JWT claim. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is an access-token prototype without refresh tokens; production deployment would still need rate limiting, audit logging, stronger operational controls, and a full security review.
 
 The system avoids Docker by design in the current branch. It is intended to run on a normal development system with IntelliJ IDEA or VS Code, Java 17 or later, Maven, Node.js, and a locally installed PostgreSQL server. The backend connection defaults to `pms_db`, `pms_user`, and `pms_password`, but these can be changed using environment variables. This makes the project easier to run on college lab systems, personal laptops, or another development machine where Docker Desktop is not installed.
 
 Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile, public registration creates adult patient accounts with acknowledgment metadata, patient and staff login paths remain isolated, draft assessments stay outside completed analytics, red-flag warnings remain immediate, risk rules remain predictable, and mock insight output stays structured. Frontend testing uses Vitest and Testing Library to render every major section and verify the legal signup steps, blank intake controls, grouped symptom library, pending follow-up gate, labeled profile fields, and completed care-preparation guide. The project also supports a production frontend build using TypeScript and Vite.
 
-Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, backend-owned AI-style care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production privacy review for real AI use, a production security model, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
+Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines JWT authentication, role-based screens, structured health input, explainable risk scoring, backend-owned AI-style care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production privacy review for real AI use, refresh tokens, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
 
 ## Medical Disclaimer
 
@@ -38,7 +38,7 @@ Use this branch for continuing development:
 PMS_Test3
 ```
 
-This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, compact summary-first care-preparation results, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, a read-only staff profile, backend-owned mock AI care-prep guides, optional backend-only OpenAI provider configuration, report insight endpoints, validation, and a componentized frontend structure.
+This branch contains the Spring Boot backend, React TypeScript frontend, polished public landing/auth UI, sticky public and workspace headers, public Safety, Contact, Privacy, and Terms sections, adult patient-only three-step signup, dedicated Staff login, explicit profile setup flow, dual-unit height input, editable labeled patient profile, grouped multi-symptom assessments, resumable draft follow-ups, compact summary-first care-preparation results, reusable completed-report drawers, clinical-operations analytics, operational safety-rule management, managed assessment questions, AI-assisted staff question drafts, a read-only staff profile, backend-owned mock AI care-prep guides, optional backend-only Ollama and OpenAI provider configuration, report insight endpoints, validation, and a componentized frontend structure.
 
 ## Presentation Decks
 
@@ -49,7 +49,7 @@ PMS-Health-Professional-Demonstration.pptx
 PMS-Health-Normal-Presentation.pptx
 ```
 
-`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. For `PMS_Test3`, the demo answer is: mock AI remains the default, and real OpenAI calls are optional backend-only behavior when configured.
+`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the project snapshot, problem statement, solution overview, system architecture, demo flow, and future scope. For `PMS_Test3`, the demo answer is: mock AI remains the default, and real provider calls are optional backend-only behavior through Ollama first, then OpenAI fallback, when configured.
 
 ## Importing The Project On Another System
 
@@ -106,6 +106,7 @@ React + TypeScript Frontend
        - RiskEngineService
        - ConfiguredAiInsightService
        - MockAiInsightService
+       - OllamaInsightClient
        - OpenAiInsightClient
        - ReportInsightController
   -> JPA Repositories
@@ -118,23 +119,49 @@ The Vite development server proxies `/api` calls to the Spring Boot backend. By 
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
-`ConfiguredAiInsightService` is the single Spring bean for AI-style care-preparation wording. In the default `mock` mode it delegates to `MockAiInsightService`. In provider mode, it can call `OpenAiInsightClient`, which uses the OpenAI Responses API with Structured Outputs and validates the returned fields before PMS displays them. Any missing configuration, provider error, timeout, invalid JSON, or validation failure falls back to mock output.
+`ConfiguredAiInsightService` is the single Spring bean for AI-style care-preparation wording. In the default `mock` mode it delegates to `MockAiInsightService`. In provider mode, it tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then mock output. Any missing configuration, provider error, timeout, invalid JSON, or validation failure falls to the next provider and finally to mock output.
 
 Detailed diagrams and architecture notes are available at `docs/architecture.md`. Future pregnancy care-preparation architecture is described in `docs/pregnancy-care-prep-feature-plan.md`.
 
+For a short speaking sheet before a professor or manager demo, use `docs/demo-quick-summary.md`.
+
+## JWT Authentication
+
+PMS now uses signed JWT access tokens instead of the earlier in-memory token map.
+
+- Login, staff login, and registration still return `AuthResponse { token, user }`.
+- The browser still sends `Authorization: Bearer <token>` for private API calls.
+- JWT subject is the database user ID.
+- JWT claims include role, username, and email for traceability.
+- The backend validates signature, expiry, issuer, and user existence for every protected request.
+- Staff authorization still reads the current database role through `AuthService.requireAdmin`, so changing a staff role in the database is respected even if an older token contains a stale role claim.
+- The current access token expires after 12 hours by default.
+- No refresh-token flow is included in this pass.
+
+JWT environment variables:
+
+```powershell
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
+$env:JWT_ISSUER="PMS Health"
+$env:JWT_EXPIRATION_HOURS="12"
+```
+
+For local demos, the backend has a development fallback secret. For any shared, deployed, or production-like run, set `JWT_SECRET` yourself and do not commit it.
+
 ## AI Usage Clarification
 
-Short answer for professor or manager demo: **PMS uses mock AI by default. `PMS_Test3` has started real AI integration, but OpenAI runs only when backend provider configuration is supplied.**
+Short answer for professor or manager demo: **PMS uses mock AI by default. `PMS_Test3` has real provider integration behind the backend: Ollama Gemma 4 31B is tried first, OpenAI is the fallback, and mock output is the final fallback.**
 
 - No external AI API is called in the default local/demo setup.
 - The frontend never stores AI provider keys and never sends requests directly to an AI provider.
 - `AiInsightService` is the backend interface for AI-style care-preparation output.
 - `ConfiguredAiInsightService` is the active backend bean. It uses `MockAiInsightService` unless provider mode is explicitly configured.
-- `MockAiInsightService` generates predictable plain-language care summaries, explanations, possible directions, monitoring notes, doctor-prep questions, trusted source links, and report insight wording for demos and tests.
-- `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when `AI_MODE=provider`, `AI_PROVIDER=openai`, and `AI_API_KEY` are configured on the backend.
+- `MockAiInsightService` generates predictable plain-language care summaries, explanations, possible directions, monitoring notes, care tips, doctor-prep questions, trusted source links, and report insight wording for demos and tests.
+- `OllamaInsightClient` calls Ollama Cloud chat with `gemma4:31b`, `stream:false`, bearer authentication, and structured JSON output when `AI_MODE=provider` and `OLLAMA_API_KEY` are configured.
+- `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when the Ollama step fails and `OPENAI_API_KEY` or legacy `AI_API_KEY` is configured on the backend.
 - `RiskEngineService` remains the safety source of truth. Protected red flags and urgent warnings are rule-based before AI-style wording is generated.
 - AI-generated text cannot create or lower urgent warnings. Assessment urgent warnings stay rule-owned, and report urgent scanning remains Java-owned.
-- If provider configuration is missing, times out, returns invalid JSON, or fails validation, PMS falls back to mock output and returns `aiMode=MOCK`.
+- If Ollama configuration is missing, times out, returns invalid JSON, or fails validation, PMS tries OpenAI. If OpenAI also fails, PMS falls back to mock output and returns `aiMode=MOCK`.
 
 This means PMS can demonstrate the full AI integration architecture without sending real health data to an external model during normal demo/testing. In a production version, provider configuration, prompt validation, output validation, privacy review, logging rules, retention rules, and security controls would need to be designed before real patient data is used.
 
@@ -229,24 +256,33 @@ $env:DATABASE_URL="jdbc:postgresql://localhost:5432/pms_db"
 $env:DATABASE_USERNAME="pms_user"
 $env:DATABASE_PASSWORD="pms_password"
 $env:CORS_ORIGIN="http://localhost:5173"
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
+$env:JWT_ISSUER="PMS Health"
+$env:JWT_EXPIRATION_HOURS="12"
 $env:AI_MODE="mock"
-$env:AI_PROVIDER="openai"
-$env:AI_API_KEY=""
-$env:AI_MODEL="gpt-4o-mini"
-$env:AI_TIMEOUT_SECONDS="20"
-$env:AI_BASE_URL="https://api.openai.com/v1"
+$env:AI_PROVIDER_CHAIN="ollama,openai"
+$env:OLLAMA_API_KEY=""
+$env:OLLAMA_MODEL="gemma4:31b"
+$env:OLLAMA_BASE_URL="https://ollama.com/api"
+$env:OPENAI_API_KEY=""
+$env:OPENAI_MODEL="gpt-4o-mini"
+$env:OPENAI_BASE_URL="https://api.openai.com/v1"
+$env:AI_TIMEOUT_SECONDS="30"
+$env:AI_TEMPERATURE="0.2"
 ```
 
-To try real OpenAI wording locally, keep PostgreSQL and the backend running and set backend-only variables before starting Spring Boot:
+To try real provider wording locally, keep PostgreSQL and the backend running and set backend-only variables before starting Spring Boot. Ollama is tried first, OpenAI second, and mock last:
 
 ```powershell
 $env:AI_MODE="provider"
-$env:AI_PROVIDER="openai"
-$env:AI_API_KEY="sk-your-key-here"
-$env:AI_MODEL="gpt-4o-mini"
+$env:AI_PROVIDER_CHAIN="ollama,openai"
+$env:OLLAMA_API_KEY="your-rotated-ollama-key"
+$env:OLLAMA_MODEL="gemma4:31b"
+$env:OPENAI_API_KEY="your-openai-key-if-you-want-fallback"
+$env:OPENAI_MODEL="gpt-4o-mini"
 ```
 
-Do not put provider keys in frontend files, browser storage, screenshots, or GitHub commits. Real patient data should not be sent to an external provider until privacy, consent, logging, retention, and security requirements are reviewed.
+Do not put provider keys in frontend files, browser storage, screenshots, or GitHub commits. If a key is pasted into chat or documentation by mistake, revoke or rotate it before use. Real patient data should not be sent to an external provider until privacy, consent, logging, retention, and security requirements are reviewed.
 
 ## Run Backend
 
@@ -293,7 +329,7 @@ Recommended Swagger flow:
 
 1. Run `GET /api/health` first.
 2. Login as a patient using `POST /api/auth/login`, or login as staff using `POST /api/auth/staff-login`.
-3. Copy the returned `token`.
+3. Copy the returned JWT `token`.
 4. Click Swagger `Authorize`.
 5. Enter `Bearer <token>`.
 6. Test patient endpoints with a patient token and admin endpoints with a staff token.
@@ -361,29 +397,31 @@ Use this flow when presenting the project:
 8. Open Reports. Upload a PDF name, paste report notes or abnormal values, answer follow-up cards, and generate the report care-prep guide.
 9. Open History and click an assessment record to show the reusable full care-preparation report drawer.
 10. Log out, use the separate Staff login link, and sign in with the demo admin account. Show analytics, full-width assessment records, the same report drawer, upward-only safety-rule management, managed assessment questions, and the read-only staff profile.
-11. Explain future pregnancy support as a safe care-preparation extension: PMS could collect pregnancy or postpartum context, check protected maternal warning signs with rules, and use optional backend OpenAI wording only after rules decide safety.
+11. Explain future pregnancy support as a safe care-preparation extension: PMS could collect pregnancy or postpartum context, check protected maternal warning signs with rules, and use optional backend provider wording only after rules decide safety.
 
 Suggested short explanation:
 
 ```text
-PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then the AI insight layer creates plain-language care-preparation output. By default that layer is mock for predictable demos; with backend-only OpenAI configuration it can use a real provider for wording. The user receives a compact summary first and can expand directions, monitoring notes, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
+PMS helps users organize symptoms, health history, and report notes before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then the AI insight layer creates plain-language care-preparation output. By default that layer is mock for predictable demos; with backend-only provider configuration it can use Ollama Gemma 4 31B first, OpenAI as fallback, and mock as the final fallback. The user receives a compact summary first and can expand directions, monitoring notes, care tips, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
 ```
 
 Pregnancy-focused future scope:
 
 ```text
-PMS can be extended to support pregnant and postpartum users by collecting optional pregnancy context, checking urgent maternal warning signs with protected rules, and preparing a clear summary for a doctor or midwife. In PMS_Test3, OpenAI may improve wording only after rule-based safety decisions are complete and validated by the backend.
+PMS can be extended to support pregnant and postpartum users by collecting optional pregnancy context, checking urgent maternal warning signs with protected rules, and preparing a clear summary for a doctor or midwife. In PMS_Test3, Ollama or OpenAI may improve wording only after rule-based safety decisions are complete and validated by the backend.
 ```
 
 ## Where Key Functions Are Used
 
-- `AuthService`: handles adult patient-only registration, stored privacy and terms acknowledgments, separate patient and staff login paths, token lookup, role checks, explicit health-history completion, and profile-completion percentage.
+- `AuthService`: handles adult patient-only registration, stored privacy and terms acknowledgments, separate patient and staff login paths, JWT-backed user lookup, database role checks, explicit health-history completion, and profile-completion percentage.
+- `JwtService`: creates signed JWT access tokens and validates bearer token signature, issuer, expiry, and user ID before protected endpoints use the current user.
 - `AssessmentService`: saves pending intake drafts, resumes or discards patient-owned drafts, finalizes completed records after follow-up answers, and keeps unfinished drafts outside normal history.
 - `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, protected urgent warnings, upward-only operational rule matches, and symptom-matched managed questions.
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
-- `ConfiguredAiInsightService`: single active Spring AI service. It selects mock mode by default, calls OpenAI only when backend provider configuration is valid, strips AI urgent warnings, and falls back safely.
-- `MockAiInsightService`: development/test implementation that generates care summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and report insights.
-- `OpenAiInsightClient`: optional provider client that calls the OpenAI Responses API with Structured Outputs and validates the structured care-prep fields before use.
+- `ConfiguredAiInsightService`: single active Spring AI service. It selects mock mode by default, tries Ollama first and OpenAI second in provider mode, strips AI urgent warnings, and falls back safely.
+- `MockAiInsightService`: development/test implementation that generates care summary, explanation, possible directions, monitoring plan, care tips, doctor questions, trusted links, and report insights.
+- `OllamaInsightClient`: primary provider client that calls Ollama Cloud chat with `gemma4:31b`, `stream:false`, and structured JSON.
+- `OpenAiInsightClient`: fallback provider client that calls the OpenAI Responses API with Structured Outputs and validates the structured care-prep fields before use.
 - `ReportInsightController`: exposes backend report follow-up and report insight endpoints.
 - `CarePrepGuide`: shared React component that renders a compact summary-first care-preparation result for assessments and reports, with a button to expand or hide full details.
 - `AssessmentReportDrawer`: shared React component that opens completed patient and staff assessment records without leaving the current screen.
@@ -399,7 +437,10 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
   No. It gives care-preparation guidance only. It does not diagnose, prescribe medicine, or replace a doctor.
 
 - Where is AI used?
-  AI is represented through the backend `AiInsightService`. The default demo path uses `MockAiInsightService` for predictable output. `PMS_Test3` also includes an optional OpenAI provider path behind the backend, enabled only with `AI_MODE=provider`, `AI_PROVIDER=openai`, and `AI_API_KEY`.
+  AI is represented through the backend `AiInsightService`. The default demo path uses `MockAiInsightService` for predictable output. `PMS_Test3` also includes an optional provider chain behind the backend, enabled with `AI_MODE=provider`: Ollama Gemma 4 31B first, OpenAI fallback second, and mock last.
+
+- Did we use JWT?
+  Yes. Login, staff login, and signup return signed JWT access tokens. The frontend stores the token and sends it as `Authorization: Bearer <token>`. The backend validates the signature and expiry, then still checks the current database role.
 
 - Why use rules plus AI instead of only AI?
   Health safety needs predictable guardrails. Rule-based red-flag checks handle urgent warnings first, and AI-style output only improves explanation and wording.
@@ -411,7 +452,7 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
   Report values need context. The system asks about symptoms, abnormal values, medicines, chronic conditions, and doctor review before creating a safe preparation guide.
 
 - How can PMS help pregnant women in the future?
-  PMS can add optional pregnancy and postpartum context, pregnancy-aware symptom groups, protected maternal warning-sign rules, and doctor or midwife preparation notes. It would not diagnose pregnancy complications, estimate fetal condition, prescribe medicine, or replace urgent care. In `PMS_Test3`, optional OpenAI wording would remain behind the backend and could not lower urgent warnings.
+  PMS can add optional pregnancy and postpartum context, pregnancy-aware symptom groups, protected maternal warning-sign rules, and doctor or midwife preparation notes. It would not diagnose pregnancy complications, estimate fetal condition, prescribe medicine, or replace urgent care. In `PMS_Test3`, optional provider wording would remain behind the backend and could not lower urgent warnings.
 
 - How is user privacy handled in this prototype?
   Adult signup records the accepted privacy-notice and terms versions with timestamps. Normal users can see only their own completed assessments, and unfinished drafts stay private. Admin users can view completed records for demo analytics. This is still a capstone prototype, not a HIPAA-certified production system.
@@ -420,10 +461,10 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
   Spring Boot, Spring Data JPA, PostgreSQL for local runtime, H2 for tests, React TypeScript, Vite, Recharts, and CSS.
 
 - How would real AI be added later?
-  The first provider-backed path is now in place through `OpenAiInsightClient`. To use it, configure backend-only environment variables, keep Structured Outputs validation enabled, and keep the existing rule engine as the safety layer. A production version still needs privacy, consent, retention, logging, and security review.
+  The provider-backed path is now in place through `OllamaInsightClient` and `OpenAiInsightClient`. To use it, configure backend-only environment variables, keep structured-output validation enabled, and keep the existing rule engine as the safety layer. A production version still needs privacy, consent, retention, logging, and security review.
 
 - What is the current limitation?
-  It is a capstone MVP using mock AI by default and synthetic/demo data. Optional OpenAI wording is available only when configured, but the project is not ready for real patient data or production medical use.
+  It is a capstone MVP using mock AI by default and synthetic/demo data. Optional Ollama/OpenAI wording is available only when configured, but the project is not ready for real patient data or production medical use.
 
 ## API Endpoints
 
@@ -455,6 +496,7 @@ POST /api/admin/rules
 PATCH /api/admin/rules/{id}/active
 GET  /api/admin/questions
 POST /api/admin/questions
+POST /api/admin/questions/suggest
 PATCH /api/admin/questions/{id}/active
 ```
 
@@ -463,6 +505,8 @@ Authenticated requests use:
 ```text
 Authorization: Bearer <token>
 ```
+
+The token is a signed JWT access token returned by registration, patient login, or staff login.
 
 Normal users only see their own completed assessments. Admin users can see completed assessments and admin analytics. Pending drafts remain private to the patient until finalized or discarded.
 
@@ -473,6 +517,8 @@ Normal users only see their own completed assessments. Admin users can see compl
 ### How Managed Questions Work
 
 `Create question` adds a Yes / No / Not sure compatible follow-up prompt for a specific symptom or `General`. Active symptom-matched questions can join future assessment drafts while the backend keeps the final follow-up set between four and seven questions. Paused questions remain visible to staff but do not enter new patient drafts.
+
+`Suggest with AI` calls the staff-only `/api/admin/questions/suggest` endpoint. PMS asks the configured provider chain for three to five draft prompts, but those drafts are not active or persisted until staff saves selected items. Saved AI drafts are paused by default so a staff user can review and activate them deliberately.
 
 ## Frontend Sections
 
@@ -525,7 +571,7 @@ A detailed manual testing guide is available at `docs/testing-guide.md`. It cove
 
 Validated on `PMS_Test3` after this branch update:
 
-- Backend Spring context, patient/staff authentication, risk engine, mock AI insight tests, configured AI fallback tests, and OpenAI structured-output client tests passed with H2 test profile
+- Backend Spring context, JWT patient/staff authentication, risk engine, mock AI insight tests, configured AI fallback-chain tests, Ollama structured-output client tests, and OpenAI structured-output client tests passed with H2 test profile
 - Backend controller/API tests cover OpenAPI docs, patient assessment flow, staff authorization boundaries, admin rules, admin questions, missing-token checks, underage signup, invalid follow-up answers, and draft discard behavior
 - Frontend patient/staff auth, section, compact care-prep guide, and expanded drawer test suite passed
 - Frontend TypeScript and Vite production build passed
@@ -535,18 +581,19 @@ Validated on `PMS_Test3` after this branch update:
 
 The default project setup does not call a real external AI model. It uses controlled prototype logic: the backend risk engine is rule-based, and the backend-owned `MockAiInsightService` generates care-preparation wording for assessments and reports. This remains intentional for demos and automated tests because it keeps the system predictable, testable, and safe while the main full-stack structure is being completed.
 
-`PMS_Test3` starts the real AI integration behind the backend. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. Spring Boot calls the internal `ConfiguredAiInsightService`, which uses mock mode by default and can call OpenAI only when provider environment variables are present.
+`PMS_Test3` starts the real AI integration behind the backend. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. Spring Boot calls the internal `ConfiguredAiInsightService`, which uses mock mode by default. In provider mode it tries Ollama Gemma 4 31B first, OpenAI second, and mock last.
 
 Current implementation and next phases:
 
 1. Backend DTOs now expose structured care-prep fields so model-style output is predictable.
 2. `AiInsightService` now owns assessment and report insight generation in the backend service layer.
 3. `MockAiInsightService` is used for tests and development so automated checks do not require internet or paid API access.
-4. `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when `AI_MODE=provider`, `AI_PROVIDER=openai`, `AI_API_KEY`, and `AI_MODEL` are configured.
-5. Report summary generation and assessment insight refresh logic stay behind backend endpoints.
-6. AI-style output returns care summary, explanation, possible directions, urgent warning, monitoring plan, doctor questions, trusted source links, and four to seven follow-up questions.
-7. The existing rule engine remains the safety layer. Protected hard-coded red flags cannot be disabled or lowered. Staff-created operational rules are additive score floors only. AI can improve wording and ask better follow-up questions, but it must not independently diagnose disease, prescribe medicine, or make emergency decisions.
-8. Tests now cover the risk engine, red-flag urgent warnings, mock AI structured output, provider fallback, OpenAI structured-output parsing, and compact/expanded frontend rendering of the care-prep guide.
+4. `OllamaInsightClient` can call Ollama Cloud chat with `OLLAMA_API_KEY`, `OLLAMA_MODEL=gemma4:31b`, and structured JSON output.
+5. `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when Ollama fails and `OPENAI_API_KEY` or legacy `AI_API_KEY` is configured.
+6. Report summary generation, assessment insight refresh logic, care tips, and AI-assisted staff question suggestions stay behind backend endpoints.
+7. AI-style output returns care summary, explanation, possible directions, urgent warning, monitoring plan, care tips, doctor questions, trusted source links, and four to seven follow-up questions.
+8. The existing rule engine remains the safety layer. Protected hard-coded red flags cannot be disabled or lowered. Staff-created operational rules are additive score floors only. AI can improve wording and ask better follow-up questions, but it must not independently diagnose disease, prescribe medicine, or make emergency decisions.
+9. Tests now cover the risk engine, red-flag urgent warnings, mock AI structured output, Ollama-to-OpenAI-to-mock fallback, provider structured-output parsing, staff AI question suggestions, and compact/expanded frontend rendering of the care-prep guide.
 
 The production AI version should follow strict safety rules. The prompt and backend validation must tell the AI that PMS is only a health-awareness assistant. It must avoid disease diagnosis, medication instructions, dosage advice, emergency triage promises, or statements that replace a doctor. If the user enters severe symptoms such as chest pain, breathing difficulty, fainting, confusion, heavy bleeding, or sudden weakness, the system should show safe guidance to seek urgent professional care from Java-owned rule logic. Real patient data should not be used with an AI provider until privacy, consent, logging, retention, and compliance requirements are designed properly.
 
@@ -565,7 +612,7 @@ The plan is based on official and reputable maternal-health resources:
 - [ACOG pregnancy patient education](https://www.acog.org/womens-health/pregnancy/during-pregnancy)
 - [March of Dimes pregnancy resources](https://www.marchofdimes.org/find-support/topics/pregnancy)
 
-For `PMS_Test3`, pregnancy-support wording would use mock mode by default. Optional OpenAI provider wording may improve readability only after Java-owned maternal warning-sign rules set safety output, and provider output cannot lower urgent warnings or make diagnoses.
+For `PMS_Test3`, pregnancy-support wording would use mock mode by default. Optional Ollama/OpenAI provider wording may improve readability only after Java-owned maternal warning-sign rules set safety output, and provider output cannot lower urgent warnings or make diagnoses.
 
 ## Privacy And Production Review
 
@@ -582,7 +629,7 @@ Useful official references:
 Included for prototype:
 
 - Password hashing
-- Simple token authentication
+- Signed JWT access tokens
 - Separate patient and staff login paths
 - Adult patient-only public registration
 - Stored privacy-notice and terms acknowledgments

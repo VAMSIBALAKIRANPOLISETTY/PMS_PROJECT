@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, BookOpen, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, HelpCircle, Stethoscope } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, HelpCircle, Lightbulb, Stethoscope } from "lucide-react";
 import { RiskPill } from "./RiskPill";
 import type { CarePrepGuideData, RiskLevel } from "../types";
 import { displayRisk } from "../utils";
@@ -25,6 +25,7 @@ function sourceParts(source: string) {
 
 export function CarePrepGuide({ title = "Your care-preparation guide", insight, riskLevel, riskScore, reasons = [], suggestions = [], defaultExpanded = false }: CarePrepGuideProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const careTips = insight.careTips ?? [];
 
   useEffect(() => {
     setExpanded(defaultExpanded);
@@ -36,6 +37,7 @@ export function CarePrepGuide({ title = "Your care-preparation guide", insight, 
         <div>
           <p className="eyebrow">Personalized guidance</p>
           <h2>{title}</h2>
+          {insight.aiMode && <small className="ai-mode-label">Guidance support: {modeLabel(insight.aiMode)}</small>}
         </div>
         {riskLevel && <RiskPill value={riskLevel} />}
       </div>
@@ -80,6 +82,13 @@ export function CarePrepGuide({ title = "Your care-preparation guide", insight, 
             </ul>
           </section>
 
+          {careTips.length > 0 && (
+            <section className="care-section">
+              <div><Lightbulb size={18} /><strong>Care tips</strong></div>
+              <ul>{careTips.map((item) => <li key={item}>{item}</li>)}</ul>
+            </section>
+          )}
+
           <section className="care-section">
             <div><HelpCircle size={18} /><strong>Doctor questions</strong></div>
             <ul>{insight.doctorPrepQuestions.map((item) => <li key={item}>{item}</li>)}</ul>
@@ -98,4 +107,10 @@ export function CarePrepGuide({ title = "Your care-preparation guide", insight, 
       )}
     </div>
   );
+}
+
+function modeLabel(mode: string) {
+  if (mode === "OLLAMA") return "Gemma 4 31B";
+  if (mode === "OPENAI" || mode === "PROVIDER") return "OpenAI fallback";
+  return "Mock guidance";
 }

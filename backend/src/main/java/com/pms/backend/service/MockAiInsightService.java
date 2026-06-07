@@ -20,6 +20,7 @@ public class MockAiInsightService implements AiInsightService {
                 + " " + profileContext;
         List<String> directions = possibleDirections(assessment.getSymptoms(), assessment.getChronicCondition(), result.level());
         List<String> monitoring = monitoringPlan(result.level(), assessment);
+        List<String> tips = careTips(result.level(), assessment.getSymptoms());
         List<String> doctorQuestions = doctorQuestions(result.followUps(), assessment.getSymptoms(), result.level());
         return new CarePrepInsight(
                 careSummary,
@@ -27,6 +28,7 @@ public class MockAiInsightService implements AiInsightService {
                 directions,
                 result.urgentWarning(),
                 monitoring,
+                tips,
                 doctorQuestions,
                 trustedSources(result.urgentWarning() != null),
                 activeMode()
@@ -34,15 +36,20 @@ public class MockAiInsightService implements AiInsightService {
     }
 
     @Override
-    public List<String> reportFollowUps(String reportName) {
-        return List.of(
+    public QuestionSet assessmentFollowUps(AppUser user, Assessment assessment, RiskEngineService.RiskResult result) {
+        return new QuestionSet(List.of(), activeMode());
+    }
+
+    @Override
+    public QuestionSet reportFollowUps(String reportName) {
+        return new QuestionSet(List.of(
                 "What main symptom or concern made you upload this report?",
                 "Did a doctor already review this report with you?",
                 "Are any values marked high, low, critical, abnormal, or outside range?",
                 "Do you currently have fever, pain, breathing difficulty, dizziness, weakness, or confusion?",
                 "Are you taking medicines related to this report?",
                 "Do you have a chronic condition connected to these results?"
-        );
+        ), activeMode());
     }
 
     @Override
@@ -72,6 +79,11 @@ public class MockAiInsightService implements AiInsightService {
                         "Write down medicines, supplements, allergies, and chronic conditions before the visit."
                 ),
                 List.of(
+                        "Keep the original report handy so a clinician can review exact values and reference ranges.",
+                        "Avoid changing medicines based only on PMS report wording.",
+                        "Bring a short timeline of symptoms, test date, and current medicines to the appointment."
+                ),
+                List.of(
                         "Which values in this report need attention, and how urgent are they?",
                         "Could my symptoms or medicines affect these report values?",
                         "Do I need repeat testing, lifestyle changes, or a specialist review?",
@@ -80,6 +92,18 @@ public class MockAiInsightService implements AiInsightService {
                 trustedSources(urgentWarning != null),
                 activeMode()
         );
+    }
+
+    @Override
+    public QuestionSet suggestQuestions(String symptomKey, String focus) {
+        String symptom = hasText(symptomKey) ? symptomKey.trim() : "General";
+        List<String> questions = List.of(
+                "Has the " + symptom.toLowerCase(Locale.ROOT) + " changed since yesterday?",
+                "Is the " + symptom.toLowerCase(Locale.ROOT) + " affecting normal daily activity?",
+                "Do you have any new severe symptom with the " + symptom.toLowerCase(Locale.ROOT) + "?",
+                "Have you already discussed the " + symptom.toLowerCase(Locale.ROOT) + " with a clinician?"
+        );
+        return new QuestionSet(questions, activeMode());
     }
 
     private List<String> possibleDirections(List<String> symptoms, String chronicCondition, RiskLevel level) {
@@ -123,6 +147,17 @@ public class MockAiInsightService implements AiInsightService {
             plan.add("Do not wait if symptoms are severe, sudden, or worsening. Seek urgent professional care.");
         }
         return plan;
+    }
+
+    private List<String> careTips(RiskLevel level, List<String> symptoms) {
+        List<String> tips = new ArrayList<>();
+        tips.add("Write down when each symptom started and whether it is improving, stable, or worsening.");
+        tips.add("Keep any measured values, medicines taken, and allergies ready for the care conversation.");
+        tips.add("Use clear examples, such as what activity is harder now than before.");
+        if (level == RiskLevel.HIGH || String.join(" ", symptoms).toLowerCase(Locale.ROOT).contains("breath")) {
+            tips.add("For severe, sudden, or worsening symptoms, seek urgent professional care instead of waiting for a routine visit.");
+        }
+        return dedupe(tips).stream().limit(5).toList();
     }
 
     private List<String> doctorQuestions(List<String> followUps, List<String> symptoms, RiskLevel level) {
@@ -170,6 +205,10 @@ public class MockAiInsightService implements AiInsightService {
 
     private String safeText(String value) {
         return value == null ? "" : value;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private List<String> dedupe(List<String> values) {
