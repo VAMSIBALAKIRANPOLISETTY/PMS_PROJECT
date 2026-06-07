@@ -47,6 +47,23 @@ flowchart TD
 
 The frontend never calls OpenAI and never stores provider keys. In provider mode, the backend `OpenAiInsightClient` calls the OpenAI Responses API with Structured Outputs. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall back to mock output.
 
+## Future Pregnancy Care-Preparation Flow
+
+```mermaid
+flowchart TD
+  A["Optional pregnancy or postpartum profile"] --> B["Pregnancy-aware symptom intake"]
+  B --> C["Protected maternal warning-sign rules"]
+  C --> D["Safe follow-up question cards"]
+  D --> E["Configured AI insight service"]
+  E --> F["Mock wording by default"]
+  E --> G["Optional OpenAI wording after rule decisions"]
+  F --> H["Compact guide with urgent warning, summary, tracking notes, and doctor or midwife questions"]
+  G --> H
+  H --> I["Patient prepares for qualified care team conversation"]
+```
+
+In `PMS_Test3`, pregnancy support remains future scope. Maternal warning signs must be Java-owned protected rules. Optional OpenAI wording may improve readability only after rule decisions are complete and must never diagnose, estimate fetal condition, prescribe medication, or lower urgent warnings.
+
 ## Frontend
 
 The frontend is organized by section instead of a single monolithic entry file:
