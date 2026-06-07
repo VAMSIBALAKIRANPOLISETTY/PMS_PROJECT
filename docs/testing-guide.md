@@ -18,14 +18,16 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 3. Reload Maven when IntelliJ asks, or open the Maven panel and click Reload.
 4. Select JDK 17 or newer from `File > Project Structure > Project SDK`.
 5. Open `backend/src/main/java/com/pms/backend/BackendApplication.java`.
-6. Run the application from the green Run button, or use:
+6. Optional but recommended: add `JWT_SECRET` to the Run Configuration environment variables for any shared demo machine.
+7. Run the application from the green Run button, or use:
 
 ```powershell
 cd backend
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
 .\mvnw.cmd spring-boot:run
 ```
 
-7. Verify the backend is running:
+8. Verify the backend is running:
 
 ```text
 http://localhost:8080/api/health
@@ -82,7 +84,7 @@ Recommended patient flow:
 }
 ```
 
-3. Copy the returned `token`.
+3. Copy the returned JWT `token`.
 4. Click Swagger `Authorize`.
 5. Enter:
 
@@ -96,6 +98,15 @@ Bearer <token>
 9. Run `POST /api/assessments/{id}/follow-ups`.
 10. Confirm the completed response includes summary, explanation, possible directions, monitoring plan, doctor questions, trusted links, and status `COMPLETED`.
 11. Run `GET /api/assessments` and confirm the completed item appears in history.
+
+JWT checks in Swagger:
+
+- Use the copied token with `GET /api/auth/me`. Expected: current user is returned.
+- Remove the token and run `GET /api/auth/me`. Expected: 4xx response.
+- Enter `Bearer not-a-jwt`. Expected: 4xx response with a safe error message.
+- Use a patient token on `GET /api/admin/analytics`. Expected: forbidden.
+- Use a staff token on `POST /api/assessments`. Expected: rejected because patient access is required.
+- Restart the backend and reuse an unexpired token signed with the same `JWT_SECRET`. Expected: token still works because validation is stateless.
 
 Recommended staff flow:
 
@@ -185,6 +196,8 @@ Black-box testing checks behavior from the user or API perspective without readi
 Use Swagger or Postman to check:
 
 - Missing bearer token returns a 4xx response for private endpoints.
+- Malformed JWT returns a safe 4xx response.
+- Expired JWT and wrong-signature JWT cases are covered by backend tests.
 - Patient token is rejected from `/api/admin/**`.
 - Staff token is rejected from patient-only draft creation.
 - One patient cannot finalize or discard another patient's draft.
@@ -194,6 +207,16 @@ Use Swagger or Postman to check:
 - API keys are never present in frontend code or browser storage.
 - Mock AI output does not diagnose, prescribe, or make emergency promises.
 - Protected red-flag wording remains rule-based.
+
+JWT automated test checklist:
+
+- Login/register returns a three-part JWT.
+- Valid JWT works for `GET /api/auth/me`.
+- Missing, malformed, expired, and wrong-signature JWTs are rejected.
+- Patient JWT is rejected from admin endpoints.
+- Staff JWT is rejected from patient assessment creation.
+- Backend restart does not invalidate unexpired tokens when `JWT_SECRET` remains the same.
+- `JWT_SECRET` never appears in frontend source, browser storage, screenshots, or committed documentation examples as a real secret.
 
 Compare this checklist with the OWASP API Security Top 10 topics: broken object-level authorization, broken authentication, unrestricted resource consumption, broken function-level authorization, sensitive data exposure, and unsafe API consumption.
 

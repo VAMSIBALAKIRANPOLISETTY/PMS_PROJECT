@@ -7,7 +7,7 @@ flowchart TD
   B --> D["Spring Boot API"]
   D --> E["Local PostgreSQL"]
   D --> F["Rule-Based Risk Engine"]
-  D --> G["Token Auth"]
+  D --> G["JWT Auth"]
   D --> H["JPA Repositories"]
 ```
 
@@ -40,6 +40,32 @@ flowchart TD
 - Compact summary-first care-preparation result display with expandable detail sections
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
+
+## JWT Authentication Flow
+
+```mermaid
+sequenceDiagram
+  participant Browser as React browser
+  participant Auth as AuthController
+  participant Service as AuthService
+  participant JWT as JwtService
+  participant DB as UserRepository
+
+  Browser->>Auth: POST login, staff-login, or register
+  Auth->>Service: Validate credentials or registration
+  Service->>DB: Load or save user
+  Service->>JWT: Create signed JWT
+  JWT-->>Service: Access token
+  Service-->>Browser: AuthResponse { token, user }
+  Browser->>Auth: Authorization: Bearer token
+  Auth->>Service: requireUser or requireAdmin
+  Service->>JWT: Verify signature, issuer, expiry, subject
+  JWT-->>Service: User id
+  Service->>DB: Load current user and role
+  Service-->>Auth: Authorized user or safe rejection
+```
+
+JWT keeps the browser contract simple while removing the old in-memory token map. The token proves the login session until expiry, but PMS still loads the current user from the database and checks the database role for staff-only actions.
 
 ## Future Pregnancy Care-Preparation Flow
 

@@ -18,13 +18,13 @@ The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons
 
 The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, report insight requests, rules, questions, and analytics through controller, service, repository, DTO, and model layers. The current AI layer is a backend-owned mock `AiInsightService`; the frontend does not call AI providers or store AI keys.
 
-Authentication in this prototype uses a simple token-based approach. After patient login, staff login, or patient signup, the backend returns a token and the frontend sends it in the `Authorization: Bearer <token>` header. The backend uses that token to identify the current user and apply role-based behavior. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is appropriate for a capstone prototype, but production deployment would require a stronger security model such as Spring Security with JWT signing, refresh tokens, rate limiting, audit logging, and stronger operational controls.
+Authentication uses signed JWT access tokens. After patient login, staff login, or patient signup, the backend returns a JWT in the existing `token` field and the frontend sends it in the `Authorization: Bearer <token>` header. The JWT subject is the user ID, and signed claims include role, username, and email. The backend validates token signature, expiry, issuer, and user existence on every protected request. Admin access still checks the current database role, not only the JWT claim. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. This is an access-token prototype without refresh tokens; production deployment would still need rate limiting, audit logging, stronger operational controls, and a full security review.
 
 The system avoids Docker by design in the current branch. It is intended to run on a normal development system with IntelliJ IDEA or VS Code, Java 17 or later, Maven, Node.js, and a locally installed PostgreSQL server. The backend connection defaults to `pms_db`, `pms_user`, and `pms_password`, but these can be changed using environment variables. This makes the project easier to run on college lab systems, personal laptops, or another development machine where Docker Desktop is not installed.
 
 Testing is part of the current project structure. Backend testing verifies that the Spring Boot application context loads successfully with the H2 test profile, public registration creates adult patient accounts with acknowledgment metadata, patient and staff login paths remain isolated, draft assessments stay outside completed analytics, red-flag warnings remain immediate, risk rules remain predictable, and mock insight output stays structured. Frontend testing uses Vitest and Testing Library to render every major section and verify the legal signup steps, blank intake controls, grouped symptom library, pending follow-up gate, labeled profile fields, and completed care-preparation guide. The project also supports a production frontend build using TypeScript and Vite.
 
-Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines authentication, role-based screens, structured health input, explainable risk scoring, backend-owned mock AI care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production AI provider adapter, a production security model, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
+Overall, the project demonstrates a complete MVP foundation for a patient health-awareness system. It combines JWT authentication, role-based screens, structured health input, explainable risk scoring, backend-owned mock AI care-prep wording, frontend validation, backend validation, persistence, analytics, reusable frontend components, and documentation. Future improvements could include a production AI provider adapter, refresh tokens, real PDF extraction, appointment booking, doctor dashboards, multilingual support, richer test coverage, and deployment configuration. Even with those future possibilities, the current scope remains intentionally safe: synthetic/demo data only, no diagnosis, no prescription, and no emergency decision-making.
 
 ## Medical Disclaimer
 
@@ -117,6 +117,31 @@ The Vite development server proxies `/api` calls to the Spring Boot backend. By 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
 Detailed diagrams and architecture notes are available at `docs/architecture.md`. Future pregnancy care-preparation architecture is described in `docs/pregnancy-care-prep-feature-plan.md`.
+
+For a short speaking sheet before a professor or manager demo, use `docs/demo-quick-summary.md`.
+
+## JWT Authentication
+
+PMS now uses signed JWT access tokens instead of the earlier in-memory token map.
+
+- Login, staff login, and registration still return `AuthResponse { token, user }`.
+- The browser still sends `Authorization: Bearer <token>` for private API calls.
+- JWT subject is the database user ID.
+- JWT claims include role, username, and email for traceability.
+- The backend validates signature, expiry, issuer, and user existence for every protected request.
+- Staff authorization still reads the current database role through `AuthService.requireAdmin`, so changing a staff role in the database is respected even if an older token contains a stale role claim.
+- The current access token expires after 12 hours by default.
+- No refresh-token flow is included in this pass.
+
+JWT environment variables:
+
+```powershell
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
+$env:JWT_ISSUER="PMS Health"
+$env:JWT_EXPIRATION_HOURS="12"
+```
+
+For local demos, the backend has a development fallback secret. For any shared, deployed, or production-like run, set `JWT_SECRET` yourself and do not commit it.
 
 ## AI Usage Clarification
 
@@ -223,6 +248,9 @@ $env:DATABASE_URL="jdbc:postgresql://localhost:5432/pms_db"
 $env:DATABASE_USERNAME="pms_user"
 $env:DATABASE_PASSWORD="pms_password"
 $env:CORS_ORIGIN="http://localhost:5173"
+$env:JWT_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
+$env:JWT_ISSUER="PMS Health"
+$env:JWT_EXPIRATION_HOURS="12"
 $env:AI_MODE="mock"
 $env:AI_PROVIDER=""
 $env:AI_API_KEY=""
@@ -274,7 +302,7 @@ Recommended Swagger flow:
 
 1. Run `GET /api/health` first.
 2. Login as a patient using `POST /api/auth/login`, or login as staff using `POST /api/auth/staff-login`.
-3. Copy the returned `token`.
+3. Copy the returned JWT `token`.
 4. Click Swagger `Authorize`.
 5. Enter `Bearer <token>`.
 6. Test patient endpoints with a patient token and admin endpoints with a staff token.
@@ -358,7 +386,8 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
 
 ## Where Key Functions Are Used
 
-- `AuthService`: handles adult patient-only registration, stored privacy and terms acknowledgments, separate patient and staff login paths, token lookup, role checks, explicit health-history completion, and profile-completion percentage.
+- `AuthService`: handles adult patient-only registration, stored privacy and terms acknowledgments, separate patient and staff login paths, JWT-backed user lookup, database role checks, explicit health-history completion, and profile-completion percentage.
+- `JwtService`: creates signed JWT access tokens and validates bearer token signature, issuer, expiry, and user ID before protected endpoints use the current user.
 - `AssessmentService`: saves pending intake drafts, resumes or discards patient-owned drafts, finalizes completed records after follow-up answers, and keeps unfinished drafts outside normal history.
 - `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, protected urgent warnings, upward-only operational rule matches, and symptom-matched managed questions.
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
@@ -379,6 +408,9 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
 
 - Where is AI used?
   AI is represented through the backend `AiInsightService`. Currently the app uses `MockAiInsightService` for predictable demo output. A real provider can be added later behind the backend using environment variables.
+
+- Did we use JWT?
+  Yes. Login, staff login, and signup return signed JWT access tokens. The frontend stores the token and sends it as `Authorization: Bearer <token>`. The backend validates the signature and expiry, then still checks the current database role.
 
 - Why use rules plus AI instead of only AI?
   Health safety needs predictable guardrails. Rule-based red-flag checks handle urgent warnings first, and AI-style output only improves explanation and wording.
@@ -443,6 +475,8 @@ Authenticated requests use:
 Authorization: Bearer <token>
 ```
 
+The token is a signed JWT access token returned by registration, patient login, or staff login.
+
 Normal users only see their own completed assessments. Admin users can see completed assessments and admin analytics. Pending drafts remain private to the patient until finalized or discarded.
 
 ### How Staff Rules Work
@@ -504,7 +538,7 @@ A detailed manual testing guide is available at `docs/testing-guide.md`. It cove
 
 Validated on `PMS_Test2`:
 
-- Backend Spring context, patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
+- Backend Spring context, JWT patient/staff authentication, risk engine, and mock AI insight tests passed with H2 test profile
 - Backend controller/API tests cover OpenAPI docs, patient assessment flow, staff authorization boundaries, admin rules, admin questions, missing-token checks, underage signup, invalid follow-up answers, and draft discard behavior
 - Frontend patient/staff auth, section, compact care-prep guide, and expanded drawer test suite passed
 - Frontend TypeScript and Vite production build passed
@@ -561,7 +595,7 @@ Useful official references:
 Included for prototype:
 
 - Password hashing
-- Simple token authentication
+- Signed JWT access tokens
 - Separate patient and staff login paths
 - Adult patient-only public registration
 - Stored privacy-notice and terms acknowledgments
