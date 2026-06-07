@@ -114,7 +114,7 @@ React + TypeScript Frontend
 
 The frontend is responsible for public pages, patient screens, staff screens, form validation, authenticated API calls, and rendering the care-preparation guide. It does not own medical-safety decisions and it does not contact any AI provider.
 
-The Vite development server proxies `/api` calls to the Spring Boot backend. Spring Boot owns authentication, role separation, assessment drafts, follow-up finalization, report insights, staff rule management, staff question management, analytics, and all persistence logic. JPA repositories store users, assessments, rules, questions, and related records in PostgreSQL for normal local runtime. Backend tests use the H2 profile so automated checks can run without a PostgreSQL server.
+The Vite development server proxies `/api` calls to the Spring Boot backend. By default it targets `http://localhost:8080`, and `VITE_API_PROXY_TARGET` can override the backend URL for side-by-side branch testing. Spring Boot owns authentication, role separation, assessment drafts, follow-up finalization, report insights, staff rule management, staff question management, analytics, and all persistence logic. JPA repositories store users, assessments, rules, questions, and related records in PostgreSQL for normal local runtime. Backend tests use the H2 profile so automated checks can run without a PostgreSQL server.
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
@@ -317,6 +317,13 @@ The Vite proxy forwards `/api` requests to:
 
 ```text
 http://localhost:8080
+```
+
+For side-by-side branch testing, override the proxy target before starting Vite:
+
+```powershell
+$env:VITE_API_PROXY_TARGET="http://localhost:8083"
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 ## Demo Accounts

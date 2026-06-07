@@ -20,7 +20,7 @@ flowchart TD
 - Backend runs on `http://localhost:8080`
 - PostgreSQL runs locally on `localhost:5432`
 - Docker is not part of the runtime or setup
-- Vite proxies `/api` calls to the backend
+- Vite proxies `/api` calls to the backend and can use `VITE_API_PROXY_TARGET` for alternate local backend ports
 
 ## Backend
 
