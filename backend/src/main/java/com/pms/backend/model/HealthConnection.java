@@ -22,8 +22,18 @@ public class HealthConnection {
 
     private String displayName;
     private String externalAccountId;
+    private String authorizationState;
+    private String providerSubjectId;
+    @Column(length = 4000)
+    private String encryptedRefreshToken;
+    private LocalDateTime accessTokenExpiresAt;
+    @Column(length = 1200)
+    private String grantedScopes;
     private LocalDateTime connectedAt;
     private LocalDateTime lastSyncAt;
+    private String lastSyncStatus;
+    @Column(length = 1200)
+    private String lastSyncMessage;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Long getId() { return id; }
@@ -38,10 +48,24 @@ public class HealthConnection {
     public void setDisplayName(String displayName) { this.displayName = displayName; }
     public String getExternalAccountId() { return externalAccountId; }
     public void setExternalAccountId(String externalAccountId) { this.externalAccountId = externalAccountId; }
+    public String getAuthorizationState() { return authorizationState; }
+    public void setAuthorizationState(String authorizationState) { this.authorizationState = authorizationState; }
+    public String getProviderSubjectId() { return providerSubjectId; }
+    public void setProviderSubjectId(String providerSubjectId) { this.providerSubjectId = providerSubjectId; }
+    public String getEncryptedRefreshToken() { return encryptedRefreshToken; }
+    public void setEncryptedRefreshToken(String encryptedRefreshToken) { this.encryptedRefreshToken = encryptedRefreshToken; }
+    public LocalDateTime getAccessTokenExpiresAt() { return accessTokenExpiresAt; }
+    public void setAccessTokenExpiresAt(LocalDateTime accessTokenExpiresAt) { this.accessTokenExpiresAt = accessTokenExpiresAt; }
+    public String getGrantedScopes() { return grantedScopes; }
+    public void setGrantedScopes(String grantedScopes) { this.grantedScopes = grantedScopes; }
     public LocalDateTime getConnectedAt() { return connectedAt; }
     public void setConnectedAt(LocalDateTime connectedAt) { this.connectedAt = connectedAt; }
     public LocalDateTime getLastSyncAt() { return lastSyncAt; }
     public void setLastSyncAt(LocalDateTime lastSyncAt) { this.lastSyncAt = lastSyncAt; }
+    public String getLastSyncStatus() { return lastSyncStatus; }
+    public void setLastSyncStatus(String lastSyncStatus) { this.lastSyncStatus = lastSyncStatus; }
+    public String getLastSyncMessage() { return lastSyncMessage; }
+    public void setLastSyncMessage(String lastSyncMessage) { this.lastSyncMessage = lastSyncMessage; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

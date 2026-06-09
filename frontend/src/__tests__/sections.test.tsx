@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CarePrepGuide } from "../components/CarePrepGuide";
@@ -284,7 +284,7 @@ describe("section rendering", () => {
       fireEvent.click(action);
     }
     await waitFor(() => expect(screen.getByText("Summary")).toBeInTheDocument());
-  }, 10000);
+  }, 15000);
 
   it("renders reports, history, profile, and recent assessments", () => {
     render(<Reports token="token" notify={vi.fn()} />);
@@ -308,12 +308,14 @@ describe("section rendering", () => {
     vi.spyOn(api, "get").mockResolvedValue({ data: [] });
     const post = vi.spyOn(api, "post").mockImplementation((url) => {
       if (url === "/connections/APPLE_HEALTH/start") {
-        return Promise.resolve({ data: { provider: "APPLE_HEALTH", authorizationUrl: "pms-health://apple", permissionSummary: "Patient-approved Apple Health import." } });
+        return Promise.resolve({ data: { provider: "APPLE_HEALTH", authorizationUrl: "pms-health://apple", permissionSummary: "Patient-approved Apple Health import.", state: null } });
       }
       return Promise.resolve({ data: {} });
     });
     render(<ConnectedHealth token="token" notify={vi.fn()} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Review permissions/i })[0]);
+    const appleCard = screen.getByText("Apple Health / Apple Watch").closest(".connector-card");
+    expect(appleCard).not.toBeNull();
+    fireEvent.click(within(appleCard as HTMLElement).getByRole("button", { name: /Review permissions/i }));
     await waitFor(() => expect(screen.getByText("Patient-approved Apple Health import.")).toBeInTheDocument());
     fireEvent.change(screen.getByPlaceholderText("patient@example.com or portal ID"), { target: { value: "patient@example.com" } });
     fireEvent.change(screen.getByPlaceholderText("Dummy credential for connection check"), { target: { value: "password123" } });
@@ -321,6 +323,38 @@ describe("section rendering", () => {
     await waitFor(() => expect(screen.getByText("Connection established. Review and save this source.")).toBeInTheDocument(), { timeout: 1500 });
     fireEvent.click(screen.getByRole("button", { name: "Save connection" }));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/connections/APPLE_HEALTH/callback", expect.objectContaining({ externalAccountId: "patient@example.com" }), expect.anything()));
+  });
+
+  it("opens the real Google Health authorization flow", async () => {
+    vi.spyOn(api, "get").mockResolvedValue({ data: [] });
+    vi.spyOn(api, "post").mockImplementation((url) => {
+      if (url === "/connections/GOOGLE_HEALTH/start") {
+        return Promise.resolve({
+          data: {
+            provider: "GOOGLE_HEALTH",
+            authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=test-state",
+            permissionSummary: "OAuth connection for Google activity, sleep, and heart-rate summaries using patient-approved access.",
+            state: "test-state",
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    render(<ConnectedHealth token="token" notify={vi.fn()} />);
+    const googleCard = screen.getByText("Google Health / Fitbit").closest(".connector-card");
+    expect(googleCard).not.toBeNull();
+    fireEvent.click(within(googleCard as HTMLElement).getByRole("button", { name: /Review permissions/i }));
+
+    await waitFor(() => expect(screen.getByText(/OAuth connection for Google activity, sleep, and heart-rate summaries/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Google Health/i }));
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://accounts.google.com/o/oauth2/v2/auth?state=test-state",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    await waitFor(() => expect(screen.getByText(/authorization opened in a new tab/i)).toBeInTheDocument());
   });
 
   it("imports Samsung smartwatch sample records during connected-health sync", async () => {

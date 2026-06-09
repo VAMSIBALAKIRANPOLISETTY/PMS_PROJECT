@@ -138,12 +138,15 @@ export interface HealthConnection {
   connectedAt?: string | null;
   lastSyncAt?: string | null;
   permissionSummary: string;
+  lastSyncStatus?: string | null;
+  lastSyncMessage?: string | null;
 }
 
 export interface ConnectionStartResponse {
   provider: string;
   authorizationUrl: string;
   permissionSummary: string;
+  state?: string | null;
 }
 
 export interface TimelineRecord {

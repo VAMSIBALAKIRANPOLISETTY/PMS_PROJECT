@@ -14,13 +14,16 @@ public class ConnectedHealthDtos {
             String status,
             LocalDateTime connectedAt,
             LocalDateTime lastSyncAt,
-            String permissionSummary
+            String permissionSummary,
+            String lastSyncStatus,
+            String lastSyncMessage
     ) {}
 
     public record ConnectionStartResponse(
             String provider,
             String authorizationUrl,
-            String permissionSummary
+            String permissionSummary,
+            String state
     ) {}
 
     public record ConnectionCallbackRequest(

@@ -78,6 +78,20 @@ class RealWorldExpansionServiceTests {
     }
 
     @Test
+    void googleHealthStartReturnsAuthorizationUrlAndUnknownStateIsRejected() {
+        var user = registerPatient("google.patient@example.com", "googlepatient");
+
+        var start = connectedHealthService.start(user, "GOOGLE_HEALTH");
+
+        assertEquals("GOOGLE_HEALTH", start.provider());
+        assertTrue(start.authorizationUrl().contains("client_id=test-google-client-id"));
+        assertTrue(start.authorizationUrl().contains("state="));
+        assertTrue(start.state() != null && !start.state().isBlank());
+        assertThrows(IllegalArgumentException.class, () ->
+                connectedHealthService.completeGoogleHealthAuthorization("missing-state", "sample-code", null));
+    }
+
+    @Test
     void samsungSmartWatchSyncCreatesDemoRecordsForAssessmentsAndReports() {
         var user = registerPatient("samsung.context@example.com", "samsungcontext");
 

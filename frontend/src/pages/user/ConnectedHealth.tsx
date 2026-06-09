@@ -11,10 +11,11 @@ interface ConnectedHealthProps {
 }
 
 const providers = [
+  { id: "GOOGLE_HEALTH", label: "Google Health / Fitbit", detail: "Live web connector for Google-authorized activity, heart-rate, and sleep summaries." },
   { id: "APPLE_HEALTH", label: "Apple Health / Apple Watch", detail: "iOS companion import for activity, sleep, vitals, workouts, and supported Health Records." },
-  { id: "ANDROID_HEALTH_CONNECT", label: "Android Health Connect", detail: "Android companion import for steps, heart rate, sleep, temperature, and supported records." },
-  { id: "SAMSUNG_HEALTH", label: "Samsung Health", detail: "Samsung-supported wearable data through Health Connect or Samsung Health Data SDK." },
-  { id: "HOSPITAL_PORTAL", label: "Hospital portal", detail: "Patient-authorized clinical record import through SMART on FHIR where available." },
+  { id: "ANDROID_HEALTH_CONNECT", label: "Android Health Connect", detail: "Preview companion path for Android-native steps, heart rate, sleep, temperature, and supported records." },
+  { id: "SAMSUNG_HEALTH", label: "Samsung Health", detail: "Preview Samsung wearable import until the native companion sync is added." },
+  { id: "HOSPITAL_PORTAL", label: "Hospital portal", detail: "Preview patient-authorized clinical record import through SMART on FHIR where available." },
   { id: "MANUAL_ENTRY", label: "Manual vitals", detail: "Manual entry remains available when direct device or hospital access is unavailable." },
 ];
 
@@ -26,6 +27,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
   const [credentialSecret, setCredentialSecret] = useState("");
   const [connectionReady, setConnectionReady] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [googleAuthOpened, setGoogleAuthOpened] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
       setCredentialAccount("");
       setCredentialSecret("");
       setConnectionReady(false);
+      setGoogleAuthOpened(false);
     } catch (error) {
       const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Connection could not be prepared." : "Connection could not be prepared.";
       setMessage(fallback);
@@ -88,6 +91,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
       setCredentialAccount("");
       setCredentialSecret("");
       setConnectionReady(false);
+      setGoogleAuthOpened(false);
       notify("Connected health source saved.");
       setMessage("Connection saved. Checking for imported records...");
       const connectionsLoaded = await loadConnections(false);
@@ -135,6 +139,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
     setCredentialSecret("");
     setConnectionReady(false);
     setConnecting(false);
+    setGoogleAuthOpened(false);
     setMessage("");
   }
 
@@ -150,6 +155,37 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
     setConnecting(false);
     setConnectionReady(true);
     setMessage("Connection established. Review and save this source.");
+  }
+
+  async function refreshConnectedHealthStatus() {
+    try {
+      const [connectionsResponse, timelineResponse] = await Promise.all([
+        api.get<HealthConnection[]>("/connections", { headers: authHeaders(token) }),
+        api.get<TimelineRecord[]>("/health-timeline", { headers: authHeaders(token) }),
+      ]);
+      setConnections(connectionsResponse.data);
+      setTimeline(timelineResponse.data);
+      const googleConnection = connectionsResponse.data.find((item) => item.provider === "GOOGLE_HEALTH" && item.status === "CONNECTED");
+      if (googleConnection) {
+        setPendingStart(null);
+        setGoogleAuthOpened(false);
+        setMessage("Google Health access is connected. Use Sync to refresh the latest imported records.");
+        return;
+      }
+      setMessage("Google authorization may still be in progress. Return here after completing the provider sign-in.");
+    } catch (error) {
+      setMessage(apiMessage(error, "Google Health access could not be refreshed right now."));
+    }
+  }
+
+  function openGoogleHealthAuthorization() {
+    if (!pendingStart?.authorizationUrl) {
+      setMessage("Google Health authorization is not available yet.");
+      return;
+    }
+    window.open(pendingStart.authorizationUrl, "_blank", "noopener,noreferrer");
+    setGoogleAuthOpened(true);
+    setMessage("Google Health authorization opened in a new tab. Complete access there, then return here and refresh sources.");
   }
 
   function handleCredentialKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -184,6 +220,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
               <Link2 size={22} />
               <h3>{provider.label}</h3>
               <p>{provider.detail}</p>
+              {provider.id !== "GOOGLE_HEALTH" && <small>Preview connector</small>}
               <button className="ghost-button" type="button" onClick={() => void start(provider.id)}>
                 Review permissions <ArrowRight size={16} />
               </button>
@@ -197,32 +234,53 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
           <div className="section-title">
             <div>
               <p className="eyebrow">Permission review</p>
-              <h2>{pendingStart.provider.replaceAll("_", " ")}</h2>
+              <h2>{(pendingStart.provider ?? "Connected health").replaceAll("_", " ")}</h2>
             </div>
           </div>
           <p>{pendingStart.permissionSummary}</p>
-          <div className="connector-credential-grid">
-            <label>
-              Account ID or email
-              <input placeholder="patient@example.com or portal ID" value={credentialAccount} onChange={(event) => { setCredentialAccount(event.target.value); setConnectionReady(false); }} />
-            </label>
-            <label>
-              Password or API token
-              <input type="password" placeholder="Dummy credential for connection check" value={credentialSecret} onChange={(event) => { setCredentialSecret(event.target.value); setConnectionReady(false); }} />
-            </label>
-          </div>
-          <div className="profile-setup-actions">
-            <button className="ghost-button" type="button" onClick={cancelPendingConnection}>Cancel</button>
-            {!connectionReady ? (
-              <button className="primary-button" type="button" disabled={connecting} onClick={() => void connectApiLink()}>
-                {connecting ? "Connecting API link..." : "Connect API link"} <ArrowRight size={18} />
-              </button>
-            ) : (
-              <button className="primary-button" type="button" onClick={() => void confirmConnection(pendingStart.provider)}>
-                Save connection <ArrowRight size={18} />
-              </button>
-            )}
-          </div>
+          {pendingStart.provider === "GOOGLE_HEALTH" ? (
+            <>
+              <p className="summary-box">
+                Google Health uses a real provider sign-in. PMS stores connection metadata and backend-only refresh access, then imports supported step, heart-rate, and sleep summaries into your private health timeline.
+              </p>
+              <div className="profile-setup-actions">
+                <button className="ghost-button" type="button" onClick={cancelPendingConnection}>Cancel</button>
+                <button className="primary-button" type="button" onClick={openGoogleHealthAuthorization}>
+                  Continue to Google Health <ArrowRight size={18} />
+                </button>
+                {googleAuthOpened && (
+                  <button className="ghost-button" type="button" onClick={() => void refreshConnectedHealthStatus()}>
+                    Refresh sources <RefreshCw size={16} />
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="connector-credential-grid">
+                <label>
+                  Account ID or email
+                  <input placeholder="patient@example.com or portal ID" value={credentialAccount} onChange={(event) => { setCredentialAccount(event.target.value); setConnectionReady(false); }} />
+                </label>
+                <label>
+                  Password or API token
+                  <input type="password" placeholder="Dummy credential for connection check" value={credentialSecret} onChange={(event) => { setCredentialSecret(event.target.value); setConnectionReady(false); }} />
+                </label>
+              </div>
+              <div className="profile-setup-actions">
+                <button className="ghost-button" type="button" onClick={cancelPendingConnection}>Cancel</button>
+                {!connectionReady ? (
+                  <button className="primary-button" type="button" disabled={connecting} onClick={() => void connectApiLink()}>
+                    {connecting ? "Connecting API link..." : "Connect API link"} <ArrowRight size={18} />
+                  </button>
+                ) : (
+                  <button className="primary-button" type="button" onClick={() => void confirmConnection(pendingStart.provider)}>
+                    Save connection <ArrowRight size={18} />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </section>
       )}
 
@@ -237,6 +295,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
               <div>
                 <strong>{connection.displayName}</strong>
                 <span>{connection.status} {connection.lastSyncAt ? `| synced ${new Date(connection.lastSyncAt).toLocaleDateString()}` : ""}</span>
+                {connection.lastSyncMessage && <span>{connection.lastSyncMessage}</span>}
               </div>
               <button className="icon-button" type="button" aria-label={`Sync ${connection.displayName}`} onClick={() => void sync(connection)}><RefreshCw size={16} /></button>
               <button className="icon-button" type="button" aria-label={`Stop ${connection.displayName}`} onClick={() => void revoke(connection)}><Trash2 size={16} /></button>
