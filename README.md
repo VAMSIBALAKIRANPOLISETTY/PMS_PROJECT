@@ -16,7 +16,7 @@ The risk engine is deliberately simple, explainable, and controlled. It does not
 
 The frontend is implemented with React, TypeScript, Vite, Recharts, Lucide icons, and CSS custom properties. The current branch refactors the earlier single-file frontend into component and section files. This makes the code easier to understand, test, and extend. Authentication pages live under `pages/auth`, user-facing sections live under `pages/user`, admin-facing sections live under `pages/admin`, and shared interface elements live under `components`. The public landing page now keeps only public product information on the first screens, with Home, How It Works, Safety, and Contact sections. User profile details, admin information, assessment history, and private health data remain inside authenticated screens only. Shared TypeScript types, API helpers, static data, and formatting utilities are separated into `types.ts`, `api.ts`, `data.ts`, and `utils.ts`.
 
-The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, PDFBox for text-based report extraction, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, saved report assessments, connected-health metadata, normalized health-timeline records, rules, questions, exports, and analytics through controller, service, repository, DTO, and model layers. The AI layer is backend-owned through `AiInsightService`: local fallback mode remains the default for repeatable development and tests, while `PMS_Test3` can use Ollama Gemma 4 31B first, OpenAI second, and fallback output last when backend environment variables are configured. The frontend does not call AI providers or store AI keys.
+The backend is implemented with Java Spring Boot, Spring Web MVC, Spring Data JPA, Bean Validation, PostgreSQL, PDFBox for text-based report extraction, and an H2 test profile. PostgreSQL is used for normal local runtime on a development system. The H2 profile is used only for automated backend tests so the core Spring context can be validated without requiring a running database server. The backend creates and manages users, assessments, saved report assessments, connected-health metadata, normalized health-timeline records, rules, questions, exports, and analytics through controller, service, repository, DTO, and model layers. The AI layer is backend-owned through `AiInsightService`: local fallback mode remains the default for repeatable development and tests, while `PMS_Test3` can use Ollama Cloud, OpenAI, and fallback output in the configured `AI_PROVIDER_CHAIN` order. The frontend does not call AI providers or store AI keys.
 
 Authentication uses signed JWT access tokens. After patient login, staff login, or patient signup, the backend returns a JWT in the existing `token` field and the frontend sends it in the `Authorization: Bearer <token>` header. The JWT subject is the user ID, and signed claims include role, username, and email. The backend validates token signature, expiry, issuer, and user existence on every protected request. Admin access still checks the current database role, not only the JWT claim. Public registration always creates a patient, accepts self-registration for adults age 18 and older, and requires privacy-notice and terms acknowledgment. `POST /api/auth/login` accepts patient accounts only, while `POST /api/auth/staff-login` accepts staff accounts only. Patients can see only their own completed assessments. Staff users can access clinical-operations analytics and completed assessment records. The current pass uses access tokens only; refresh tokens, rate limiting, audit logging, and a full security review are production-hardening items.
 
@@ -49,7 +49,7 @@ PMS-Health-Professional-Demonstration.pptx
 PMS-Health-Normal-Presentation.pptx
 ```
 
-`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the product snapshot, problem statement, solution overview, system architecture, walkthrough flow, and future scope. For `PMS_Test3`, the AI answer is: local fallback output remains the default, and real provider calls are optional backend-only behavior through Ollama first, then OpenAI fallback, when configured.
+`PMS-Health-Professional-Demonstration.pptx` is the polished MNC-style deck for formal review. `PMS-Health-Normal-Presentation.pptx` is a simpler classroom-style deck with a plain blue header, white background, and direct bullet structure. Both decks cover the product snapshot, problem statement, solution overview, system architecture, walkthrough flow, and future scope. For `PMS_Test3`, the AI answer is: local fallback output remains the default, and real provider calls are optional backend-only behavior through a configurable OpenAI/Ollama provider chain.
 
 ## Importing The Project On Another System
 
@@ -122,7 +122,7 @@ The Vite development server proxies `/api` calls to the Spring Boot backend. By 
 
 The staff-side `Operational Rules` and `Question Bank` feed future assessment drafts through the backend service layer. Staff rules are upward-only safeguards: they can raise a risk score floor when configured conditions match, but they cannot lower risk or disable protected red-flag warnings. Staff questions can join future guided assessments when active and symptom-matched while the backend keeps the final follow-up set controlled.
 
-`ConfiguredAiInsightService` is the single Spring bean for AI-style care-preparation wording. In the default `mock` mode it delegates to `MockAiInsightService`. In provider mode, it tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then mock output. Any missing configuration, provider error, timeout, invalid JSON, or validation failure falls to the next provider and finally to mock output.
+`ConfiguredAiInsightService` is the single Spring bean for AI-style care-preparation wording. In the default `mock` mode it delegates to `MockAiInsightService`. In provider mode, it follows `AI_PROVIDER_CHAIN`, such as `openai,ollama` for presentation reliability or `ollama,openai` for the product/default architecture. Any missing configuration, provider error, timeout, invalid JSON, or validation failure falls to the next provider and finally to mock output.
 
 Detailed diagrams and architecture notes are available at `docs/architecture.md`. Future pregnancy care-preparation architecture is described in `docs/pregnancy-care-prep-feature-plan.md`.
 
@@ -183,18 +183,18 @@ For local development, the backend has a development fallback secret. For any sh
 
 ## AI Usage Clarification
 
-Short answer: **PMS uses backend fallback AI-style output by default. `PMS_Test3` also has real provider integration behind the backend: Ollama Gemma 4 31B is tried first, OpenAI is the fallback, and local fallback output is the final fallback.**
+Short answer: **PMS uses backend fallback AI-style output by default. `PMS_Test3` also has real provider integration behind the backend: Ollama Cloud, OpenAI, and local fallback are all supported, and the runtime order is controlled by `AI_PROVIDER_CHAIN`. For restricted presentation laptops, use OpenAI first, Ollama Cloud second, and local fallback last.**
 
 - No external AI API is called in the default local setup.
 - The frontend never stores AI provider keys and never sends requests directly to an AI provider.
 - `AiInsightService` is the backend interface for AI-style care-preparation output.
 - `ConfiguredAiInsightService` is the active backend bean. It uses the local fallback implementation unless provider mode is explicitly configured.
 - `MockAiInsightService` generates predictable plain-language care summaries, explanations, possible directions, monitoring notes, care tips, doctor-prep questions, trusted source links, and report insight wording for development and tests.
-- `OllamaInsightClient` calls Ollama Cloud chat with `gemma4:31b`, `stream:false`, bearer authentication, and structured JSON output when `AI_MODE=provider` and `OLLAMA_API_KEY` are configured.
-- `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when the Ollama step fails and `OPENAI_API_KEY` or legacy `AI_API_KEY` is configured on the backend.
+- `OllamaInsightClient` calls Ollama Cloud chat with bearer authentication and JSON output when `AI_MODE=provider` and `OLLAMA_API_KEY` are configured. Use `gemma4:31b-cloud` for Ollama Cloud and `gemma4:31b` only for local/workstation Ollama.
+- `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when `OPENAI_API_KEY` or legacy `AI_API_KEY` is configured on the backend.
 - `RiskEngineService` remains the safety source of truth. Protected red flags and urgent warnings are rule-based before AI-style wording is generated.
 - AI-generated text cannot create or lower urgent warnings. Assessment urgent warnings stay rule-owned, and report urgent scanning remains Java-owned.
-- If Ollama configuration is missing, times out, returns invalid JSON, or fails validation, PMS tries OpenAI. If OpenAI also fails, PMS falls back to mock output and returns `aiMode=MOCK`.
+- If the active provider order is `openai,ollama`, PMS tries OpenAI first, then Ollama Cloud, then local fallback output. If the active order is `ollama,openai`, PMS tries Ollama first, then OpenAI, then local fallback output. Provider errors still complete safely with `aiMode=MOCK` when no real provider succeeds.
 
 This means PMS can run the full AI integration architecture without sending health data to an external model during normal local testing. In a production version, provider configuration, prompt validation, output validation, privacy review, logging rules, retention rules, and security controls would need to be designed before real patient data is used.
 
@@ -299,7 +299,7 @@ $env:JWT_EXPIRATION_HOURS="12"
 $env:AI_MODE="mock"
 $env:AI_PROVIDER_CHAIN="ollama,openai"
 $env:OLLAMA_API_KEY=""
-$env:OLLAMA_MODEL="gemma4:31b"
+$env:OLLAMA_MODEL="gemma4:31b-cloud"
 $env:OLLAMA_BASE_URL="https://ollama.com/api"
 $env:OPENAI_API_KEY=""
 $env:OPENAI_MODEL="gpt-4o-mini"
@@ -308,19 +308,20 @@ $env:AI_TIMEOUT_SECONDS="30"
 $env:AI_TEMPERATURE="0.2"
 ```
 
-To try real provider wording locally, keep PostgreSQL and the backend running and set backend-only variables before starting Spring Boot. Ollama is tried first, OpenAI second, and mock last:
+To try real provider wording on a restricted company laptop, keep PostgreSQL and the backend running and set backend-only variables before starting Spring Boot. This presentation-safe setup tries OpenAI first, Ollama Cloud second, and local fallback last:
 
 ```powershell
 $env:AI_MODE="provider"
-$env:AI_PROVIDER_CHAIN="ollama,openai"
-$env:OLLAMA_API_KEY="your-rotated-ollama-key"
-$env:OLLAMA_MODEL="gemma4:31b"
-$env:OLLAMA_BASE_URL="https://ollama.com/api"
-$env:OPENAI_API_KEY="your-openai-key-if-you-want-fallback"
+$env:AI_PROVIDER_CHAIN="openai,ollama"
+$env:OPENAI_API_KEY="your-openai-key"
 $env:OPENAI_MODEL="gpt-4o-mini"
+$env:OLLAMA_API_KEY="your-rotated-ollama-key"
+$env:OLLAMA_MODEL="gemma4:31b-cloud"
+$env:OLLAMA_BASE_URL="https://ollama.com/api"
+$env:AI_TIMEOUT_SECONDS="20"
 ```
 
-For a local Ollama installation, `OLLAMA_BASE_URL` can be `http://localhost:11434/api` and `OLLAMA_MODEL` can be `gemma4:31b` after the model is available locally. For Ollama Cloud, `https://ollama.com/api` requires `OLLAMA_API_KEY`. PMS tries the configured `OLLAMA_MODEL` first and can fall back to the Cloud tag `gemma4:31b-cloud` before trying OpenAI and then internal fallback output. Staff can view sanitized runtime status at `/api/admin/ai/status` or from the staff profile screen.
+For the product/default architecture, `AI_PROVIDER_CHAIN=ollama,openai` is still supported. For a local Ollama installation, `OLLAMA_BASE_URL` can be `http://localhost:11434/api` and `OLLAMA_MODEL` can be `gemma4:31b` after the model is available locally. For restricted laptops, local Ollama is not required; Ollama Cloud can be attempted with `OLLAMA_BASE_URL=https://ollama.com/api` and `OLLAMA_MODEL=gemma4:31b-cloud` if the account has access. Staff can view sanitized runtime status at `/api/admin/ai/status` or from the staff profile screen.
 
 Do not put provider keys in frontend files, browser storage, screenshots, or GitHub commits. If a key is pasted into chat or documentation by mistake, revoke or rotate it before use. Real patient data should not be sent to an external provider until privacy, consent, logging, retention, and security requirements are reviewed.
 
@@ -443,7 +444,7 @@ Use this flow when presenting the project:
 Suggested short explanation:
 
 ```text
-PMS helps users organize symptoms, profile context, health history, profile photos, report values, and connected-health records before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then the AI insight layer creates plain-language care-preparation output. By default that layer uses local fallback wording; with backend-only provider configuration it can use Ollama Gemma 4 31B first, OpenAI as fallback, and local fallback output last. The user receives a compact summary first and can expand directions, monitoring notes, care tips, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
+PMS helps users organize symptoms, profile context, health history, profile photos, report values, and connected-health records before they speak to a doctor. It does not diagnose. The backend uses rules for safety and red flags, then the AI insight layer creates plain-language care-preparation output. By default that layer uses local fallback wording; with backend-only provider configuration it can use OpenAI, Ollama Cloud, and local fallback output in the configured order. The user receives a compact summary first and can expand directions, monitoring notes, care tips, doctor questions, and trusted source links instead of only seeing a Low, Medium, or High label.
 ```
 
 Pregnancy-focused future scope:
@@ -459,9 +460,9 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
 - `AssessmentService`: saves pending intake drafts, saves report-based assessment drafts, resumes or discards patient-owned drafts, finalizes completed records after follow-up answers, exports completed records, and keeps unfinished drafts outside normal history.
 - `RiskEngineService`: calculates score, Low / Medium / High level, reasons, follow-up questions, suggestions, protected urgent warnings, upward-only operational rule matches, and symptom-matched managed questions.
 - `AiInsightService`: backend interface for AI-style care-preparation output. The frontend never calls AI providers directly.
-- `ConfiguredAiInsightService`: single active Spring AI service. It selects local fallback mode by default, tries Ollama first and OpenAI second in provider mode, strips AI urgent warnings, and falls back safely.
+- `ConfiguredAiInsightService`: single active Spring AI service. It selects local fallback mode by default, follows the configured provider order in provider mode, strips AI urgent warnings, and falls back safely.
 - `MockAiInsightService`: development/test fallback implementation that generates care summary, explanation, possible directions, monitoring plan, care tips, doctor questions, trusted links, and report insights.
-- `OllamaInsightClient`: primary provider client that calls Ollama Cloud chat with `gemma4:31b`, `stream:false`, and structured JSON.
+- `OllamaInsightClient`: provider client that calls Ollama Cloud chat with `gemma4:31b-cloud` or local Ollama with `gemma4:31b`, `stream:false`, and JSON output.
 - `OpenAiInsightClient`: fallback provider client that calls the OpenAI Responses API with Structured Outputs and validates the structured care-prep fields before use.
 - `ReportParserService`: extracts readable text and candidate lab observations from text-based reports.
 - `ReportInsightController`: exposes saved report upload, report follow-up, report finalization, and compatibility insight endpoints.
@@ -481,7 +482,7 @@ PMS can be extended to support pregnant and postpartum users by collecting optio
   No. It gives care-preparation guidance only. It does not diagnose, prescribe medicine, or replace a doctor.
 
 - Where is AI used?
-  AI is represented through the backend `AiInsightService`. The default local path uses fallback wording for predictable output. `PMS_Test3` also includes an optional provider chain behind the backend, enabled with `AI_MODE=provider`: Ollama Gemma 4 31B first, OpenAI fallback second, and local fallback last.
+  AI is represented through the backend `AiInsightService`. The default local path uses fallback wording for predictable output. `PMS_Test3` also includes an optional provider chain behind the backend, enabled with `AI_MODE=provider`. The provider order is configurable, so restricted presentation laptops can use OpenAI first while Ollama Cloud remains supported.
 
 - Did we use JWT?
   Yes. Login, staff login, and signup return signed JWT access tokens. The frontend stores the token and sends it as `Authorization: Bearer <token>`. The backend validates the signature and expiry, then still checks the current database role.
@@ -644,14 +645,14 @@ Validated on `PMS_Test3` after this branch update:
 
 The default local setup does not call a real external AI model. The backend risk engine is rule-based, and the backend-owned fallback implementation generates care-preparation wording for assessments and reports. This remains intentional for automated tests and local development because it keeps the system predictable, testable, and safe.
 
-`PMS_Test3` includes real AI integration behind the backend. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. Spring Boot calls the internal `ConfiguredAiInsightService`, which uses local fallback mode by default. In provider mode it tries Ollama Gemma 4 31B first, OpenAI second, and local fallback last.
+`PMS_Test3` includes real AI integration behind the backend. The React frontend never calls an AI provider directly and never stores provider API keys. Instead, the frontend submits symptoms, optional temperature data, report text or report notes, health-history answers, and follow-up answers to Spring Boot endpoints. Spring Boot calls the internal `ConfiguredAiInsightService`, which uses local fallback mode by default. In provider mode it follows `AI_PROVIDER_CHAIN`; for presentation runs use OpenAI first, Ollama Cloud second, and local fallback last.
 
 Current implementation and next phases:
 
 1. Backend DTOs now expose structured care-prep fields so model-style output is predictable.
 2. `AiInsightService` now owns assessment and report insight generation in the backend service layer.
 3. `MockAiInsightService` is used for tests and development so automated checks do not require internet or paid API access.
-4. `OllamaInsightClient` can call Ollama Cloud chat with `OLLAMA_API_KEY`, `OLLAMA_MODEL=gemma4:31b`, and structured JSON output.
+4. `OllamaInsightClient` can call Ollama Cloud chat with `OLLAMA_API_KEY`, `OLLAMA_MODEL=gemma4:31b-cloud`, and JSON output, or local Ollama with `OLLAMA_MODEL=gemma4:31b`.
 5. `OpenAiInsightClient` can call the OpenAI Responses API with Structured Outputs when Ollama fails and `OPENAI_API_KEY` or legacy `AI_API_KEY` is configured.
 6. Report summary generation, assessment insight refresh logic, care tips, and AI-assisted staff question suggestions stay behind backend endpoints.
 7. AI-style output returns care summary, explanation, possible directions, urgent warning, monitoring plan, care tips, doctor questions, trusted source links, and four to seven follow-up questions.

@@ -12,7 +12,7 @@ People often reach a doctor with scattered information: symptoms in memory, repo
 
 PMS Health solves a communication and preparation problem in healthcare. A patient may know something feels wrong, but they may not know how to explain severity, duration, health-history context, recent reports, wearable trends, or warning signs clearly. PMS gives them a guided assessment and a report-based assessment in one place. It asks follow-up questions, stores the final guide in history, and lets staff review completed records from a clinical operations workspace.
 
-The product uses a safety-first architecture. The Java rule engine owns risk scoring, red-flag detection, and urgent warning boundaries. AI is used only after those rules to improve the wording of summaries, follow-up prompts, tips, and doctor-preparation questions. In `PMS_Test3`, the backend tries Ollama Gemma 4 31B first, then OpenAI, then internal fallback output. The frontend never stores provider keys and never calls AI providers directly.
+The product uses a safety-first architecture. The Java rule engine owns risk scoring, red-flag detection, and urgent warning boundaries. AI is used only after those rules to improve the wording of summaries, follow-up prompts, tips, and doctor-preparation questions. In `PMS_Test3`, the backend supports a configurable provider chain: Ollama Cloud, OpenAI, and internal fallback output. For restricted business laptops, the recommended presentation setup is OpenAI first, Ollama Cloud second, and internal fallback last. The frontend never stores provider keys and never calls AI providers directly.
 
 The long-term vision is a patient health context hub. PMS can connect to wearable apps, hospital portals, uploaded lab reports, manual vitals, and future mobile health integrations. That means the product can evolve from a symptom form into a preparation layer that combines profile, reports, trends, and care-team discussion notes.
 
@@ -23,7 +23,7 @@ The long-term vision is a patient health context hub. PMS can connect to wearabl
 - Report-based assessment: Users can upload PDF, text, or image report files. Text-based reports and pasted report content can be extracted into notable observations, summary, tips, directions, and doctor questions.
 - Connected Health foundation: PMS has a connector model for Apple Health, Android Health Connect, Samsung Health, hospital portals, lab uploads, and manual entry. Current connectors store safe metadata and normalized timeline records.
 - Rules plus AI: Safety rules decide risk and urgent warning behavior. AI only improves wording, question drafts, summaries, tips, and patient-friendly explanations.
-- Provider fallback chain: `PMS_Test3` supports Ollama Gemma 4 31B first, OpenAI second, and internal fallback last, so the product can keep working even when a provider is unavailable.
+- Provider fallback chain: `PMS_Test3` supports Ollama Cloud, OpenAI, and internal fallback output in a configurable order, so the product can keep working even when a provider is unavailable.
 - Saved history and export: Completed symptom and report assessments are saved, can be reopened in a detailed drawer, and can be exported as a printable PDF summary.
 - Staff workspace: Staff can review completed assessment records, analytics, safety rules, managed questions, and AI-generated question drafts before activation.
 - Swagger API transparency: All major endpoints can be explored from Swagger, which makes the product easier to test, explain, and integrate.

@@ -7,7 +7,7 @@ This guide explains how to test PMS from IntelliJ, Swagger, the browser, and the
 - Confirm public pages, patient flows, staff flows, and API endpoints work together.
 - Confirm safety rules and red-flag warnings are rule-based and cannot be downgraded.
 - Confirm local fallback AI output stays structured, safe, and non-diagnostic.
-- Confirm optional provider mode is backend-only, tries Ollama first, uses OpenAI as fallback, validates structured output, and falls back safely.
+- Confirm optional provider mode is backend-only, respects `AI_PROVIDER_CHAIN`, validates structured output, and falls back safely.
 - Confirm completed results show a compact summary first and reveal long details only after the user expands them.
 - Confirm report-based assessments save to history, show extracted values, and export successfully.
 - Confirm profile photos save through the backend and appear in patient history and staff review.
@@ -182,7 +182,7 @@ White-box testing checks internal logic with knowledge of the code:
 - `RiskEngineService`: low, medium, high, red flags, urgent warnings, follow-up refinement, custom rules raising only.
 - `MockAiInsightService`: local fallback wording, structured fields, no diagnosis or prescription claims.
 - `ConfiguredAiInsightService`: local fallback default mode, provider-chain configuration checks, Ollama -> OpenAI -> fallback behavior, and rule-owned urgent warnings.
-- `OllamaInsightClient`: Ollama Cloud chat request shape, `gemma4:31b` model configuration, structured JSON parsing, invalid provider response handling, and timeout/error fallback through the configured service.
+- `OllamaInsightClient`: Ollama Cloud chat request shape, `gemma4:31b-cloud` model configuration, local `gemma4:31b` compatibility, JSON parsing, invalid provider response handling, and timeout/error fallback through the configured service.
 - `OpenAiInsightClient`: OpenAI Responses API request shape, Structured Outputs parsing, invalid provider response handling, and timeout/error fallback through the configured service.
 - Admin rules/questions: create, activate, pause, and future assessment matching behavior.
 
@@ -231,7 +231,7 @@ Use Swagger or Postman to check:
 - If Ollama fails while OpenAI is configured, the response can return `aiMode=OPENAI`.
 - If Ollama succeeds, the response can return `aiMode=OLLAMA`.
 - `/api/admin/ai/status` is staff-only and shows sanitized provider status without returning API key values.
-- Ollama Cloud runs with JSON mode and can retry the `gemma4:31b-cloud` tag when the configured model tag is unavailable.
+- Ollama Cloud runs with JSON mode and should use `gemma4:31b-cloud` on restricted laptops; local Ollama can use `gemma4:31b` only when installed and available.
 - Connected Health save success is not hidden by a later timeline refresh error.
 - Assessment and Report Assessment connected-data buttons show clear stale-login, backend, or empty-timeline messages.
 - Protected red-flag wording remains rule-based.

@@ -65,8 +65,11 @@ class ConfiguredAiInsightServiceTests {
         var insight = service.forAssessment(user, assessment, riskResult);
 
         assertEquals("MOCK", insight.aiMode());
-        assertEquals("mock", service.status().lastProviderAttempt());
-        assertEquals("All configured providers failed or were missing configuration.", service.status().lastFallbackReason());
+        assertEquals("openai", service.status().lastProviderAttempt());
+        assertEquals(
+                "Using internal fallback after configured providers failed. Last provider detail: openai: OPENAI_API_KEY or AI_API_KEY is not configured.",
+                service.status().lastFallbackReason()
+        );
     }
 
     @Test
@@ -138,6 +141,52 @@ class ConfiguredAiInsightServiceTests {
 
         assertEquals("OPENAI", insight.aiMode());
         assertNull(insight.urgentWarning());
+    }
+
+    @Test
+    void providerChainCanPreferOpenAiForPresentationRuns() {
+        ConfiguredAiInsightService service = new ConfiguredAiInsightService(
+                new MockAiInsightService(),
+                new SuccessfulOllamaClient("AI-generated warning should be removed"),
+                new SuccessfulClient("AI-generated warning should be removed"),
+                "provider",
+                "openai,ollama",
+                "test-ollama-key",
+                "test-openai-key",
+                "gemma4:31b-cloud",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
+        );
+
+        var insight = service.forAssessment(user, assessment, riskResult);
+
+        assertEquals("OPENAI", insight.aiMode());
+        assertEquals(List.of("openai", "ollama"), service.status().providerChain());
+        assertEquals("openai", service.status().lastProviderAttempt());
+    }
+
+    @Test
+    void openAiFailureFallsBackToOllamaWhenConfiguredSecond() {
+        ConfiguredAiInsightService service = new ConfiguredAiInsightService(
+                new MockAiInsightService(),
+                new SuccessfulOllamaClient("AI-generated warning should be removed"),
+                new ThrowingClient(),
+                "provider",
+                "openai,ollama",
+                "test-ollama-key",
+                "test-openai-key",
+                "gemma4:31b-cloud",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
+        );
+
+        var insight = service.forAssessment(user, assessment, riskResult);
+
+        assertEquals("OLLAMA", insight.aiMode());
+        assertEquals("ollama", service.status().lastProviderAttempt());
+        assertEquals("Provider completed successfully.", service.status().lastFallbackReason());
     }
 
     @Test

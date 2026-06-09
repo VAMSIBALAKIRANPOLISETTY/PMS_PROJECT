@@ -9,10 +9,13 @@
    - `DATABASE_PASSWORD`
    - `JWT_SECRET`
    - `AI_MODE=provider` for real provider testing
-   - `AI_PROVIDER_CHAIN=ollama,openai`
-   - `OLLAMA_API_KEY`
-   - `OLLAMA_MODEL=gemma4:31b`
+   - `AI_PROVIDER_CHAIN=openai,ollama`
+   - `OPENAI_API_KEY`
+   - `OPENAI_MODEL=gpt-4o-mini`
+   - `OLLAMA_API_KEY` if Ollama Cloud should be attempted as fallback
+   - `OLLAMA_MODEL=gemma4:31b-cloud`
    - `OLLAMA_BASE_URL=https://ollama.com/api`
+   - `AI_TIMEOUT_SECONDS=20`
 3. Start the frontend:
    - `cd frontend`
    - `npm run dev`
@@ -152,7 +155,7 @@ Explain:
 
 Use this exact explanation:
 
-> PMS_Test3 uses a provider chain. The backend tries Ollama Gemma 4 31B first. If Ollama fails, it tries OpenAI. If both fail, PMS still returns safe internal fallback wording. The frontend never stores API keys. AI does not score risk or create urgent warnings. The Java rule engine owns safety decisions.
+> PMS_Test3 uses a configurable provider chain. For a restricted company laptop, I run OpenAI first because it is the most reliable cloud provider for the presentation, keep Ollama Cloud as a supported fallback, and then use internal fallback wording if providers are unavailable. The frontend never stores API keys. AI does not score risk or create urgent warnings. The Java rule engine owns safety decisions.
 
 If DevTools shows `aiMode=MOCK`, say:
 

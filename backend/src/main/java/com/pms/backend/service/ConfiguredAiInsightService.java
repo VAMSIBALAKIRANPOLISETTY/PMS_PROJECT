@@ -115,7 +115,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 log.warn("{} assessment insight failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
-        remember("mock", "All configured providers failed or were missing configuration.");
+        rememberFinalMockFallback();
         return mockAiInsightService.forAssessment(user, assessment, result);
     }
 
@@ -148,7 +148,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 log.warn("{} assessment question suggestion failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
-        remember("mock", "All configured providers failed or were missing configuration.");
+        rememberFinalMockFallback();
         return mockAiInsightService.assessmentFollowUps(user, assessment, result);
     }
 
@@ -181,7 +181,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 log.warn("{} report follow-up generation failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
-        remember("mock", "All configured providers failed or were missing configuration.");
+        rememberFinalMockFallback();
         return mockAiInsightService.reportFollowUps(reportName);
     }
 
@@ -219,7 +219,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 log.warn("{} report insight failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
-        remember("mock", "All configured providers failed or were missing configuration.");
+        rememberFinalMockFallback();
         return safetyScan;
     }
 
@@ -252,7 +252,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 log.warn("{} managed question suggestion failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
-        remember("mock", "All configured providers failed or were missing configuration.");
+        rememberFinalMockFallback();
         return mockAiInsightService.suggestQuestions(symptomKey, focus);
     }
 
@@ -318,6 +318,18 @@ public class ConfiguredAiInsightService implements AiInsightService {
     private void rememberSuccess(String provider) {
         lastProviderAttempt.set(provider == null || provider.isBlank() ? "unknown" : provider);
         lastFallbackReason.set("Provider completed successfully.");
+    }
+
+    private void rememberFinalMockFallback() {
+        String attemptedProvider = lastProviderAttempt.get();
+        String providerReason = lastFallbackReason.get();
+        if (attemptedProvider == null || attemptedProvider.isBlank() || "none".equals(attemptedProvider)) {
+            lastProviderAttempt.set("mock");
+            lastFallbackReason.set("Using internal fallback because no configured provider could be attempted.");
+            return;
+        }
+        lastFallbackReason.set("Using internal fallback after configured providers failed. Last provider detail: "
+                + attemptedProvider + ": " + providerReason);
     }
 
     public record RuntimeStatus(

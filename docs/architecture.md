@@ -53,7 +53,7 @@ flowchart TD
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
-The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with the configured model, can retry the Ollama Cloud tag `gemma4:31b-cloud`, then tries `OpenAiInsightClient`, then the local fallback implementation. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
+The frontend never calls AI providers and never stores provider keys. In provider mode, the backend follows `AI_PROVIDER_CHAIN`; presentation runs can use `openai,ollama` while the product/default architecture can still use `ollama,openai`. Ollama Cloud should use `gemma4:31b-cloud`, local Ollama can use `gemma4:31b`, and provider errors fall to the next safe fallback. The rule engine still owns score, risk, and urgent warning behavior.
 
 ## Report And Connected-Health Flow
 

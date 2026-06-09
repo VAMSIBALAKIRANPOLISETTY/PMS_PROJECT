@@ -8,7 +8,7 @@ PMS Health is a patient health-preparation platform. It helps a patient organize
 
 ## 1-Minute Explanation
 
-The system has two workspaces. Patients can sign up, complete a structured profile, create symptom assessments, answer follow-up cards, upload health reports, review saved history, export assessment summaries, and manage connected-health sources. Staff use a separate clinical-operations workspace to review completed records, monitor analytics, manage upward-only safety rules, and maintain the question bank. Authentication uses JWT access tokens, and the frontend never stores AI provider keys. In `PMS_Test3`, backend provider mode tries Ollama Gemma 4 31B first, OpenAI second, and local fallback output last. The medical-safety layer remains rule-owned.
+The system has two workspaces. Patients can sign up, complete a structured profile, create symptom assessments, answer follow-up cards, upload health reports, review saved history, export assessment summaries, and manage connected-health sources. Staff use a separate clinical-operations workspace to review completed records, monitor analytics, manage upward-only safety rules, and maintain the question bank. Authentication uses JWT access tokens, and the frontend never stores AI provider keys. In `PMS_Test3`, backend provider mode can use OpenAI, Ollama Cloud, and local fallback output in the configured order. The medical-safety layer remains rule-owned.
 
 ## Patient Flow
 
@@ -37,7 +37,7 @@ The system has two workspaces. Patients can sign up, complete a structured profi
 - Java rules own red flags and safety boundaries.
 - AI helps with wording, summaries, tips, and question suggestions.
 - Frontend never calls Ollama or OpenAI.
-- Provider chain in `PMS_Test3`: Ollama Gemma 4 31B -> OpenAI -> local fallback.
+- Provider chain in `PMS_Test3`: configurable OpenAI/Ollama Cloud -> local fallback.
 
 ## JWT Explanation
 
