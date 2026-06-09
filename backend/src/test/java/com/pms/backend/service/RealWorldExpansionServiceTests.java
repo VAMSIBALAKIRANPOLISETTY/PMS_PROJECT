@@ -53,6 +53,7 @@ class RealWorldExpansionServiceTests {
         assertTrue(completed.careSummary() != null && !completed.careSummary().isBlank());
         assertTrue(assessmentService.reportHistoryFor(user).stream().anyMatch(item -> item.id().equals(completed.id())));
         assertTrue(assessmentService.exportAssessment(user, completed.id()).length > 100);
+        assertTrue(assessmentService.exportHistory(user).length > 100);
     }
 
     @Test

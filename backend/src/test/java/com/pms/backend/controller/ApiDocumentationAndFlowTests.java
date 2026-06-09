@@ -51,6 +51,7 @@ class ApiDocumentationAndFlowTests {
                 .andExpect(jsonPath("$.paths['/api/auth/staff-login']").exists())
                 .andExpect(jsonPath("$.paths['/api/auth/me']").exists())
                 .andExpect(jsonPath("$.paths['/api/assessments']").exists())
+                .andExpect(jsonPath("$.paths['/api/assessments/history/export']").exists())
                 .andExpect(jsonPath("$.paths['/api/assessments/{assessmentId}/follow-ups']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/follow-ups']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/insight']").exists())
@@ -120,6 +121,10 @@ class ApiDocumentationAndFlowTests {
                 .andReturn();
         JsonNode history = jsonTree(listResult);
         assertTrue(StreamSupport.stream(history.spliterator(), false).anyMatch(item -> item.path("id").asLong() == assessmentId));
+
+        mockMvc.perform(get("/api/assessments/history/export")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
     }
 
     @Test

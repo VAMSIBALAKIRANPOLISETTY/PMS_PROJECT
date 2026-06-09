@@ -89,4 +89,17 @@ public class AssessmentController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }
+
+    @Operation(summary = "Export full history", description = "Returns a printable PDF covering the authenticated patient's completed assessment history.")
+    @GetMapping("/history/export")
+    public ResponseEntity<byte[]> exportHistory(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader
+    ) {
+        AppUser user = authService.requireUser(authHeader);
+        byte[] pdf = assessmentService.exportHistory(user);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"pms-assessment-history.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
 }

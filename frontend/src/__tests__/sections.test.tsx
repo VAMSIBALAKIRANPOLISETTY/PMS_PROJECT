@@ -230,7 +230,7 @@ describe("section rendering", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /Report assessment/i }));
     expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Upload a report")).toBeVisible();
+    expect(screen.getByText("Upload a report for review")).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: /Guided assessment/i }));
     expect(screen.getByPlaceholderText("Example: 2")).toHaveValue(3);
@@ -255,7 +255,7 @@ describe("section rendering", () => {
       />,
     );
     expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Upload a report")).toBeVisible();
+    expect(screen.getByText("Upload a report for review")).toBeVisible();
   });
 
   it("shows an empty connected-health message from guided assessment", async () => {
@@ -288,10 +288,13 @@ describe("section rendering", () => {
 
   it("renders reports, history, profile, and recent assessments", () => {
     render(<Reports token="token" notify={vi.fn()} />);
-    expect(screen.getByText("Upload a report")).toBeInTheDocument();
+    expect(screen.getByText("Upload a report for review")).toBeInTheDocument();
+    expect(screen.getByText("Prepare a report-based care guide")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Use connected health data/i })).toBeInTheDocument();
     render(<History assessments={[assessment]} token="token" />);
     expect(screen.getByText("Assessment history")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Export full history/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Export PDF/i })).toBeInTheDocument();
     render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
     expect(screen.getByText("Profile photo")).toBeInTheDocument();
@@ -377,6 +380,21 @@ describe("section rendering", () => {
     fireEvent.click(screen.getByRole("button", { name: /15 May \| Fever/i }));
     expect(screen.getByText("ASM-10 care-preparation record")).toBeInTheDocument();
     expect(screen.getByText("Follow-up answers")).toBeInTheDocument();
+  });
+
+  it("renders profile edit sections in the expected stacked order", () => {
+    const view = render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Edit profile/i }));
+    const legends = Array.from(view.container.querySelectorAll(".profile-edit-group legend")).map((node) => node.textContent?.trim());
+    expect(legends).toEqual([
+      "Identity",
+      "Body basics",
+      "Emergency info",
+      "Care team",
+      "Clinical background",
+      "Lifestyle and preferences",
+    ]);
+    expect(screen.getByText("Required for a complete patient profile.")).toBeInTheDocument();
   });
 
   it("uses blank dynamic profile questions and preserves reviewed answers", () => {

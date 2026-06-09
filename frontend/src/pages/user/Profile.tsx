@@ -85,15 +85,26 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
 
   async function saveProfile() {
     setMessage("");
-    if (!form.fullName.trim() || !form.age || !form.heightCm || !form.weightKg || !form.sex.trim()) {
-      setMessage("Full name, age, height, weight, and sex are required.");
+    const normalizedHeight = heightUnit === "cm" ? Number(form.heightCm) : feetInchesToCm(heightFeet, heightInches);
+    if (
+      !form.fullName.trim()
+      || !form.dateOfBirth
+      || !form.age
+      || !normalizedHeight
+      || !form.weightKg
+      || !form.sex.trim()
+      || !form.bloodType
+      || !form.emergencyContactName.trim()
+      || !form.emergencyContactPhone.trim()
+    ) {
+      setMessage("Complete the required profile fields before saving.");
       return;
     }
     try {
       const response = await api.put("/auth/profile", {
         ...form,
         age: Number(form.age),
-        heightCm: heightUnit === "cm" ? Number(form.heightCm) : feetInchesToCm(heightFeet, heightInches),
+        heightCm: normalizedHeight,
         weightKg: Number(form.weightKg),
       }, { headers: authHeaders(token) });
       updateUser(response.data);
@@ -151,10 +162,10 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
       {editing ? (
         <div className="profile-edit-form">
           <ProfileGroup title="Identity">
-            <label>Full name<input value={form.fullName} onChange={(event) => setField("fullName", event.target.value)} /></label>
-            <label>Date of birth<input type="date" value={form.dateOfBirth} onChange={(event) => setField("dateOfBirth", event.target.value)} /></label>
-            <label>Age<input type="number" min="1" max="120" value={form.age} onChange={(event) => setField("age", event.target.value ? Number(event.target.value) : "")} /></label>
-            <label>Sex<select value={form.sex} onChange={(event) => setField("sex", event.target.value)}><option value="">Select sex</option><option>Female</option><option>Male</option><option>Intersex</option><option>Prefer not to say</option></select></label>
+            <label><LabelText required>Full name</LabelText><input value={form.fullName} onChange={(event) => setField("fullName", event.target.value)} /></label>
+            <label><LabelText required>Date of birth</LabelText><input type="date" value={form.dateOfBirth} onChange={(event) => setField("dateOfBirth", event.target.value)} /></label>
+            <label><LabelText required>Age</LabelText><input type="number" min="1" max="120" value={form.age} onChange={(event) => setField("age", event.target.value ? Number(event.target.value) : "")} /></label>
+            <label><LabelText required>Sex</LabelText><select value={form.sex} onChange={(event) => setField("sex", event.target.value)}><option value="">Select sex</option><option>Female</option><option>Male</option><option>Intersex</option><option>Prefer not to say</option></select></label>
             <label>Sex at birth<input value={form.sexAtBirth} placeholder="Female, male, intersex, or prefer not to say" onChange={(event) => setField("sexAtBirth", event.target.value)} /></label>
             <label>Gender identity<input value={form.genderIdentity} placeholder="Optional" onChange={(event) => setField("genderIdentity", event.target.value)} /></label>
             <label>Preferred language<input value={form.preferredLanguage} placeholder="Example: English" onChange={(event) => setField("preferredLanguage", event.target.value)} /></label>
@@ -164,23 +175,26 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
 
           <ProfileGroup title="Body basics">
             <div className="height-field">
-              <div className="field-heading"><span>Height</span><div className="segmented compact"><button type="button" className={heightUnit === "cm" ? "active" : ""} onClick={() => switchHeightUnit("cm")}>cm</button><button type="button" className={heightUnit === "imperial" ? "active" : ""} onClick={() => switchHeightUnit("imperial")}>ft + in</button></div></div>
+              <div className="field-heading"><LabelText required>Height</LabelText><div className="segmented compact"><button type="button" className={heightUnit === "cm" ? "active" : ""} onClick={() => switchHeightUnit("cm")}>cm</button><button type="button" className={heightUnit === "imperial" ? "active" : ""} onClick={() => switchHeightUnit("imperial")}>ft + in</button></div></div>
               {heightUnit === "cm" ? (
                 <input type="number" aria-label="Height cm" min="30" max="260" step="0.1" value={form.heightCm} onChange={(event) => setField("heightCm", event.target.value ? Number(event.target.value) : "")} />
               ) : (
                 <div className="imperial-height-grid"><input type="number" aria-label="Height feet" placeholder="Feet" min="1" max="8" value={heightFeet} onChange={(event) => setHeightFeet(event.target.value)} /><input type="number" aria-label="Height inches" placeholder="Inches" min="0" max="11" value={heightInches} onChange={(event) => setHeightInches(event.target.value)} /></div>
               )}
             </div>
-            <label>Weight kg<input type="number" min="2" max="350" step="0.1" value={form.weightKg} onChange={(event) => setField("weightKg", event.target.value ? Number(event.target.value) : "")} /></label>
-            <label>Blood type<select value={form.bloodType} onChange={(event) => setField("bloodType", event.target.value)}>{bloodTypes.map((type) => <option key={type || "blank"} value={type}>{type || "Select blood type"}</option>)}</select></label>
+            <label><LabelText required>Weight kg</LabelText><input type="number" min="2" max="350" step="0.1" value={form.weightKg} onChange={(event) => setField("weightKg", event.target.value ? Number(event.target.value) : "")} /></label>
+            <label><LabelText required>Blood type</LabelText><select value={form.bloodType} onChange={(event) => setField("bloodType", event.target.value)}>{bloodTypes.map((type) => <option key={type || "blank"} value={type}>{type || "Select blood type"}</option>)}</select></label>
             <label>Pregnancy or postpartum status<input value={form.pregnancyStatus} placeholder="Not applicable, pregnant, postpartum, or clinician-guided detail" onChange={(event) => setField("pregnancyStatus", event.target.value)} /></label>
           </ProfileGroup>
 
-          <ProfileGroup title="Emergency and care team">
-            <label>Emergency contact<input value={form.emergencyContactName} onChange={(event) => setField("emergencyContactName", event.target.value)} /></label>
+          <ProfileGroup title="Emergency info">
+            <label><LabelText required>Emergency contact name</LabelText><input value={form.emergencyContactName} onChange={(event) => setField("emergencyContactName", event.target.value)} /></label>
             <label>Relationship<input value={form.emergencyContactRelationship} onChange={(event) => setField("emergencyContactRelationship", event.target.value)} /></label>
-            <label>Emergency phone<input value={form.emergencyContactPhone} onChange={(event) => setField("emergencyContactPhone", event.target.value)} /></label>
+            <label><LabelText required>Emergency phone</LabelText><input value={form.emergencyContactPhone} onChange={(event) => setField("emergencyContactPhone", event.target.value)} /></label>
             <label>Preferred hospital<input value={form.preferredHospital} onChange={(event) => setField("preferredHospital", event.target.value)} /></label>
+          </ProfileGroup>
+
+          <ProfileGroup title="Care team">
             <label>Primary doctor<input value={form.primaryDoctor} onChange={(event) => setField("primaryDoctor", event.target.value)} /></label>
             <label>Specialists<input value={form.specialistNames} onChange={(event) => setField("specialistNames", event.target.value)} /></label>
             <label>Hospital or clinic<input value={form.hospitalClinic} onChange={(event) => setField("hospitalClinic", event.target.value)} /></label>
@@ -212,6 +226,7 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
           </ProfileGroup>
 
           {message && <div className="form-message">{message}</div>}
+          <p className="required-note"><span className="required-indicator">*</span> Required for a complete patient profile.</p>
           <div className="profile-edit-actions">
             <button className="ghost-button" type="button" onClick={resetEditor}>Cancel</button>
             <button className="primary-button" type="button" onClick={saveProfile}>Save profile<Save size={18} /></button>
@@ -269,6 +284,15 @@ function ProfileGroup({ title, children }: { title: string; children: ReactNode 
       <legend>{title}</legend>
       <div className="form-grid">{children}</div>
     </fieldset>
+  );
+}
+
+function LabelText({ children, required = false }: { children: ReactNode; required?: boolean }) {
+  return (
+    <span className="label-text">
+      {children}
+      {required && <span className="required-indicator">*</span>}
+    </span>
   );
 }
 
@@ -344,11 +368,18 @@ function profileSections(user: User) {
       ],
     },
     {
-      title: "Emergency and care team",
-      description: "People and organizations you may want ready during care planning.",
+      title: "Emergency information",
+      description: "The main emergency contact details you may want ready during care planning.",
       rows: [
-        ["Emergency contact", joinValues(user.emergencyContactName, user.emergencyContactRelationship, user.emergencyContactPhone)],
+        ["Emergency contact", joinValues(user.emergencyContactName, user.emergencyContactRelationship)],
+        ["Emergency phone", user.emergencyContactPhone],
         ["Preferred hospital", user.preferredHospital],
+      ],
+    },
+    {
+      title: "Care team",
+      description: "Clinicians, clinics, and coverage details linked to ongoing care.",
+      rows: [
         ["Primary doctor", user.primaryDoctor],
         ["Specialists", user.specialistNames],
         ["Hospital or clinic", user.hospitalClinic],

@@ -162,35 +162,41 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
   const sourceAssessment = result ?? draft;
 
   return (
-    <div className="split-layout" data-section="reports">
-      <section className="panel upload-panel">
-        <div className="upload-zone">
+    <div className="report-assessment-workspace" data-section="reports">
+      <section className="panel report-upload-panel">
+        <p className="eyebrow">Upload report</p>
+        <h2>Upload a report for review</h2>
+        <p className="section-note">Add a PDF, image, or pasted report text so PMS can prepare a saved report-based care guide and follow-up questions for the patient record.</p>
+        <div className="upload-zone report-upload-zone">
           <Upload size={34} />
-          <h2>Upload a report</h2>
-          <p>Use a text-based PDF or paste report text. PMS saves the report assessment so it appears in history and staff review.</p>
+          <h3>Choose a report file or paste the report text</h3>
+          <p>PDF, text, and image files are supported. If an uploaded image cannot be read clearly, paste the readable text below before continuing.</p>
           <input type="file" accept="application/pdf,text/plain,image/png,image/jpeg,image/webp" onChange={(event) => resetDraft(event.target.files?.[0] ?? null)} />
           {file && <div className="success-row"><CheckCircle2 size={18} />{file.name} selected</div>}
           <label className="report-text-box">
             Report text or notes
             <textarea
-              placeholder="Paste lab values, abnormal flags, or provider notes if the PDF cannot be read."
+              placeholder="Paste key values, abnormal flags, and provider notes if the uploaded file cannot be read clearly."
               value={reportText}
               onChange={(event) => setReportText(event.target.value)}
             />
           </label>
-          <button className="primary-button" type="button" disabled={busy} onClick={uploadReport}>
-            Prepare report questions <ArrowRight size={18} />
-          </button>
-          <button className="ghost-button" type="button" onClick={() => void useConnectedHealthData()}>
-            <Activity size={17} /> Use connected health data
-          </button>
-          {includeConnected && <div className="success-row"><CheckCircle2 size={18} />Connected data will be included in this report assessment.</div>}
+          <div className="report-upload-actions">
+            <button className="primary-button" type="button" disabled={busy} onClick={uploadReport}>
+              Prepare report questions <ArrowRight size={18} />
+            </button>
+            <button className="ghost-button" type="button" onClick={() => void useConnectedHealthData()}>
+              <Activity size={17} /> Use connected health data
+            </button>
+          </div>
+          {includeConnected && <div className="success-row"><CheckCircle2 size={18} />Connected health context will be included in this report assessment.</div>}
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel report-review-panel">
         <p className="eyebrow">Report assessment</p>
         <h2>{currentQuestion ? `Question ${step + 1} of ${draft?.followUpQuestions.length}` : "Prepare a report-based care guide"}</h2>
+        <p className="section-note">This section collects follow-up details, saves the completed report assessment to history, and prepares a structured summary for clinical discussion.</p>
         {message && <div className="form-message">{message}</div>}
 
         {sourceAssessment?.extractedObservations && sourceAssessment.extractedObservations.length > 0 && (
@@ -240,9 +246,9 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
               )}
             </div>
           </div>
-        ) : (
-          <p className="summary-box">Upload a report or paste text to prepare a saved report assessment.</p>
-        )}
+        ) : !result ? (
+          <p className="summary-box">Upload a report and complete the follow-up questions to save a report-based assessment in history.</p>
+        ) : null}
 
         {result && (
           <>
@@ -260,7 +266,7 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
           </>
         )}
 
-        <div className="disclaimer-box"><FileText size={16} /> PMS explains report context for care preparation. It does not diagnose, prescribe, or replace medical care.</div>
+        <div className="disclaimer-box"><FileText size={16} /> PMS organizes report context for care preparation. It does not diagnose, prescribe, or replace professional medical care.</div>
       </section>
     </div>
   );
