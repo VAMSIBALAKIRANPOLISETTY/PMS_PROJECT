@@ -37,6 +37,42 @@ public class AppUser {
     private String familyHistory;
     private String mentalHealthHistory;
     private String sleepQuality;
+    private String dateOfBirth;
+    private String sexAtBirth;
+    private String genderIdentity;
+    private String preferredLanguage;
+    private String phone;
+    @Column(length = 500)
+    private String address;
+    private String bloodType;
+    private String pregnancyStatus;
+    private String emergencyContactName;
+    private String emergencyContactRelationship;
+    private String emergencyContactPhone;
+    private String preferredHospital;
+    @Column(length = 500)
+    private String surgeries;
+    @Column(length = 500)
+    private String immunizations;
+    private String primaryDoctor;
+    @Column(length = 500)
+    private String specialistNames;
+    private String hospitalClinic;
+    private String insuranceProvider;
+    private String insuranceMemberId;
+    private String baselineHeartRate;
+    private String baselineBloodPressure;
+    @Column(length = 500)
+    private String tobaccoAlcoholUse;
+    @Column(length = 500)
+    private String dietNotes;
+    private Boolean connectedDataConsent = false;
+    private String notificationPreference;
+    private String exportFormatPreference;
+    private String dataSharingPreference;
+    @Lob
+    @Column(length = 500000)
+    private String profilePhotoDataUrl;
     private LocalDateTime profileSetupCompletedAt;
     private String privacyNoticeVersion;
     private String termsVersion;
@@ -78,6 +114,62 @@ public class AppUser {
     public void setMentalHealthHistory(String mentalHealthHistory) { this.mentalHealthHistory = mentalHealthHistory; }
     public String getSleepQuality() { return sleepQuality; }
     public void setSleepQuality(String sleepQuality) { this.sleepQuality = sleepQuality; }
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getSexAtBirth() { return sexAtBirth; }
+    public void setSexAtBirth(String sexAtBirth) { this.sexAtBirth = sexAtBirth; }
+    public String getGenderIdentity() { return genderIdentity; }
+    public void setGenderIdentity(String genderIdentity) { this.genderIdentity = genderIdentity; }
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+    public String getBloodType() { return bloodType; }
+    public void setBloodType(String bloodType) { this.bloodType = bloodType; }
+    public String getPregnancyStatus() { return pregnancyStatus; }
+    public void setPregnancyStatus(String pregnancyStatus) { this.pregnancyStatus = pregnancyStatus; }
+    public String getEmergencyContactName() { return emergencyContactName; }
+    public void setEmergencyContactName(String emergencyContactName) { this.emergencyContactName = emergencyContactName; }
+    public String getEmergencyContactRelationship() { return emergencyContactRelationship; }
+    public void setEmergencyContactRelationship(String emergencyContactRelationship) { this.emergencyContactRelationship = emergencyContactRelationship; }
+    public String getEmergencyContactPhone() { return emergencyContactPhone; }
+    public void setEmergencyContactPhone(String emergencyContactPhone) { this.emergencyContactPhone = emergencyContactPhone; }
+    public String getPreferredHospital() { return preferredHospital; }
+    public void setPreferredHospital(String preferredHospital) { this.preferredHospital = preferredHospital; }
+    public String getSurgeries() { return surgeries; }
+    public void setSurgeries(String surgeries) { this.surgeries = surgeries; }
+    public String getImmunizations() { return immunizations; }
+    public void setImmunizations(String immunizations) { this.immunizations = immunizations; }
+    public String getPrimaryDoctor() { return primaryDoctor; }
+    public void setPrimaryDoctor(String primaryDoctor) { this.primaryDoctor = primaryDoctor; }
+    public String getSpecialistNames() { return specialistNames; }
+    public void setSpecialistNames(String specialistNames) { this.specialistNames = specialistNames; }
+    public String getHospitalClinic() { return hospitalClinic; }
+    public void setHospitalClinic(String hospitalClinic) { this.hospitalClinic = hospitalClinic; }
+    public String getInsuranceProvider() { return insuranceProvider; }
+    public void setInsuranceProvider(String insuranceProvider) { this.insuranceProvider = insuranceProvider; }
+    public String getInsuranceMemberId() { return insuranceMemberId; }
+    public void setInsuranceMemberId(String insuranceMemberId) { this.insuranceMemberId = insuranceMemberId; }
+    public String getBaselineHeartRate() { return baselineHeartRate; }
+    public void setBaselineHeartRate(String baselineHeartRate) { this.baselineHeartRate = baselineHeartRate; }
+    public String getBaselineBloodPressure() { return baselineBloodPressure; }
+    public void setBaselineBloodPressure(String baselineBloodPressure) { this.baselineBloodPressure = baselineBloodPressure; }
+    public String getTobaccoAlcoholUse() { return tobaccoAlcoholUse; }
+    public void setTobaccoAlcoholUse(String tobaccoAlcoholUse) { this.tobaccoAlcoholUse = tobaccoAlcoholUse; }
+    public String getDietNotes() { return dietNotes; }
+    public void setDietNotes(String dietNotes) { this.dietNotes = dietNotes; }
+    public Boolean getConnectedDataConsent() { return connectedDataConsent; }
+    public void setConnectedDataConsent(Boolean connectedDataConsent) { this.connectedDataConsent = connectedDataConsent; }
+    public String getNotificationPreference() { return notificationPreference; }
+    public void setNotificationPreference(String notificationPreference) { this.notificationPreference = notificationPreference; }
+    public String getExportFormatPreference() { return exportFormatPreference; }
+    public void setExportFormatPreference(String exportFormatPreference) { this.exportFormatPreference = exportFormatPreference; }
+    public String getDataSharingPreference() { return dataSharingPreference; }
+    public void setDataSharingPreference(String dataSharingPreference) { this.dataSharingPreference = dataSharingPreference; }
+    public String getProfilePhotoDataUrl() { return profilePhotoDataUrl; }
+    public void setProfilePhotoDataUrl(String profilePhotoDataUrl) { this.profilePhotoDataUrl = profilePhotoDataUrl; }
     public LocalDateTime getProfileSetupCompletedAt() { return profileSetupCompletedAt; }
     public void setProfileSetupCompletedAt(LocalDateTime profileSetupCompletedAt) { this.profileSetupCompletedAt = profileSetupCompletedAt; }
     public String getPrivacyNoticeVersion() { return privacyNoticeVersion; }

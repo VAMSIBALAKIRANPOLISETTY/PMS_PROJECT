@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { CartesianGrid, Line, LineChart as ReLineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AssessmentReportDrawer } from "../../components/AssessmentReportDrawer";
+import { ProfileAvatar } from "../../components/ProfileAvatar";
 import { RiskPill } from "../../components/RiskPill";
 import type { Assessment } from "../../types";
 import { formatDate, trendFromAssessments } from "../../utils";
 
-export function History({ assessments }: { assessments: Assessment[] }) {
+export function History({ assessments, token }: { assessments: Assessment[]; token: string }) {
   const [selected, setSelected] = useState<Assessment | null>(null);
   return (
     <>
@@ -15,7 +16,11 @@ export function History({ assessments }: { assessments: Assessment[] }) {
         <div className="timeline">
           {assessments.length === 0 && <div className="empty-row">No history found for this account.</div>}
           {assessments.map((item) => (
-            <button type="button" key={item.id} className="timeline-item assessment-open-button" onClick={() => setSelected(item)}><span /><div><strong>{formatDate(item.createdAt)} | {item.mainSymptom}</strong><p>{item.reasons[0]}</p></div><RiskPill value={item.riskLevel} /></button>
+            <button type="button" key={item.id} className="timeline-item assessment-open-button" onClick={() => setSelected(item)}>
+              <ProfileAvatar name={item.patient} photo={item.patientProfilePhotoDataUrl} size="sm" />
+              <div><strong>{formatDate(item.createdAt)} | {item.mainSymptom}</strong><p>{item.reasons[0]}</p></div>
+              <RiskPill value={item.riskLevel} />
+            </button>
           ))}
         </div>
       </section>
@@ -32,7 +37,7 @@ export function History({ assessments }: { assessments: Assessment[] }) {
         </ResponsiveContainer>
       </section>
     </div>
-    <AssessmentReportDrawer assessment={selected} onClose={() => setSelected(null)} />
+    <AssessmentReportDrawer assessment={selected} onClose={() => setSelected(null)} token={token} />
     </>
   );
 }

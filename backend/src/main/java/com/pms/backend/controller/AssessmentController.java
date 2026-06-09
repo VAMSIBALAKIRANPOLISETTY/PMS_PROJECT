@@ -13,6 +13,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -71,5 +74,19 @@ public class AssessmentController {
     ) {
         AppUser user = authService.requireUser(authHeader);
         assessmentService.discardDraft(user, assessmentId);
+    }
+
+    @Operation(summary = "Export completed assessment", description = "Returns a printable PDF summary for a completed symptom or report assessment.")
+    @GetMapping("/{assessmentId}/export")
+    public ResponseEntity<byte[]> exportAssessment(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long assessmentId
+    ) {
+        AppUser user = authService.requireUser(authHeader);
+        byte[] pdf = assessmentService.exportAssessment(user, assessmentId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"pms-assessment-" + assessmentId + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

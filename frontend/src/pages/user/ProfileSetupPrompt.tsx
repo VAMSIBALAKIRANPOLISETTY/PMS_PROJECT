@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import axios from "axios";
 import { ArrowRight, CheckCircle2, Save } from "lucide-react";
 import { api, authHeaders } from "../../api";
@@ -36,6 +36,8 @@ interface ProfileSetupPromptProps {
 }
 
 export function ProfileSetupPrompt({ user, token, updateUser, notify }: ProfileSetupPromptProps) {
+  const detailRef = useRef<HTMLInputElement | null>(null);
+  const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -68,6 +70,33 @@ export function ProfileSetupPrompt({ user, token, updateUser, notify }: ProfileS
         mentalHealthHistory: serializeAnswer(answers.mentalHealthHistory),
         sleepQuality: serializeAnswer(answers.sleepQuality),
         lifestyle: serializeAnswer(answers.lifestyle),
+        dateOfBirth: user.dateOfBirth,
+        sexAtBirth: user.sexAtBirth,
+        genderIdentity: user.genderIdentity,
+        preferredLanguage: user.preferredLanguage,
+        phone: user.phone,
+        address: user.address,
+        bloodType: user.bloodType,
+        pregnancyStatus: user.pregnancyStatus,
+        emergencyContactName: user.emergencyContactName,
+        emergencyContactRelationship: user.emergencyContactRelationship,
+        emergencyContactPhone: user.emergencyContactPhone,
+        preferredHospital: user.preferredHospital,
+        surgeries: user.surgeries,
+        immunizations: user.immunizations,
+        primaryDoctor: user.primaryDoctor,
+        specialistNames: user.specialistNames,
+        hospitalClinic: user.hospitalClinic,
+        insuranceProvider: user.insuranceProvider,
+        insuranceMemberId: user.insuranceMemberId,
+        baselineHeartRate: user.baselineHeartRate,
+        baselineBloodPressure: user.baselineBloodPressure,
+        tobaccoAlcoholUse: user.tobaccoAlcoholUse,
+        dietNotes: user.dietNotes,
+        connectedDataConsent: user.connectedDataConsent,
+        notificationPreference: user.notificationPreference,
+        exportFormatPreference: user.exportFormatPreference,
+        dataSharingPreference: user.dataSharingPreference,
       }, { headers: authHeaders(token) });
       updateUser(response.data);
       notify("Profile setup saved. Your assessments will use your reviewed health history.");
@@ -86,7 +115,7 @@ export function ProfileSetupPrompt({ user, token, updateUser, notify }: ProfileS
         <span className="setup-percent">{progress}%</span>
       </div>
       <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
-      <div className="question-card">
+      <div className="question-card" onKeyDown={handleQuestionKeyDown}>
         <span>Question {step + 1} of {historyQuestions.length}</span>
         <h3>{question.label}</h3>
         <select value={currentAnswer.choice} onChange={(event) => updateAnswer(question.key, event.target.value, "")}>
@@ -94,16 +123,16 @@ export function ProfileSetupPrompt({ user, token, updateUser, notify }: ProfileS
           {question.options.map((option) => <option value={option} key={option}>{option}</option>)}
         </select>
         {question.detailsFor.includes(currentAnswer.choice) && (
-          <input value={currentAnswer.detail} placeholder={question.detailPlaceholder} onChange={(event) => updateAnswer(question.key, currentAnswer.choice, event.target.value)} />
+          <input ref={detailRef} value={currentAnswer.detail} placeholder={question.detailPlaceholder} onChange={(event) => updateAnswer(question.key, currentAnswer.choice, event.target.value)} />
         )}
       </div>
       {message && <div className="form-message">{message}</div>}
       <div className="profile-setup-actions">
         <button className="ghost-button" type="button" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Back</button>
         {step < historyQuestions.length - 1 ? (
-          <button className="primary-button" type="button" disabled={!currentValid} onClick={() => setStep(step + 1)}>Next question<ArrowRight size={18} /></button>
+          <button ref={primaryActionRef} className="primary-button" type="button" disabled={!currentValid} onClick={() => setStep(step + 1)}>Next question<ArrowRight size={18} /></button>
         ) : (
-          <button className="primary-button" type="button" onClick={saveProfile} disabled={saving || answeredCount !== historyQuestions.length}>{saving ? "Saving..." : "Save setup"}<Save size={18} /></button>
+          <button ref={primaryActionRef} className="primary-button" type="button" onClick={saveProfile} disabled={saving || answeredCount !== historyQuestions.length}>{saving ? "Saving..." : "Save setup"}<Save size={18} /></button>
         )}
       </div>
       {progress === 100 && <div className="setup-complete"><CheckCircle2 size={18} />All health-history questions have reviewed answers.</div>}
@@ -112,6 +141,26 @@ export function ProfileSetupPrompt({ user, token, updateUser, notify }: ProfileS
 
   function updateAnswer(key: HistoryKey, choice: string, detail: string) {
     setAnswers((current) => ({ ...current, [key]: { choice, detail } }));
+    const needsDetail = historyQuestions.find((item) => item.key === key)?.detailsFor.includes(choice);
+    window.setTimeout(() => {
+      if (needsDetail) detailRef.current?.focus();
+      else primaryActionRef.current?.focus();
+    }, 0);
+  }
+
+  function handleQuestionKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter") return;
+    const target = event.target as HTMLElement;
+    if (target.tagName === "INPUT" && question.requiredDetailsFor?.includes(currentAnswer.choice) && !currentAnswer.detail.trim()) {
+      return;
+    }
+    event.preventDefault();
+    if (!currentValid) return;
+    if (step < historyQuestions.length - 1) {
+      setStep(step + 1);
+    } else {
+      void saveProfile();
+    }
   }
 }
 

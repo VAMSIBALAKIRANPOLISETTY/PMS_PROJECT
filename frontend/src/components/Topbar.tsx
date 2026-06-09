@@ -1,5 +1,6 @@
 import { Bell, ChevronDown, Menu, Sparkles } from "lucide-react";
 import { designOptions } from "../data";
+import { ProfileAvatar } from "./ProfileAvatar";
 import type { DesignId, User } from "../types";
 
 interface TopbarProps {
@@ -20,6 +21,7 @@ export function Topbar({ design, setDesign, onMenu, user, onLogout }: TopbarProp
         <h1>{isStaff ? "Clinical operations" : "My health overview"}</h1>
       </div>
       <div className="top-actions">
+        <ProfileAvatar name={user.fullName} photo={user.profilePhotoDataUrl} size="sm" />
         <label className="select-shell">
           <Sparkles size={16} />
           <select value={design} onChange={(event) => setDesign(event.target.value as DesignId)}>

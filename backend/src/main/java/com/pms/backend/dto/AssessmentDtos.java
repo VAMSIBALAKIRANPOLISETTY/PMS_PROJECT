@@ -2,6 +2,8 @@ package com.pms.backend.dto;
 
 import com.pms.backend.model.RiskLevel;
 import com.pms.backend.model.AssessmentStatus;
+import com.pms.backend.model.AssessmentSourceType;
+import com.pms.backend.model.LabObservation;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,8 +15,21 @@ public class AssessmentDtos {
             @NotNull @Min(0) @Max(365) Integer durationDays,
             Boolean temperatureAvailable,
             @DecimalMin("90.0") @DecimalMax("110.0") Double temperatureF,
-            @Size(max = 100) String chronicCondition
-    ) {}
+            @Size(max = 100) String chronicCondition,
+            Boolean includeConnectedHealth,
+            @Size(max = 20) List<Long> connectedHealthRecordIds
+    ) {
+        public AssessmentRequest(
+                List<String> symptoms,
+                Integer severity,
+                Integer durationDays,
+                Boolean temperatureAvailable,
+                Double temperatureF,
+                String chronicCondition
+        ) {
+            this(symptoms, severity, durationDays, temperatureAvailable, temperatureF, chronicCondition, false, List.of());
+        }
+    }
 
     public record FollowUpAnswerRequest(
             @NotEmpty @Size(min = 1, max = 7) List<@NotBlank @Size(max = 500) String> answers
@@ -47,7 +62,23 @@ public class AssessmentDtos {
             List<String> doctorPrepQuestions,
             List<String> trustedSourceLinks,
             String aiMode,
+            AssessmentSourceType sourceType,
+            String sourceName,
+            String sourceRecordId,
+            String reportName,
+            LocalDateTime reportDate,
+            String reportProvider,
+            String connectedHealthSummary,
+            String patientProfilePhotoDataUrl,
+            List<LabObservation> extractedObservations,
+            String exportUrl,
             LocalDateTime createdAt
+    ) {}
+
+    public record ReportUploadResponse(
+            AssessmentResponse assessment,
+            List<String> extractedObservations,
+            String extractedTextPreview
     ) {}
 
     public record ReportFollowUpRequest(

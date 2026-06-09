@@ -146,7 +146,6 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
         )}
         {authMode === "login" && <button className="auth-secondary-link" onClick={() => setAuthMode("staff-login")}>Staff login</button>}
         <button className="ghost-button" onClick={onBack}>Back</button>
-       {/* <div className="disclaimer-box">Demo users: user@example.com / admin@example.com. Password: password123.</div> */}
       </section>
     </div>
   );

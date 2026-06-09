@@ -12,6 +12,7 @@ interface SidebarProps {
 
 export function Sidebar({ mode, page, setPage, open, setOpen }: SidebarProps) {
   const nav = mode === "admin" ? adminNav : userNav;
+  const activePage = mode === "user" && page === "reports" ? "assessment" : page;
   return (
     <aside className={`sidebar ${open ? "open" : ""}`}>
       <div className="brand-row">
@@ -21,7 +22,7 @@ export function Sidebar({ mode, page, setPage, open, setOpen }: SidebarProps) {
       </div>
       <nav>
         {nav.map(([id, label, Icon]) => (
-          <button key={id} className={page === id ? "active" : ""} onClick={() => { setPage(id); setOpen(false); }}>
+          <button key={id} className={activePage === id ? "active" : ""} onClick={() => { setPage(id); setOpen(false); }}>
             <Icon size={18} />{label}
           </button>
         ))}

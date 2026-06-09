@@ -53,6 +53,7 @@ public class OllamaInsightClient {
                 - Temperature available: %s
                 - Temperature F: %s
                 - Assessment chronic condition: %s
+                - Connected health context: %s
 
                 Rule engine result:
                 - Risk level: %s
@@ -70,6 +71,7 @@ public class OllamaInsightClient {
                 nullable(assessment.getTemperatureAvailable()),
                 nullable(assessment.getTemperatureF()),
                 nullable(assessment.getChronicCondition()),
+                nullable(assessment.getConnectedHealthSummary()),
                 result.level(),
                 result.score(),
                 result.reasons(),

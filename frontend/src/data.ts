@@ -1,8 +1,8 @@
 import {
   ClipboardList,
-  FileText,
   LayoutDashboard,
   LineChart,
+  Link2,
   MessageSquareText,
   Settings2,
   UserRound,
@@ -33,7 +33,7 @@ export const possibleSymptoms = symptomGroups.flatMap((group) => group.symptoms)
 export const userNav: NavItem[] = [
   ["overview", "Overview", LayoutDashboard],
   ["assessment", "Assessment", ClipboardList],
-  ["reports", "Reports", FileText],
+  ["connected", "Connected Health", Link2],
   ["history", "History", LineChart],
   ["profile", "Profile", UserRound],
 ];

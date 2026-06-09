@@ -6,6 +6,7 @@ import { CarePrepGuide } from "../components/CarePrepGuide";
 import { DesignPicker } from "../components/DesignPicker";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
+import { MainContent } from "../MainContent";
 import { AdminOverview } from "../pages/admin/AdminOverview";
 import { AdminProfile } from "../pages/admin/AdminProfile";
 import { AssessmentTable } from "../pages/admin/AssessmentTable";
@@ -14,6 +15,8 @@ import { Rules } from "../pages/admin/Rules";
 import { AuthPage } from "../pages/auth/AuthPage";
 import { LandingPage } from "../pages/auth/LandingPage";
 import { AssessmentForm } from "../pages/user/AssessmentForm";
+import { AssessmentWorkspace } from "../pages/user/AssessmentWorkspace";
+import { ConnectedHealth } from "../pages/user/ConnectedHealth";
 import { History } from "../pages/user/History";
 import { Profile } from "../pages/user/Profile";
 import { ProfileSetupPrompt } from "../pages/user/ProfileSetupPrompt";
@@ -96,6 +99,8 @@ const assessment: Assessment = {
   doctorPrepQuestions: ["What symptoms should I mention first?"],
   trustedSourceLinks: ["MedlinePlus evaluating health information: https://medlineplus.gov/evaluatinghealthinformation.html"],
   aiMode: "MOCK",
+  connectedHealthSummary: "Recent connected health context: Resting heart rate 72 bpm from Apple Health.",
+  patientProfilePhotoDataUrl: "data:image/png;base64,ZmFrZQ==",
   createdAt: "2026-05-15T10:00:00",
 };
 
@@ -184,9 +189,16 @@ describe("section rendering", () => {
     expect(screen.queryByRole("button", { name: "User" })).not.toBeInTheDocument();
     render(<Sidebar mode="user" page="overview" setPage={vi.fn()} open={false} setOpen={vi.fn()} />);
     expect(screen.getByText("Assessment")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reports" })).not.toBeInTheDocument();
     render(<Sidebar mode="admin" page="overview" setPage={vi.fn()} open={false} setOpen={vi.fn()} />);
     expect(screen.getAllByText("Profile").length).toBeGreaterThan(0);
     expect(screen.queryByText("Quality review")).not.toBeInTheDocument();
+  });
+
+  it("keeps the hidden reports route highlighted as Assessment in the sidebar", () => {
+    render(<Sidebar mode="user" page="reports" setPage={vi.fn()} open={false} setOpen={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Assessment" })).toHaveClass("active");
+    expect(screen.queryByRole("button", { name: "Reports" })).not.toBeInTheDocument();
   });
 
   it("renders user overview without the large appearance panel", () => {
@@ -205,6 +217,55 @@ describe("section rendering", () => {
     expect(screen.getAllByText("Fever").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Cardiovascular").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Chest pressure").length).toBeGreaterThan(0);
+  });
+
+  it("combines guided and report assessment flows in one workspace", () => {
+    vi.spyOn(api, "get").mockRejectedValue(new Error("No draft"));
+    render(<AssessmentWorkspace token="token" onCreated={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+
+    expect(screen.getByRole("tab", { name: /Guided assessment/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Tell us how you feel")).toBeVisible();
+    const durationInput = screen.getByPlaceholderText("Example: 2");
+    fireEvent.change(durationInput, { target: { value: "3" } });
+
+    fireEvent.click(screen.getByRole("tab", { name: /Report assessment/i }));
+    expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Upload a health report")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Guided assessment/i }));
+    expect(screen.getByPlaceholderText("Example: 2")).toHaveValue(3);
+  });
+
+  it("opens report assessment from the reports route alias", () => {
+    vi.spyOn(api, "get").mockRejectedValue(new Error("No draft"));
+    render(
+      <MainContent
+        mode="user"
+        page="reports"
+        setPage={vi.fn()}
+        user={user}
+        token="token"
+        assessments={[]}
+        analytics={analytics}
+        rules={[rule]}
+        questions={[question]}
+        refresh={vi.fn().mockResolvedValue(undefined)}
+        updateUser={vi.fn()}
+        notify={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Upload a health report")).toBeVisible();
+  });
+
+  it("shows an empty connected-health message from guided assessment", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url === "/health-timeline") return Promise.resolve({ data: [] });
+      return Promise.reject(new Error("No draft"));
+    });
+    render(<AssessmentForm token="token" onCreated={vi.fn()} notify={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Use connected health data/i }));
+    await waitFor(() => expect(screen.getByText("No connected health records are available yet.")).toBeInTheDocument());
   });
 
   it("keeps the care guide hidden until every draft follow-up is answered", async () => {
@@ -227,19 +288,40 @@ describe("section rendering", () => {
 
   it("renders reports, history, profile, and recent assessments", () => {
     render(<Reports token="token" notify={vi.fn()} />);
-    expect(screen.getByText("Upload text-based PDF report")).toBeInTheDocument();
-    render(<History assessments={[assessment]} />);
+    expect(screen.getByText("Upload a health report")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Use connected health data/i })).toBeInTheDocument();
+    render(<History assessments={[assessment]} token="token" />);
     expect(screen.getByText("Assessment timeline")).toBeInTheDocument();
     render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
+    expect(screen.getByText("Profile photo")).toBeInTheDocument();
     expect(screen.getByText("Allergies")).toBeInTheDocument();
     expect(screen.getByText("Chronic conditions")).toBeInTheDocument();
     render(<RecentAssessments assessments={[assessment]} />);
     expect(screen.getByText("Recent assessments")).toBeInTheDocument();
   });
 
+  it("stages connected-health credentials before saving a connection", async () => {
+    vi.spyOn(api, "get").mockResolvedValue({ data: [] });
+    const post = vi.spyOn(api, "post").mockImplementation((url) => {
+      if (url === "/connections/APPLE_HEALTH/start") {
+        return Promise.resolve({ data: { provider: "APPLE_HEALTH", authorizationUrl: "pms-health://apple", permissionSummary: "Patient-approved Apple Health import." } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    render(<ConnectedHealth token="token" notify={vi.fn()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Review permissions/i })[0]);
+    await waitFor(() => expect(screen.getByText("Patient-approved Apple Health import.")).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText("patient@example.com or portal ID"), { target: { value: "patient@example.com" } });
+    fireEvent.change(screen.getByPlaceholderText("Dummy credential for connection check"), { target: { value: "password123" } });
+    fireEvent.click(screen.getByRole("button", { name: /Connect API link/i }));
+    await waitFor(() => expect(screen.getByText("Connection established. Review and save this source.")).toBeInTheDocument(), { timeout: 1500 });
+    fireEvent.click(screen.getByRole("button", { name: "Save connection" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/connections/APPLE_HEALTH/callback", expect.objectContaining({ externalAccountId: "patient@example.com" }), expect.anything()));
+  });
+
   it("opens a complete assessment report from history", () => {
-    render(<History assessments={[assessment]} />);
+    render(<History assessments={[assessment]} token="token" />);
     fireEvent.click(screen.getByRole("button", { name: /15 May \| Fever/i }));
     expect(screen.getByText("ASM-10 care-preparation record")).toBeInTheDocument();
     expect(screen.getByText("Follow-up answers")).toBeInTheDocument();
@@ -277,7 +359,6 @@ describe("section rendering", () => {
     expect(screen.getByText("Bring a symptom timeline to the clinician conversation.")).toBeInTheDocument();
     expect(screen.getByText("Doctor questions")).toBeInTheDocument();
     expect(screen.getByText("Personalized guidance")).toBeInTheDocument();
-    expect(screen.getByText("Guidance support: Mock guidance")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Hide full care details/i }));
     expect(screen.queryByText("Why this matters")).not.toBeInTheDocument();
   });
@@ -296,9 +377,9 @@ describe("section rendering", () => {
 
   it("renders admin overview, management sections, and staff profile", () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
-    render(<AdminOverview analytics={analytics} assessments={[assessment]} setPage={vi.fn()} />);
+    render(<AdminOverview analytics={analytics} assessments={[assessment]} setPage={vi.fn()} token="token" />);
     expect(screen.getByText("Common symptoms")).toBeInTheDocument();
-    render(<AssessmentTable assessments={[assessment]} />);
+    render(<AssessmentTable assessments={[assessment]} token="token" />);
     expect(screen.getAllByText("Care review").length).toBeGreaterThan(0);
     render(<Rules token="token" rules={[rule]} refresh={refresh} notify={vi.fn()} />);
     expect(screen.getByText("Safety rule review")).toBeInTheDocument();

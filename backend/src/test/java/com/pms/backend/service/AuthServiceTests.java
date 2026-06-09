@@ -196,7 +196,69 @@ class AuthServiceTests {
         ));
 
         assertTrue(response.profileSetupComplete());
-        assertEquals(100, response.profileCompletion());
+        assertTrue(response.profileCompletion() < 100);
         assertTrue(userRepository.findById(user.getId()).orElseThrow().getProfileSetupCompletedAt() != null);
+    }
+
+    @Test
+    void fullPatientProfileCompletesAllProfileGroups() {
+        authService.register(new RegisterRequest(
+                "complete.profile@example.com",
+                "completeprofile",
+                "Complete Profile",
+                "password123",
+                34,
+                174.0,
+                76.0,
+                "Female",
+                true,
+                true
+        ));
+        var user = userRepository.findByEmailIgnoreCase("complete.profile@example.com").orElseThrow();
+
+        var response = authService.updateProfile(user, new ProfileUpdateRequest(
+                user.getFullName(),
+                user.getAge(),
+                user.getHeightCm(),
+                user.getWeightKg(),
+                user.getGender(),
+                "No known allergies",
+                "None",
+                "Moderately active",
+                "None",
+                "None known",
+                "None",
+                "Restful",
+                "1992-04-12",
+                "Female",
+                "Woman",
+                "English",
+                "+91 90000 00000",
+                "Hyderabad",
+                "O+",
+                "Not pregnant",
+                "Family Contact",
+                "Sibling",
+                "+91 90000 00001",
+                "Preferred Hospital",
+                "None",
+                "Routine immunizations",
+                "Primary Doctor",
+                "None",
+                "City Clinic",
+                "Health Insurance",
+                "MEM-123",
+                "72 bpm",
+                "120/80",
+                "No tobacco or alcohol use",
+                "Balanced diet",
+                true,
+                "Email",
+                "PDF",
+                "Share only with consent"
+        ));
+
+        assertEquals(100, response.profileCompletion());
+        assertEquals("O+", response.bloodType());
     }
 }

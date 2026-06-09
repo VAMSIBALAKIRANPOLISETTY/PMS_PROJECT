@@ -37,7 +37,6 @@ export function CarePrepGuide({ title = "Your care-preparation guide", insight, 
         <div>
           <p className="eyebrow">Personalized guidance</p>
           <h2>{title}</h2>
-          {insight.aiMode && <small className="ai-mode-label">Guidance support: {modeLabel(insight.aiMode)}</small>}
         </div>
         {riskLevel && <RiskPill value={riskLevel} />}
       </div>
@@ -107,10 +106,4 @@ export function CarePrepGuide({ title = "Your care-preparation guide", insight, 
       )}
     </div>
   );
-}
-
-function modeLabel(mode: string) {
-  if (mode === "OLLAMA") return "Gemma 4 31B";
-  if (mode === "OPENAI" || mode === "PROVIDER") return "OpenAI fallback";
-  return "Mock guidance";
 }

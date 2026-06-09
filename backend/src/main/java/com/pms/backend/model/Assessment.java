@@ -33,6 +33,23 @@ public class Assessment {
     @Enumerated(EnumType.STRING)
     private AssessmentStatus status = AssessmentStatus.PENDING_FOLLOW_UP;
 
+    @Enumerated(EnumType.STRING)
+    private AssessmentSourceType sourceType = AssessmentSourceType.SYMPTOM;
+
+    private String sourceName;
+    private String sourceRecordId;
+    private String reportName;
+    private LocalDateTime reportDate;
+    private String reportProvider;
+    @Column(length = 2200)
+    private String connectedHealthSummary;
+
+    @Column(length = 8000)
+    private String reportText;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<LabObservation> extractedObservations = new ArrayList<>();
+
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> reasons = new ArrayList<>();
 
@@ -102,6 +119,24 @@ public class Assessment {
     public void setRiskLevel(RiskLevel riskLevel) { this.riskLevel = riskLevel; }
     public AssessmentStatus getStatus() { return status; }
     public void setStatus(AssessmentStatus status) { this.status = status; }
+    public AssessmentSourceType getSourceType() { return sourceType; }
+    public void setSourceType(AssessmentSourceType sourceType) { this.sourceType = sourceType; }
+    public String getSourceName() { return sourceName; }
+    public void setSourceName(String sourceName) { this.sourceName = sourceName; }
+    public String getSourceRecordId() { return sourceRecordId; }
+    public void setSourceRecordId(String sourceRecordId) { this.sourceRecordId = sourceRecordId; }
+    public String getReportName() { return reportName; }
+    public void setReportName(String reportName) { this.reportName = reportName; }
+    public LocalDateTime getReportDate() { return reportDate; }
+    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
+    public String getReportProvider() { return reportProvider; }
+    public void setReportProvider(String reportProvider) { this.reportProvider = reportProvider; }
+    public String getConnectedHealthSummary() { return connectedHealthSummary; }
+    public void setConnectedHealthSummary(String connectedHealthSummary) { this.connectedHealthSummary = connectedHealthSummary; }
+    public String getReportText() { return reportText; }
+    public void setReportText(String reportText) { this.reportText = reportText; }
+    public List<LabObservation> getExtractedObservations() { return extractedObservations; }
+    public void setExtractedObservations(List<LabObservation> extractedObservations) { this.extractedObservations = extractedObservations; }
     public List<String> getReasons() { return reasons; }
     public void setReasons(List<String> reasons) { this.reasons = reasons; }
     public List<String> getSuggestions() { return suggestions; }

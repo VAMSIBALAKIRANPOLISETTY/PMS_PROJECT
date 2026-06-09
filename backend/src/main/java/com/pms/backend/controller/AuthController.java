@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -60,5 +61,16 @@ public class AuthController {
     ) {
         AppUser user = authService.requireUser(authHeader);
         return authService.updateProfile(user, request);
+    }
+
+    @Operation(summary = "Update patient profile photo", description = "Stores a patient-owned JPG, PNG, or WebP profile image for display across patient and staff review screens.")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @PostMapping(value = "/profile-photo", consumes = "multipart/form-data")
+    public UserResponse updateProfilePhoto(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader,
+            @RequestParam("file") MultipartFile file
+    ) {
+        AppUser user = authService.requireUser(authHeader);
+        return authService.updateProfilePhoto(user, file);
     }
 }

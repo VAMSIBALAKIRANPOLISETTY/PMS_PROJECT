@@ -10,9 +10,12 @@ flowchart TD
   D --> G["JWT Auth"]
   D --> H["JPA Repositories"]
   D --> I["Configured AI Insight Service"]
+  D --> M["Report Parser + Export"]
+  D --> N["Connected Health Service"]
   I --> J["Mock AI fallback"]
   I --> K["Ollama Gemma 4 31B"]
   I --> L["OpenAI fallback"]
+  N --> O["Normalized Health Timeline"]
 ```
 
 ## Runtime Shape
@@ -35,9 +38,12 @@ flowchart TD
 - Patient-only public registration
 - Adult signup with cm or ft/in height entry, centimeter storage, and stored privacy-notice and terms acknowledgments
 - Separate patient and staff login paths
-- Seeded demo patient/staff accounts
 - Explicit seven-card health-history review with backend-owned completion state
+- Expanded patient-record profile with blood type, emergency contact, care team, insurance, baseline, and preference fields
+- Patient profile photo upload stored through the authenticated backend profile endpoint
 - Patient-owned pending drafts with resume and discard actions
+- Saved report-based assessments with text-based PDF/text extraction, image attachment support that requires pasted text until OCR is added, and exportable summaries
+- Connected-health metadata, staged credential review, normalized health timeline records, and optional connected-data context for assessments
 - Completed-only patient history and staff analytics
 - Protected built-in red flags plus upward-only operational safety rules
 - Symptom-matched active staff questions for future assessment drafts
@@ -46,7 +52,28 @@ flowchart TD
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
-The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then `MockAiInsightService`. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
+The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then the local fallback implementation. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
+
+## Report And Connected-Health Flow
+
+```mermaid
+flowchart TD
+  A["Patient profile"] --> E["Care-preparation context"]
+  B["Symptom intake"] --> E
+  C["Report upload or pasted report text"] --> D["ReportParserService"]
+  D --> F["Extracted observations"]
+  F --> E
+  G["Connected health source"] --> H["ConnectedHealthService"]
+  H --> I["Normalized timeline records"]
+  I --> E
+  E --> J["Rule-based safety checks"]
+  J --> K["Configured AI wording layer"]
+  K --> L["Saved assessment or report guide"]
+  L --> M["History drawer"]
+  L --> N["PDF export"]
+```
+
+Report records and connected-health records are normalized before they are used for summaries. Provider-specific raw payloads should not directly drive risk logic. Connected-health context can enrich care-preparation wording only after the patient explicitly chooses to include recent timeline records.
 
 ## JWT Authentication Flow
 
@@ -127,7 +154,9 @@ src/
 - Rule-based Low, Medium, High risk output
 - Resumable pending intake followed by required follow-up cards and completed care guide
 - Compact summary-first result view with a full-details toggle
-- Assessment history, reusable completed-report drawer, and labeled profile views
+- Assessment history, reusable completed-report drawer, PDF export, and labeled profile views
+- Report upload with saved report assessments, image-file acceptance, extracted value display, and connected-data inclusion
+- Connected Health page for patient-owned source metadata, dummy credential staging, and normalized timeline records
 - Clinical operations analytics overview
 - Full-width staff care review, operational safety-rule management, managed questions, and read-only staff profile
 - No real patient data and no diagnosis
@@ -139,4 +168,5 @@ src/
 - Backend AI tests for mock default mode, Ollama -> OpenAI -> mock fallback, rule-owned urgent warnings, and provider structured-output parsing
 - Frontend section render tests for auth, user, admin, and layout sections
 - Frontend care-guide tests for compact summary, expanded details, urgent warning visibility, and drawer expanded mode
+- Frontend report and connected-health section rendering
 - Frontend TypeScript and production build validation

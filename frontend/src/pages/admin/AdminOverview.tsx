@@ -8,6 +8,7 @@ interface AdminOverviewProps {
   analytics: Analytics;
   assessments: Assessment[];
   setPage: (page: Page) => void;
+  token: string;
 }
 
 interface SymptomTickProps {
@@ -36,7 +37,7 @@ function wrapSymptomLabel(value: string) {
   }, []));
 }
 
-export function AdminOverview({ analytics, assessments, setPage }: AdminOverviewProps) {
+export function AdminOverview({ analytics, assessments, setPage, token }: AdminOverviewProps) {
   const riskData = [
     { name: "Low", value: analytics.lowRiskCount, color: "#2f9e75" },
     { name: "Medium", value: analytics.mediumRiskCount, color: "#d8902f" },
@@ -72,7 +73,7 @@ export function AdminOverview({ analytics, assessments, setPage }: AdminOverview
         </ResponsiveContainer>
         <button className="primary-button full" onClick={() => setPage("assessments")}>Review records<ArrowRight size={18} /></button>
       </section>
-      <AssessmentTable assessments={assessments} />
+      <AssessmentTable assessments={assessments} token={token} />
     </div>
   );
 }

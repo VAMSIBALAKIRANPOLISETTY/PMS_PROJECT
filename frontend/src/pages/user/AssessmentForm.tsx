@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import type { DragEvent, FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { DragEvent, FormEvent, KeyboardEvent } from "react";
 import axios from "axios";
-import { ArrowRight, Sparkles, Stethoscope, Trash2, X } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, Sparkles, Stethoscope, Trash2, X } from "lucide-react";
 import { api, authHeaders } from "../../api";
 import { CarePrepGuide } from "../../components/CarePrepGuide";
-import type { Assessment, Notify } from "../../types";
+import type { Assessment, Notify, TimelineRecord } from "../../types";
 import { SymptomDrawer } from "./SymptomDrawer";
 
 interface AssessmentFormProps {
@@ -31,11 +31,14 @@ const emptyForm = {
 };
 
 export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps) {
+  const primaryFollowActionRef = useRef<HTMLButtonElement | null>(null);
   const [draft, setDraft] = useState<Assessment | null>(null);
   const [result, setResult] = useState<Assessment | null>(null);
   const [message, setMessage] = useState("");
   const [followStep, setFollowStep] = useState(0);
   const [followAnswers, setFollowAnswers] = useState<FollowUpAnswer[]>([]);
+  const [connectedRecords, setConnectedRecords] = useState<TimelineRecord[]>([]);
+  const [includeConnected, setIncludeConnected] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
@@ -85,6 +88,8 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
         temperatureAvailable: form.temperatureMode === "available",
         temperatureF: form.temperatureMode === "available" && form.temperatureF !== "" ? Number(form.temperatureF) : null,
         chronicCondition: form.chronicCondition,
+        includeConnectedHealth: includeConnected,
+        connectedHealthRecordIds: connectedRecords.map((record) => record.id),
       }, { headers: authHeaders(token) });
       setDraft(response.data);
       setResult(null);
@@ -129,6 +134,21 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
     } catch (error) {
       setMessage(axios.isAxiosError(error) ? error.response?.data?.message ?? "Draft could not be discarded." : "Draft could not be discarded.");
       notify("Draft could not be discarded.", "danger");
+    }
+  }
+
+  async function useConnectedHealthData() {
+    try {
+      const response = await api.get<TimelineRecord[]>("/health-timeline", { headers: authHeaders(token) });
+      const records = recentTimelineRecords(response.data);
+      setConnectedRecords(records);
+      setIncludeConnected(records.length > 0);
+      setMessage(records.length > 0
+        ? `Connected health data selected: ${records.length} recent record${records.length === 1 ? "" : "s"}.`
+        : "No connected health records are available yet.");
+    } catch (error) {
+      setMessage(axios.isAxiosError(error) ? error.response?.data?.message ?? "Connected health records could not be loaded." : "Connected health records could not be loaded.");
+      notify("Connected health lookup failed.", "danger");
     }
   }
 
@@ -179,7 +199,13 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
               <label>Known chronic condition<select value={form.chronicCondition} onChange={(event) => setForm({ ...form, chronicCondition: event.target.value })} required><option value="">Select an option</option><option>None</option><option>Diabetes</option><option>Blood pressure</option><option>Asthma</option><option>Heart disease</option></select></label>
               {draft && <div className="form-message neutral">A saved draft is waiting below. Finish its questions or discard it before starting another.</div>}
               {message && <div className="form-message">{message}</div>}
-              <button className="primary-button full" disabled={!!draft}>Prepare care guide<ArrowRight size={18} /></button>
+              <div className="assessment-action-row">
+                <button className="primary-button" disabled={!!draft}>Prepare care guide<ArrowRight size={18} /></button>
+                <button className="ghost-button" type="button" disabled={!!draft} onClick={() => void useConnectedHealthData()}>
+                  <Activity size={17} /> Use connected health data
+                </button>
+              </div>
+              {includeConnected && <div className="success-row"><CheckCircle2 size={18} />Connected data will be included in this assessment.</div>}
             </form>
           </section>
 
@@ -192,12 +218,13 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
             <div className="draft-workspace">
               {draft.urgentWarning && <div className="urgent-warning"><strong>Urgent safety guidance</strong><p>{draft.urgentWarning}</p></div>}
               <div className="followup-box">
+                {draft.connectedHealthSummary && <div className="summary-box compact-summary">{draft.connectedHealthSummary}</div>}
                 <div className="section-title">
                   <div><p className="eyebrow">Follow-up questions</p><h2>{answeredCount}/{draft.followUpQuestions.length} answered</h2></div>
                   <button type="button" className="ghost-button danger-text" onClick={discardDraft}><Trash2 size={17} />Discard draft</button>
                 </div>
                 {currentQuestion && (
-                  <div className="followup-card">
+                  <div className="followup-card" onKeyDown={handleFollowUpKeyDown}>
                     <span>Question {followStep + 1} of {draft.followUpQuestions.length}</span>
                     <strong>{currentQuestion}</strong>
                     <div className="followup-choices">
@@ -209,9 +236,9 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
                     <div className="profile-setup-actions">
                       <button type="button" className="ghost-button" disabled={followStep === 0} onClick={() => setFollowStep(Math.max(0, followStep - 1))}>Back</button>
                       {followStep < draft.followUpQuestions.length - 1 ? (
-                        <button type="button" className="primary-button" disabled={!currentAnswer.choice} onClick={() => setFollowStep(followStep + 1)}>Next<ArrowRight size={18} /></button>
+                        <button ref={primaryFollowActionRef} type="button" className="primary-button" disabled={!currentAnswer.choice} onClick={() => setFollowStep(followStep + 1)}>Next<ArrowRight size={18} /></button>
                       ) : (
-                        <button type="button" className="primary-button" disabled={followAnswers.some((answer) => !answer.choice)} onClick={submitFollowUps}>Prepare guide<ArrowRight size={18} /></button>
+                        <button ref={primaryFollowActionRef} type="button" className="primary-button" disabled={followAnswers.some((answer) => !answer.choice)} onClick={submitFollowUps}>Prepare guide<ArrowRight size={18} /></button>
                       )}
                     </div>
                   </div>
@@ -219,13 +246,16 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
               </div>
             </div>
           ) : result ? (
-            <CarePrepGuide
-              insight={result}
-              riskLevel={result.riskLevel}
-              riskScore={result.riskScore}
-              reasons={result.reasons}
-              suggestions={result.suggestions}
-            />
+            <>
+              {result.connectedHealthSummary && <div className="summary-box compact-summary">{result.connectedHealthSummary}</div>}
+              <CarePrepGuide
+                insight={result}
+                riskLevel={result.riskLevel}
+                riskScore={result.riskScore}
+                reasons={result.reasons}
+                suggestions={result.suggestions}
+              />
+            </>
           ) : (
             <div className="empty-state"><Sparkles size={32} /><h2>Your care guide will appear here</h2><p>Complete the intake and answer the follow-up questions to receive a clear summary and next steps.</p></div>
           )}
@@ -236,6 +266,22 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
 
   function updateAnswer(index: number, choice: FollowUpChoice, note: string) {
     setFollowAnswers((current) => current.map((answer, answerIndex) => answerIndex === index ? { choice, note } : answer));
+    if (choice) {
+      window.setTimeout(() => primaryFollowActionRef.current?.focus(), 0);
+    }
+  }
+
+  function handleFollowUpKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter") return;
+    const target = event.target as HTMLElement;
+    if (target.tagName === "TEXTAREA") return;
+    event.preventDefault();
+    if (!draft || !currentAnswer.choice) return;
+    if (followStep < draft.followUpQuestions.length - 1) {
+      setFollowStep(followStep + 1);
+    } else if (!followAnswers.some((answer) => !answer.choice)) {
+      void submitFollowUps();
+    }
   }
 }
 
@@ -246,4 +292,9 @@ function makeEmptyAnswers(count: number): FollowUpAnswer[] {
 function serializeAnswer(answer: FollowUpAnswer) {
   const note = answer.note.trim();
   return note ? `${answer.choice} | Note: ${note}` : answer.choice;
+}
+
+function recentTimelineRecords(records: TimelineRecord[]) {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return records.filter((record) => !record.observedAt || new Date(record.observedAt).getTime() >= cutoff).slice(0, 20);
 }

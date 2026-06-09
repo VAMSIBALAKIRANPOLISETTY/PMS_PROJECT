@@ -178,6 +178,7 @@ public class MockAiInsightService implements AiInsightService {
         if (user.getGender() != null && !"Not set".equalsIgnoreCase(user.getGender())) parts.add("sex " + user.getGender());
         if (user.getChronicConditions() != null && !user.getChronicConditions().isBlank()) parts.add("profile history " + user.getChronicConditions());
         if (assessment.getChronicCondition() != null && !"None".equalsIgnoreCase(assessment.getChronicCondition())) parts.add("assessment history " + assessment.getChronicCondition());
+        if (assessment.getConnectedHealthSummary() != null && !assessment.getConnectedHealthSummary().isBlank()) parts.add(assessment.getConnectedHealthSummary());
         return parts.isEmpty() ? "No completed profile context was added." : "Profile context used for preparation: " + String.join(", ", parts) + ".";
     }
 

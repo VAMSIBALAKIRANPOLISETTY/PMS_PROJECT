@@ -127,7 +127,7 @@ export function Questions({ token, questions, refresh, notify }: QuestionsProps)
               <label className="full">Optional focus<textarea placeholder="Example: duration, severity changes, breathing context, medicine context" value={suggestionForm.focus} onChange={(event) => setSuggestionForm({ ...suggestionForm, focus: event.target.value })} /></label>
             </div>
             <button className="ghost-button full" type="button" disabled={suggesting} onClick={suggestQuestions}>{suggesting ? "Preparing drafts..." : "Generate draft questions"}</button>
-            {suggestionMode && <p className="summary-box">Draft source: {suggestionMode === "OLLAMA" ? "Gemma 4 31B" : suggestionMode === "OPENAI" ? "OpenAI fallback" : "Mock guidance"}</p>}
+            {suggestionMode && <p className="summary-box">Draft source: {suggestionMode === "OLLAMA" ? "Gemma 4 31B" : suggestionMode === "OPENAI" ? "OpenAI fallback" : "Internal fallback"}</p>}
             {suggestions.length > 0 && (
               <div className="suggestion-list">
                 {suggestions.map((suggestion) => (
