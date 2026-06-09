@@ -18,7 +18,7 @@ export function Topbar({ design, setDesign, onMenu, user, onLogout }: TopbarProp
       <button className="icon-button mobile-only" onClick={onMenu} title="Menu"><Menu size={20} /></button>
       <div>
         <p className="eyebrow">{isStaff ? "Staff workspace" : "Patient workspace"} | {user.fullName}</p>
-        <h1>{isStaff ? "Clinical operations" : "My health overview"}</h1>
+        <h1>{isStaff ? "Clinical operations" : "Health overview"}</h1>
       </div>
       <div className="top-actions">
         <ProfileAvatar name={user.fullName} photo={user.profilePhotoDataUrl} size="sm" />

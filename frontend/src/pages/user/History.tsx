@@ -12,7 +12,7 @@ export function History({ assessments, token }: { assessments: Assessment[]; tok
     <>
     <div className="page-grid" data-section="history">
       <section className="panel wide">
-        <div className="section-title"><div><p className="eyebrow">History</p><h2>Assessment timeline</h2></div></div>
+        <div className="section-title"><div><p className="eyebrow">History</p><h2>Assessment history</h2></div></div>
         <div className="timeline">
           {assessments.length === 0 && <div className="empty-row">No history found for this account.</div>}
           {assessments.map((item) => (

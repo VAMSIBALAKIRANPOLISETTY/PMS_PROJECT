@@ -20,13 +20,14 @@ export function UserOverview({ user, token, assessments, setPage, updateUser, no
   const latest = assessments[0];
   const trendData = trendFromAssessments(assessments);
   const profileCompletion = user.profileCompletion ?? 0;
+  const reportCount = assessments.filter((item) => item.sourceType === "REPORT").length;
   return (
     <div className="page-grid" data-section="user-overview">
         {!user.profileSetupComplete && <ProfileSetupPrompt user={user} token={token} updateUser={updateUser} notify={notify} />}
         <div className="hero-panel">
           <div>
             <p className="eyebrow">Today</p>
-            <h2>{latest ? `Good morning, ${user.fullName}. Your latest assessment is ${displayRisk(latest.riskLevel).toLowerCase()} risk.` : `Welcome, ${user.fullName}. Start your first health assessment.`}</h2>
+            <h2>{latest ? `${user.fullName}, your latest assessment shows ${displayRisk(latest.riskLevel).toLowerCase()} awareness.` : `Welcome, ${user.fullName}. Start your first assessment.`}</h2>
             <p>{latest ? latest.reasons[0] : "Start an assessment to prepare a clear summary for your next medical conversation."}</p>
             <div className="hero-actions">
               <button className="primary-button" onClick={() => setPage("assessment")}>Start assessment<ArrowRight size={18} /></button>
@@ -41,10 +42,10 @@ export function UserOverview({ user, token, assessments, setPage, updateUser, no
           </div>
         </div>
         <div className="stats-grid">
-          <StatCard icon={ClipboardList} label="Assessments" value={assessments.length} delta="your records" />
-          <StatCard icon={UserRoundCheck} label="Profile setup" value={`${profileCompletion}%`} delta="health history" />
-          <StatCard icon={FileText} label="Reports prepared" value="0" delta="uploaded reports" />
-          <StatCard icon={ShieldCheck} label="Safety guidance" value="Active" delta="care awareness" />
+          <StatCard icon={ClipboardList} label="Assessments" value={assessments.length} delta="saved records" />
+          <StatCard icon={UserRoundCheck} label="Profile completion" value={`${profileCompletion}%`} delta="care profile" />
+          <StatCard icon={FileText} label="Report assessments" value={reportCount} delta="saved uploads" />
+          <StatCard icon={ShieldCheck} label="Safety guidance" value="Active" delta="always on" />
         </div>
         <section className="panel wide">
           <div className="section-title"><div><p className="eyebrow">Tracking</p><h2>Risk and temperature trend</h2></div><button className="icon-button" title="Filter"><Filter size={18} /></button></div>

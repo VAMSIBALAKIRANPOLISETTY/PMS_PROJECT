@@ -10,10 +10,10 @@ const landingMetrics = [
   { label: "Medical claim", value: "None" },
 ];
 const serviceCards = [
-  { title: "Describe symptoms", text: "Organize the symptoms that matter most before your consultation." },
-  { title: "Prepare reports", text: "Bring report notes together so important details are easier to discuss." },
-  { title: "Answer follow-ups", text: "Use guided questions to prepare clearer notes for your doctor." },
-  { title: "Track changes", text: "Review your assessment history and notice changes over time." },
+  { title: "Describe symptoms", text: "Capture the details you want ready before your appointment." },
+  { title: "Prepare reports", text: "Bring report notes together so important values are easier to discuss." },
+  { title: "Answer follow-ups", text: "Use guided questions to prepare clearer context for your doctor." },
+  { title: "Track records", text: "Review past assessments in one organized workspace." },
 ];
 const storySteps = [
   "Create a private account",
@@ -27,8 +27,8 @@ const safetyCards = [
 ];
 const contactCards = [
   { title: "Account support", text: "support@pmshealth.example | Monday-Friday, 9:00 AM-5:00 PM IST" },
-  { title: "Privacy and consent", text: "privacy@pmshealth.example | Review how your information supports care preparation." },
-  { title: "Feedback", text: "Send product feedback to support@pmshealth.example so the experience can keep improving." },
+  { title: "Privacy and consent", text: "privacy@pmshealth.example | Questions about how your information supports care preparation." },
+  { title: "Feedback", text: "Share product feedback at support@pmshealth.example so the experience can continue improving." },
 ];
 
 export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => void }) {
@@ -68,11 +68,11 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
       <section className="landing-hero">
         <div className="landing-copy">
           <p className="eyebrow">Health awareness before care</p>
-          <h1>Know what to ask before you visit a doctor.</h1>
+          <h1>Prepare clearly before you speak with a doctor.</h1>
           <p>
-            PMS Health is a patient-preparation website that helps people organize
-            symptoms, report notes, and safe follow-up questions before speaking
-            with a qualified medical professional.
+            PMS Health helps people organize symptoms, report notes, and
+            follow-up context before a medical conversation with a qualified
+            professional.
           </p>
           <div className="hero-actions">
             <button className="primary-button" onClick={() => onAuth("signup")}>Create account<ArrowRight size={18} /></button>
@@ -85,9 +85,9 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
 
         <div className="landing-public-preview">
           <span className="eyebrow">Prepare for your consultation</span>
-          <h2>Prepare notes, understand context, stay safe.</h2>
+          <h2>Organize details, understand context, stay focused.</h2>
           <p>
-            PMS Health helps you organize the details that can make a medical conversation more useful.
+            PMS Health helps you prepare the details that can make a medical conversation more useful.
           </p>
           <div className="public-preview-grid">
             <span>Symptoms</span>
@@ -101,11 +101,12 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
       <section className="landing-details-section" id="landing-details">
         <div className="public-story-card">
           <p className="eyebrow">How PMS Health supports you</p>
-          <h2>Prepare better, decide safely.</h2>
+          <h2>Prepare better before you get care.</h2>
           <p>
-            Organize symptoms, prepare report notes, and answer guided questions
-            before speaking with a qualified medical professional. PMS Health
-            supports preparation while your doctor remains the source of medical guidance.
+            Organize symptoms, prepare report notes, and answer guided follow-up
+            questions before speaking with a qualified medical professional.
+            PMS Health supports preparation while your doctor remains the source
+            of medical guidance.
           </p>
         </div>
 
@@ -150,9 +151,9 @@ export function LandingPage({ onAuth }: { onAuth: (mode: "login" | "signup") => 
       <section className="landing-contact-section" id="landing-contact">
         <div className="contact-copy">
           <p className="eyebrow">Support and privacy</p>
-          <h2>Prepare with confidence.</h2>
+          <h2>Use one private workspace for preparation.</h2>
           <p>
-            Keep your health information in your private workspace and use PMS Health
+            Keep your information in your private workspace and use PMS Health
             to prepare for conversations with qualified medical professionals.
           </p>
           <div className="hero-actions">

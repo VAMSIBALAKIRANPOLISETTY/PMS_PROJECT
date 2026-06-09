@@ -97,7 +97,10 @@ export function Rules({ token, rules, refresh, notify }: RulesProps) {
               <label className="agreement-check full"><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} />Activate this rule for future assessments.</label>
             </div>
             {message && <div className="form-message">{message}</div>}
-            <button className="primary-button full" type="button" disabled={saving || !form.conditionLabel.trim() || !form.primarySymptom || !form.explanation.trim()} onClick={saveRule}>{saving ? "Saving..." : "Save safety rule"}</button>
+            <div className="drawer-actions">
+              <button className="ghost-button" type="button" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="primary-button" type="button" disabled={saving || !form.conditionLabel.trim() || !form.primarySymptom || !form.explanation.trim()} onClick={saveRule}>{saving ? "Saving..." : "Save safety rule"}</button>
+            </div>
           </aside>
         </div>
       )}

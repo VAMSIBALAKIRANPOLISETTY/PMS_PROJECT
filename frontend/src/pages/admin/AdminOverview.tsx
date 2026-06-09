@@ -49,29 +49,29 @@ export function AdminOverview({ analytics, assessments, setPage, token }: AdminO
         <StatCard icon={Users} label="Total users" value={analytics.totalUsers} delta="registered" />
         <StatCard icon={ClipboardList} label="Assessments" value={analytics.totalAssessments} delta="recorded" />
         <StatCard icon={AlertTriangle} label="High risk" value={analytics.highRiskCount} delta="needs review" tone="danger" />
-        <StatCard icon={FileText} label="Reports reviewed" value="0" delta="care preparation" />
+        <StatCard icon={FileText} label="Report assessments" value={assessments.filter((item) => item.sourceType === "REPORT").length} delta="saved uploads" />
       </div>
       <section className="panel">
-        <div className="section-title"><div><p className="eyebrow">Analytics</p><h2>Common symptoms</h2></div><div className="search-box"><Search size={17} /><input placeholder="Filter symptoms" /></div></div>
-        <ResponsiveContainer width="100%" height={205}>
+        <div className="section-title"><div><p className="eyebrow">Analytics</p><h2>Common symptom patterns</h2></div><div className="search-box"><Search size={17} /><input placeholder="Filter symptoms" /></div></div>
+        <ResponsiveContainer width="100%" height={188}>
           <BarChart data={analytics.commonSymptoms.map((item) => ({ name: item.symptom, count: item.count }))} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)" />
             <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} height={52} tick={<SymptomTick />} />
             <YAxis tickLine={false} axisLine={false} />
             <Tooltip />
-            <Bar dataKey="count" maxBarSize={72} radius={[7, 7, 0, 0]} fill="var(--accent)" />
+            <Bar dataKey="count" maxBarSize={56} radius={[6, 6, 0, 0]} fill="var(--accent)" />
           </BarChart>
         </ResponsiveContainer>
       </section>
       <section className="panel">
-        <div className="section-title"><div><p className="eyebrow">Risk mix</p><h2>Assessment split</h2></div><PieChart size={24} /></div>
-        <ResponsiveContainer width="100%" height={160}>
+        <div className="section-title"><div><p className="eyebrow">Risk mix</p><h2>Assessment split</h2></div><PieChart size={22} /></div>
+        <ResponsiveContainer width="100%" height={144}>
           <RePieChart>
-            <Pie data={riskData} innerRadius={44} outerRadius={66} paddingAngle={4} dataKey="value">{riskData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie>
+            <Pie data={riskData} innerRadius={42} outerRadius={60} paddingAngle={4} dataKey="value">{riskData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie>
             <Tooltip />
           </RePieChart>
         </ResponsiveContainer>
-        <button className="primary-button full" onClick={() => setPage("assessments")}>Review records<ArrowRight size={18} /></button>
+        <button className="primary-button compact-cta" onClick={() => setPage("assessments")}>Review records<ArrowRight size={18} /></button>
       </section>
       <AssessmentTable assessments={assessments} token={token} />
     </div>

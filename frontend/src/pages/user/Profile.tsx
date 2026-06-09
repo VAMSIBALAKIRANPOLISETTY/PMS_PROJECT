@@ -68,6 +68,17 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
   const [heightInches, setHeightInches] = useState(initialImperial.inches);
   const [form, setForm] = useState<ProfileForm>(() => profileToForm(user));
 
+  function resetEditor() {
+    const nextForm = profileToForm(user);
+    const nextImperial = cmToFeetInches(user.heightCm);
+    setForm(nextForm);
+    setHeightFeet(nextImperial.feet);
+    setHeightInches(nextImperial.inches);
+    setHeightUnit("cm");
+    setMessage("");
+    setEditing(false);
+  }
+
   function setField<K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -86,6 +97,10 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
         weightKg: Number(form.weightKg),
       }, { headers: authHeaders(token) });
       updateUser(response.data);
+      setForm(profileToForm(response.data));
+      const nextImperial = cmToFeetInches(response.data.heightCm);
+      setHeightFeet(nextImperial.feet);
+      setHeightInches(nextImperial.inches);
       setEditing(false);
       notify("Profile updated successfully.");
     } catch (error) {
@@ -122,13 +137,14 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
           <p className="eyebrow">Patient profile</p>
           <h2>{user.fullName}</h2>
           <p>Age {user.age ?? "not set"} | {user.sex ?? "not set"} | {formatHeight(user.heightCm)} | {user.weightKg ?? "not set"} kg</p>
+          <p className="profile-header-copy">Keep the details you want available in your care-preparation workspace up to date.</p>
         </div>
         <div className="profile-header-actions">
           <label className="ghost-button profile-photo-upload">
             <Camera size={17} /> {photoBusy ? "Uploading..." : "Profile photo"}
             <input type="file" accept="image/jpeg,image/png,image/webp" disabled={photoBusy} onChange={(event) => void uploadProfilePhoto(event.target.files?.[0] ?? null)} />
           </label>
-          <button className="ghost-button" type="button" onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Edit profile"}<Edit3 size={17} /></button>
+          <button className="ghost-button" type="button" onClick={() => (editing ? resetEditor() : setEditing(true))}>{editing ? "Cancel" : "Edit profile"}<Edit3 size={17} /></button>
         </div>
       </div>
 
@@ -196,14 +212,40 @@ export function Profile({ user, token, updateUser, notify }: ProfileProps) {
           </ProfileGroup>
 
           {message && <div className="form-message">{message}</div>}
-          <div className="profile-setup-actions">
+          <div className="profile-edit-actions">
+            <button className="ghost-button" type="button" onClick={resetEditor}>Cancel</button>
             <button className="primary-button" type="button" onClick={saveProfile}>Save profile<Save size={18} /></button>
           </div>
         </div>
       ) : (
-        <div className="profile-grid expanded">
-          {profileDetails(user).map(([label, value]) => <div className="profile-detail" key={label}><small>{label}</small><strong>{value || "Not set"}</strong></div>)}
-        </div>
+        <>
+          <div className="profile-highlight-grid">
+            {profileHighlights(user).map(([label, value]) => (
+              <div className="profile-highlight" key={label}>
+                <small>{label}</small>
+                <strong>{value || "Not set"}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="profile-sections">
+            {profileSections(user).map((section) => (
+              <section className="profile-display-section" key={section.title}>
+                <div className="profile-display-heading">
+                  <h3>{section.title}</h3>
+                  {section.description && <p>{section.description}</p>}
+                </div>
+                <div className="profile-display-rows">
+                  {section.rows.map(([label, value]) => (
+                    <div className="profile-display-row" key={`${section.title}-${label}`}>
+                      <span>{label}</span>
+                      <strong>{value || "Not set"}</strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
@@ -274,38 +316,74 @@ function profileToForm(user: User): ProfileForm {
   };
 }
 
-function profileDetails(user: User): [string, string | number | undefined][] {
+function profileHighlights(user: User): [string, string | number | undefined][] {
   return [
     ["Blood type", user.bloodType],
     ["Height", formatHeight(user.heightCm)],
     ["Weight", user.weightKg ? `${user.weightKg} kg` : undefined],
-    ["Phone", user.phone],
-    ["Preferred language", user.preferredLanguage],
-    ["Emergency contact", joinValues(user.emergencyContactName, user.emergencyContactRelationship, user.emergencyContactPhone)],
-    ["Preferred hospital", user.preferredHospital],
-    ["Primary doctor", user.primaryDoctor],
-    ["Hospital or clinic", user.hospitalClinic],
-    ["Insurance", joinValues(user.insuranceProvider, user.insuranceMemberId)],
-    ["Allergies", user.allergies],
-    ["Chronic conditions", user.chronicConditions],
-    ["Medications", user.medications],
-    ["Surgeries", user.surgeries],
-    ["Immunizations", user.immunizations],
-    ["Family history", user.familyHistory],
-    ["Mental health history", user.mentalHealthHistory],
-    ["Sleep quality", user.sleepQuality],
-    ["Lifestyle", user.lifestyle],
-    ["Baseline heart rate", user.baselineHeartRate],
-    ["Baseline blood pressure", user.baselineBloodPressure],
-    ["Tobacco or alcohol use", user.tobaccoAlcoholUse],
-    ["Diet notes", user.dietNotes],
-    ["Connected data consent", user.connectedDataConsent ? "Allowed" : "Not allowed"],
-    ["Notification preference", user.notificationPreference],
-    ["Export preference", user.exportFormatPreference],
-    ["Data sharing", user.dataSharingPreference],
-    ["Email", user.email],
-    ["Username", `@${user.username}`],
     ["Profile completion", `${user.profileCompletion ?? 0}%`],
+  ];
+}
+
+function profileSections(user: User) {
+  return [
+    {
+      title: "Identity and contact",
+      description: "Core details used across your care-preparation workspace.",
+      rows: [
+        ["Email", user.email],
+        ["Username", `@${user.username}`],
+        ["Phone", user.phone],
+        ["Preferred language", user.preferredLanguage],
+        ["Date of birth", user.dateOfBirth],
+        ["Sex", user.sex],
+        ["Sex at birth", user.sexAtBirth],
+        ["Gender identity", user.genderIdentity],
+        ["Pregnancy or postpartum status", user.pregnancyStatus],
+        ["Address", user.address],
+      ],
+    },
+    {
+      title: "Emergency and care team",
+      description: "People and organizations you may want ready during care planning.",
+      rows: [
+        ["Emergency contact", joinValues(user.emergencyContactName, user.emergencyContactRelationship, user.emergencyContactPhone)],
+        ["Preferred hospital", user.preferredHospital],
+        ["Primary doctor", user.primaryDoctor],
+        ["Specialists", user.specialistNames],
+        ["Hospital or clinic", user.hospitalClinic],
+        ["Insurance", joinValues(user.insuranceProvider, user.insuranceMemberId)],
+      ],
+    },
+    {
+      title: "Clinical background",
+      description: "Health context that can support clearer assessments and report notes.",
+      rows: [
+        ["Allergies", user.allergies],
+        ["Chronic conditions", user.chronicConditions],
+        ["Medications", user.medications],
+        ["Surgeries", user.surgeries],
+        ["Immunizations", user.immunizations],
+        ["Family history", user.familyHistory],
+        ["Mental health history", user.mentalHealthHistory],
+      ],
+    },
+    {
+      title: "Lifestyle and preferences",
+      description: "Personal baselines and workspace preferences you may want included.",
+      rows: [
+        ["Sleep quality", user.sleepQuality],
+        ["Lifestyle", user.lifestyle],
+        ["Baseline heart rate", user.baselineHeartRate],
+        ["Baseline blood pressure", user.baselineBloodPressure],
+        ["Tobacco or alcohol use", user.tobaccoAlcoholUse],
+        ["Diet notes", user.dietNotes],
+        ["Connected data consent", user.connectedDataConsent ? "Allowed" : "Not allowed"],
+        ["Notification preference", user.notificationPreference],
+        ["Export preference", user.exportFormatPreference],
+        ["Data sharing", user.dataSharingPreference],
+      ],
+    },
   ];
 }
 

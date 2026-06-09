@@ -161,7 +161,7 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
       <div className="assessment-layout">
         <div className="assessment-intake-grid">
           <section className="panel assessment-form-panel">
-            <div className="section-title"><div><p className="eyebrow">Guided assessment</p><h2>Tell us how you feel</h2></div><Stethoscope size={24} /></div>
+            <div className="section-title"><div><p className="eyebrow">Guided assessment</p><h2>Record what you are feeling</h2></div><Stethoscope size={24} /></div>
             <form className="form-grid" onSubmit={runAssessment}>
               <div className="symptom-dropbox" onDragOver={(event) => event.preventDefault()} onDrop={dropSymptom}>
                 <div><strong>Main symptoms</strong><span>{form.symptoms.length}/5 selected. Click or drag symptoms from the drawer.</span></div>
@@ -212,9 +212,9 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
           <SymptomDrawer selected={form.symptoms} onSelect={addSymptom} />
         </div>
 
-        <section className="panel result-panel">
-          <p className="eyebrow">Your assessment</p>
-          {draft ? (
+          <section className="panel result-panel">
+            <p className="eyebrow">Your assessment</p>
+            {draft ? (
             <div className="draft-workspace">
               {draft.urgentWarning && <div className="urgent-warning"><strong>Urgent safety guidance</strong><p>{draft.urgentWarning}</p></div>}
               <div className="followup-box">
@@ -257,7 +257,7 @@ export function AssessmentForm({ token, onCreated, notify }: AssessmentFormProps
               />
             </>
           ) : (
-            <div className="empty-state"><Sparkles size={32} /><h2>Your care guide will appear here</h2><p>Complete the intake and answer the follow-up questions to receive a clear summary and next steps.</p></div>
+            <div className="empty-state"><Sparkles size={32} /><h2>Your care guide will appear here</h2><p>Complete the intake and answer the follow-up questions to receive a clear summary and practical next steps.</p></div>
           )}
         </section>
       </div>

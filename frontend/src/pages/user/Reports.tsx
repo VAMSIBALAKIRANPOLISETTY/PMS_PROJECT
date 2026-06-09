@@ -166,8 +166,8 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
       <section className="panel upload-panel">
         <div className="upload-zone">
           <Upload size={34} />
-          <h2>Upload a health report</h2>
-          <p>Use a text-based PDF or paste report text. PMS saves the report assessment so it can appear in history and staff care review.</p>
+          <h2>Upload a report</h2>
+          <p>Use a text-based PDF or paste report text. PMS saves the report assessment so it appears in history and staff review.</p>
           <input type="file" accept="application/pdf,text/plain,image/png,image/jpeg,image/webp" onChange={(event) => resetDraft(event.target.files?.[0] ?? null)} />
           {file && <div className="success-row"><CheckCircle2 size={18} />{file.name} selected</div>}
           <label className="report-text-box">
@@ -241,7 +241,7 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
             </div>
           </div>
         ) : (
-          <p className="summary-box">Upload a report or paste text to create a saved report assessment.</p>
+          <p className="summary-box">Upload a report or paste text to prepare a saved report assessment.</p>
         )}
 
         {result && (

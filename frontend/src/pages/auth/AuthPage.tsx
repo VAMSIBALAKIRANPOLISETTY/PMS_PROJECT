@@ -84,11 +84,11 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
       <section className={`panel auth-panel ${authMode === "signup" ? "signup-panel" : ""}`}>
         <div>
           <p className="eyebrow">{authMode === "signup" ? "Create account" : authMode === "staff-login" ? "Staff access" : "Welcome back"}</p>
-          <h2>{authMode === "signup" ? "Create your personal health workspace" : authMode === "staff-login" ? "Login to the clinical operations workspace" : "Login to your health workspace"}</h2>
+          <h2>{authMode === "signup" ? "Create your private health workspace" : authMode === "staff-login" ? "Sign in to the clinical operations workspace" : "Sign in to your health workspace"}</h2>
         </div>
         {authMode === "signup" && (
           <div className="signup-progress" aria-label={`Signup step ${signupStep} of 3`}>
-            {["Account details", "Privacy and consent", "Terms and create account"].map((label, index) => (
+            {["Account details", "Privacy notice", "Terms and create account"].map((label, index) => (
               <div className={signupStep >= index + 1 ? "active" : ""} key={label}><span>{index + 1}</span><strong>{label}</strong></div>
             ))}
           </div>
@@ -116,9 +116,9 @@ export function AuthPage({ initialMode, onSuccess, onBack }: AuthPageProps) {
           ) : signupStep === 2 ? (
             <div className="signup-review">
               <ShieldCheck size={26} />
-              <h3>Review how your information is used.</h3>
-              <p>PMS Health stores your profile details, symptoms, health-history answers, assessment responses, and report notes in your private care-preparation workspace.</p>
-              <p>This is not a hospital portal or HIPAA authorization form. PMS Health does not provide diagnosis, prescriptions, or emergency service.</p>
+              <h3>Review how your information supports care preparation.</h3>
+              <p>PMS Health stores your profile details, symptoms, health-history answers, assessment responses, and report notes in your private workspace.</p>
+              <p>This is not a hospital portal or emergency service. PMS Health does not provide diagnosis or prescriptions.</p>
               <p>For privacy guidance, contact privacy@pmshealth.example.</p>
               <label className="agreement-check"><input type="checkbox" checked={form.privacyNoticeAccepted} onChange={(event) => setForm({ ...form, privacyNoticeAccepted: event.target.checked })} required />I reviewed and accept the PMS Health privacy notice.</label>
             </div>

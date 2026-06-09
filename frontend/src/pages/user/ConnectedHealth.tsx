@@ -170,12 +170,12 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
         <div className="section-title">
           <div>
             <p className="eyebrow">Connected health</p>
-            <h2>Patient-owned health context</h2>
+            <h2>Bring connected health records into one timeline</h2>
           </div>
           <ShieldCheck size={24} />
         </div>
         <p className="summary-box">
-          Connectors normalize wearable, app, hospital, and manual records into one timeline before rules or AI summaries use the data.
+          PMS organizes wearable, app, hospital, and manual records into one timeline before rules or care summaries use the data.
         </p>
         {message && <div className="form-message">{message}</div>}
         <div className="connector-grid">
@@ -228,7 +228,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
 
       <section className="panel">
         <p className="eyebrow">Sources</p>
-        <h2>Active connections</h2>
+        <h2>Connected sources</h2>
         <div className="connection-list">
           {connections.length === 0 && <div className="empty-row">No connected sources yet.</div>}
           {connections.map((connection) => (
@@ -247,7 +247,7 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
 
       <section className="panel">
         <p className="eyebrow">Timeline</p>
-        <h2>Normalized records</h2>
+        <h2>Recent health records</h2>
         <div className="timeline compact-timeline">
           {timeline.length === 0 && <div className="empty-row">No imported records yet.</div>}
           {timeline.map((record) => (

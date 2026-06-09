@@ -112,7 +112,10 @@ export function Questions({ token, questions, refresh, notify }: QuestionsProps)
               <label className="agreement-check full"><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} />Activate this question for future assessments.</label>
             </div>
             {message && <div className="form-message">{message}</div>}
-            <button className="primary-button full" type="button" disabled={saving || !form.prompt.trim()} onClick={saveQuestion}>{saving ? "Saving..." : "Save assessment question"}</button>
+            <div className="drawer-actions">
+              <button className="ghost-button" type="button" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="primary-button" type="button" disabled={saving || !form.prompt.trim()} onClick={saveQuestion}>{saving ? "Saving..." : "Save assessment question"}</button>
+            </div>
           </aside>
         </div>
       )}
@@ -126,7 +129,9 @@ export function Questions({ token, questions, refresh, notify }: QuestionsProps)
               <label>Use for symptom<select value={suggestionForm.symptomKey} onChange={(event) => setSuggestionForm({ ...suggestionForm, symptomKey: event.target.value })}><option>General</option>{possibleSymptoms.map((symptom) => <option key={symptom}>{symptom}</option>)}</select></label>
               <label className="full">Optional focus<textarea placeholder="Example: duration, severity changes, breathing context, medicine context" value={suggestionForm.focus} onChange={(event) => setSuggestionForm({ ...suggestionForm, focus: event.target.value })} /></label>
             </div>
-            <button className="ghost-button full" type="button" disabled={suggesting} onClick={suggestQuestions}>{suggesting ? "Preparing drafts..." : "Generate draft questions"}</button>
+            <div className="drawer-actions">
+              <button className="ghost-button" type="button" disabled={suggesting} onClick={suggestQuestions}>{suggesting ? "Preparing drafts..." : "Generate draft questions"}</button>
+            </div>
             {suggestionMode && <p className="summary-box">Draft source: {suggestionMode === "OLLAMA" ? "Gemma 4 31B" : suggestionMode === "OPENAI" ? "OpenAI fallback" : "Internal fallback"}</p>}
             {suggestions.length > 0 && (
               <div className="suggestion-list">
@@ -143,7 +148,10 @@ export function Questions({ token, questions, refresh, notify }: QuestionsProps)
               </div>
             )}
             {suggestionMessage && <div className="form-message">{suggestionMessage}</div>}
-            <button className="primary-button full" type="button" disabled={saving || selectedSuggestions.length === 0} onClick={saveSelectedSuggestions}>{saving ? "Saving..." : "Save selected as paused questions"}</button>
+            <div className="drawer-actions">
+              <button className="ghost-button" type="button" onClick={() => setSuggestionOpen(false)}>Close</button>
+              <button className="primary-button" type="button" disabled={saving || selectedSuggestions.length === 0} onClick={saveSelectedSuggestions}>{saving ? "Saving..." : "Save selected as paused questions"}</button>
+            </div>
           </aside>
         </div>
       )}

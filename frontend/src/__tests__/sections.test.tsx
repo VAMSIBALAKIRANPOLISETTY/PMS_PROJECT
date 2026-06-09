@@ -142,7 +142,7 @@ describe("section rendering", () => {
     expect(screen.getByText("PMS Health")).toBeInTheDocument();
     expect(screen.getAllByText("Create account").length).toBeGreaterThan(0);
     expect(screen.getByText("Built for awareness, not medical decision-making.")).toBeInTheDocument();
-    expect(screen.getByText("Prepare with confidence.")).toBeInTheDocument();
+    expect(screen.getByText("Use one private workspace for preparation.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Privacy and consent" }));
     expect(screen.getByText("Understand how your information supports care preparation.")).toBeInTheDocument();
     expect(view.container.querySelector(".dynamic-ui-background")).not.toBeInTheDocument();
@@ -150,14 +150,14 @@ describe("section rendering", () => {
 
   it("renders patient login with a separate staff login path", () => {
     render(<AuthPage initialMode="login" onSuccess={vi.fn()} onBack={vi.fn()} />);
-    expect(screen.getByText("Login to your health workspace")).toBeInTheDocument();
+    expect(screen.getByText("Sign in to your health workspace")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Staff login" }));
-    expect(screen.getByText("Login to the clinical operations workspace")).toBeInTheDocument();
+    expect(screen.getByText("Sign in to the clinical operations workspace")).toBeInTheDocument();
   });
 
   it("renders patient-only signup without a role selector", () => {
     render(<AuthPage initialMode="signup" onSuccess={vi.fn()} onBack={vi.fn()} />);
-    expect(screen.getByText("Create your personal health workspace")).toBeInTheDocument();
+    expect(screen.getByText("Create your private health workspace")).toBeInTheDocument();
     expect(screen.queryByText("Role")).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("name@example.com")).toHaveValue("");
     expect(screen.getByPlaceholderText("18 or older")).toHaveValue(null);
@@ -177,7 +177,7 @@ describe("section rendering", () => {
     fireEvent.change(screen.getByLabelText("Sex"), { target: { value: "Prefer not to say" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(screen.getByText("Review how your information is used.")).toBeInTheDocument();
+    expect(screen.getByText("Review how your information supports care preparation.")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("I reviewed and accept the PMS Health privacy notice."));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByText("Accept the terms before creating your account.")).toBeInTheDocument();
@@ -203,13 +203,13 @@ describe("section rendering", () => {
 
   it("renders user overview without the large appearance panel", () => {
     render(<UserOverview user={user} token="token" assessments={[assessment]} setPage={vi.fn()} updateUser={vi.fn()} notify={vi.fn()} />);
-    expect(screen.getByText(/latest assessment is medium risk/i)).toBeInTheDocument();
+    expect(screen.getByText(/latest assessment shows medium awareness/i)).toBeInTheDocument();
     expect(screen.queryByText("Choose your workspace theme")).not.toBeInTheDocument();
   });
 
   it("renders assessment and symptom drawer sections", () => {
     render(<AssessmentForm token="token" onCreated={vi.fn()} notify={vi.fn()} />);
-    expect(screen.getByText("Tell us how you feel")).toBeInTheDocument();
+    expect(screen.getByText("Record what you are feeling")).toBeInTheDocument();
     expect(screen.getByText("Add symptoms")).toBeInTheDocument();
     expect(screen.getByText("Drop symptoms here")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Example: 2")).toHaveValue(null);
@@ -224,13 +224,13 @@ describe("section rendering", () => {
     render(<AssessmentWorkspace token="token" onCreated={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
 
     expect(screen.getByRole("tab", { name: /Guided assessment/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Tell us how you feel")).toBeVisible();
+    expect(screen.getByText("Record what you are feeling")).toBeVisible();
     const durationInput = screen.getByPlaceholderText("Example: 2");
     fireEvent.change(durationInput, { target: { value: "3" } });
 
     fireEvent.click(screen.getByRole("tab", { name: /Report assessment/i }));
     expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Upload a health report")).toBeVisible();
+    expect(screen.getByText("Upload a report")).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: /Guided assessment/i }));
     expect(screen.getByPlaceholderText("Example: 2")).toHaveValue(3);
@@ -255,7 +255,7 @@ describe("section rendering", () => {
       />,
     );
     expect(screen.getByRole("tab", { name: /Report assessment/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Upload a health report")).toBeVisible();
+    expect(screen.getByText("Upload a report")).toBeVisible();
   });
 
   it("shows an empty connected-health message from guided assessment", async () => {
@@ -288,10 +288,10 @@ describe("section rendering", () => {
 
   it("renders reports, history, profile, and recent assessments", () => {
     render(<Reports token="token" notify={vi.fn()} />);
-    expect(screen.getByText("Upload a health report")).toBeInTheDocument();
+    expect(screen.getByText("Upload a report")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Use connected health data/i })).toBeInTheDocument();
     render(<History assessments={[assessment]} token="token" />);
-    expect(screen.getByText("Assessment timeline")).toBeInTheDocument();
+    expect(screen.getByText("Assessment history")).toBeInTheDocument();
     render(<Profile user={user} token="token" updateUser={vi.fn()} notify={vi.fn()} />);
     expect(screen.getByText("Patient profile")).toBeInTheDocument();
     expect(screen.getByText("Profile photo")).toBeInTheDocument();
@@ -442,7 +442,7 @@ describe("section rendering", () => {
       lastFallbackReason: "No provider call has been attempted.",
     } });
     render(<AdminOverview analytics={analytics} assessments={[assessment]} setPage={vi.fn()} token="token" />);
-    expect(screen.getByText("Common symptoms")).toBeInTheDocument();
+    expect(screen.getByText("Common symptom patterns")).toBeInTheDocument();
     render(<AssessmentTable assessments={[assessment]} token="token" />);
     expect(screen.getAllByText("Care review").length).toBeGreaterThan(0);
     render(<Rules token="token" rules={[rule]} refresh={refresh} notify={vi.fn()} />);
