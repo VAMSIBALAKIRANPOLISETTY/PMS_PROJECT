@@ -91,7 +91,7 @@ public class ReportInsightController {
             @Valid @RequestBody ReportFollowUpRequest request
     ) {
         authService.requireUser(authHeader);
-        AiInsightService.QuestionSet questions = aiInsightService.reportFollowUps(request.reportName());
+        AiInsightService.QuestionSet questions = aiInsightService.reportFollowUps(request.reportName(), null, null);
         return new ReportFollowUpResponse(request.reportName(), questions.questions(), questions.aiMode());
     }
 
@@ -105,7 +105,7 @@ public class ReportInsightController {
         AiInsightService.CarePrepInsight insight = aiInsightService.forReport(user, request.reportName(), request.reportText(), request.answers());
         return new ReportInsightResponse(
                 request.reportName(),
-                aiInsightService.reportFollowUps(request.reportName()).questions(),
+                aiInsightService.reportFollowUps(request.reportName(), request.reportText(), null).questions(),
                 request.answers(),
                 insight.careSummary(),
                 insight.explanation(),

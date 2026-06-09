@@ -147,14 +147,17 @@ public class OllamaInsightClient {
         return requestInsight(input);
     }
 
-    public AiInsightService.QuestionSet reportFollowUps(String reportName) {
+    public AiInsightService.QuestionSet reportFollowUps(String reportName, String reportText, String connectedHealthSummary) {
         String input = """
                 Suggest PMS report follow-up questions for a patient before a care-preparation report guide is generated.
 
                 Report name: %s
+                Report text or notable values: %s
+                Connected health context: %s
 
                 Questions must be safe, non-diagnostic, and answerable by a normal patient.
-                """.formatted(nullable(reportName));
+                Keep doctor-review, abnormal-value, current-symptom, medicine, and chronic-condition questions when relevant.
+                """.formatted(nullable(reportName), nullable(reportText), nullable(connectedHealthSummary));
         return requestQuestions(input, 6);
     }
 

@@ -106,12 +106,15 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
 
   async function sync(connection: HealthConnection) {
     try {
-      await api.post(`/connections/${connection.id}/sync`, {
-        records: [],
+      const records = sampleRecordsFor(connection);
+      const response = await api.post<TimelineRecord[]>(`/connections/${connection.id}/sync`, {
+        records,
       }, { headers: authHeaders(token) });
       await loadConnections(false);
       await loadTimeline(false);
-      notify("Connection checked. No new records imported.");
+      notify(response.data.length > 0
+        ? `${response.data.length} connected health record${response.data.length === 1 ? "" : "s"} imported.`
+        : "Connection checked. No new records imported.");
     } catch (error) {
       const fallback = apiMessage(error, "Sync failed.");
       setMessage(fallback);
@@ -271,4 +274,42 @@ function apiMessage(error: unknown, fallback: string) {
   if (error.response?.status) return `${fallback} Server returned ${error.response.status}.`;
   if (error.request) return `${fallback} Confirm the backend is running and the frontend proxy is connected.`;
   return fallback;
+}
+
+function sampleRecordsFor(connection: HealthConnection) {
+  if (connection.provider !== "SAMSUNG_HEALTH") return [];
+  return [
+    {
+      recordType: "Vital reading",
+      label: "Resting heart rate",
+      valueText: "96",
+      unit: "bpm",
+      sourceName: "Samsung Galaxy Watch",
+      notes: "Imported Samsung smartwatch value. Higher than usual resting range.",
+    },
+    {
+      recordType: "Sleep summary",
+      label: "Sleep duration",
+      valueText: "4.8",
+      unit: "hours",
+      sourceName: "Samsung Galaxy Watch",
+      notes: "Wearable sleep summary showing reduced sleep before the assessment.",
+    },
+    {
+      recordType: "Activity summary",
+      label: "Daily steps",
+      valueText: "2380",
+      unit: "steps",
+      sourceName: "Samsung Galaxy Watch",
+      notes: "Activity summary showing lower movement than usual.",
+    },
+    {
+      recordType: "Stress trend",
+      label: "Stress level",
+      valueText: "High",
+      unit: "",
+      sourceName: "Samsung Galaxy Watch",
+      notes: "Wearable stress trend from the connected device.",
+    },
+  ];
 }

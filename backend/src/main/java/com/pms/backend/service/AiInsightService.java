@@ -9,7 +9,7 @@ public interface AiInsightService {
 
     QuestionSet assessmentFollowUps(AppUser user, Assessment assessment, RiskEngineService.RiskResult result);
 
-    QuestionSet reportFollowUps(String reportName);
+    QuestionSet reportFollowUps(String reportName, String reportText, String connectedHealthSummary);
 
     CarePrepInsight forReport(AppUser user, String reportName, String reportText, List<String> answers);
 

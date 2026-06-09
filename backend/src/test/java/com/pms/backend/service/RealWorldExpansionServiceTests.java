@@ -77,6 +77,47 @@ class RealWorldExpansionServiceTests {
     }
 
     @Test
+    void samsungSmartWatchSyncCreatesDemoRecordsForAssessmentsAndReports() {
+        var user = registerPatient("samsung.context@example.com", "samsungcontext");
+
+        var connection = connectedHealthService.callback(user, "SAMSUNG_HEALTH",
+                new ConnectionCallbackRequest("samsung-watch", "Samsung Health"));
+        var timeline = connectedHealthService.sync(user, connection.id(), List.of());
+
+        assertTrue(timeline.stream().anyMatch(record -> "Resting heart rate".equals(record.label())));
+        assertTrue(timeline.stream().anyMatch(record -> "Sleep duration".equals(record.label())));
+
+        var symptomDraft = assessmentService.create(user, new AssessmentRequest(
+                List.of("Fatigue"),
+                5,
+                3,
+                false,
+                null,
+                "None",
+                true,
+                timeline.stream().map(record -> record.id()).toList()
+        ));
+
+        assertTrue(symptomDraft.connectedHealthSummary().contains("Samsung Galaxy Watch"));
+        assertTrue(symptomDraft.followUpQuestions().stream().anyMatch(question -> question.toLowerCase().contains("heart-rate")));
+
+        assessmentService.discardDraft(user, symptomDraft.id());
+
+        var reportDraft = assessmentService.uploadReport(
+                user,
+                null,
+                "City Diagnostic Laboratory\nHemoglobin 10.5 g/dL 12-16 Low\nGlucose 145 mg/dL 70-110 High",
+                true,
+                timeline.stream().map(record -> record.id()).toList()
+        );
+
+        assertTrue(reportDraft.followUpQuestions().stream().anyMatch(question -> question.toLowerCase().contains("sugar")));
+        assertTrue(reportDraft.followUpQuestions().stream().anyMatch(question -> question.toLowerCase().contains("wearable")
+                || question.toLowerCase().contains("heart-rate")
+                || question.toLowerCase().contains("sleep")));
+    }
+
+    @Test
     void profilePhotoAcceptsSupportedImagesAndRejectsInvalidFiles() {
         var user = registerPatient("photo.patient@example.com", "photopatient");
 

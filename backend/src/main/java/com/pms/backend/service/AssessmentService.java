@@ -82,7 +82,12 @@ public class AssessmentService {
         assessment.setRiskScore(result.score());
         assessment.setRiskLevel(result.level());
         assessment.setReasons(result.reasons());
-        assessment.setFollowUpQuestions(mergeFollowUps(result.followUps(), aiInsightService.assessmentFollowUps(user, assessment, result).questions()));
+        List<String> connectedFollowUps = connectedHealthFollowUps(assessment.getConnectedHealthSummary());
+        assessment.setFollowUpQuestions(mergeFollowUps(
+                connectedFollowUps.isEmpty() ? result.followUps() : connectedFollowUps,
+                connectedFollowUps.isEmpty() ? List.of() : result.followUps(),
+                aiInsightService.assessmentFollowUps(user, assessment, result).questions()
+        ));
         assessment.setSuggestions(result.suggestions());
         assessment.setStatus(AssessmentStatus.PENDING_FOLLOW_UP);
         assessment.setUrgentWarning(result.urgentWarning());
@@ -165,7 +170,7 @@ public class AssessmentService {
         assessment.setUrgentWarning(parsed.criticalLanguage()
                 ? "The uploaded report contains urgent or critical wording. Contact your clinician or local urgent care service promptly if this matches your current condition."
                 : null);
-        assessment.setFollowUpQuestions(reportFollowUps(reportName));
+        assessment.setFollowUpQuestions(reportFollowUps(reportName, parsed.text(), assessment.getConnectedHealthSummary()));
         assessment.setStatus(AssessmentStatus.PENDING_FOLLOW_UP);
         return toResponse(assessmentRepository.save(assessment));
     }
@@ -347,25 +352,81 @@ public class AssessmentService {
                 .toList()));
     }
 
-    private List<String> mergeFollowUps(List<String> required, List<String> aiCandidates) {
+    @SafeVarargs
+    private List<String> mergeFollowUps(List<String> required, List<String>... candidateGroups) {
         List<String> merged = new ArrayList<>(new LinkedHashSet<>(required == null ? List.of() : required));
-        for (String candidate : aiCandidates == null ? List.<String>of() : aiCandidates) {
-            String value = candidate == null ? "" : candidate.trim();
-            if (!value.isBlank() && merged.size() < 7 && !merged.contains(value)) {
-                merged.add(value);
+        if (candidateGroups == null) {
+            return merged.stream().limit(7).toList();
+        }
+        for (List<String> candidates : candidateGroups) {
+            for (String candidate : candidates == null ? List.<String>of() : candidates) {
+                String value = candidate == null ? "" : candidate.trim();
+                if (!value.isBlank() && merged.size() < 7 && !merged.contains(value)) {
+                    merged.add(value);
+                }
             }
         }
         return merged.stream().limit(7).toList();
     }
 
-    private List<String> reportFollowUps(String reportName) {
+    private List<String> reportFollowUps(String reportName, String reportText, String connectedHealthSummary) {
         List<String> questions = mergeFollowUps(List.of(
                 "Do you currently have symptoms related to this report?",
                 "Has a clinician already reviewed this report with you?",
                 "Are any values marked high, low, abnormal, or critical?",
                 "Do you want to discuss lifestyle, medication, or follow-up testing questions with your clinician?"
-        ), aiInsightService.reportFollowUps(reportName).questions());
+        ), reportValueFollowUps(reportText), connectedHealthFollowUps(connectedHealthSummary),
+                aiInsightService.reportFollowUps(reportName, reportText, connectedHealthSummary).questions());
         return questions.stream().limit(7).toList();
+    }
+
+    private List<String> reportValueFollowUps(String reportText) {
+        String value = normalizeQuestionContext(reportText);
+        List<String> questions = new ArrayList<>();
+        if (value.matches(".*(hemoglobin|hb |anemia|iron|ferritin).*")) {
+            questions.add("Have you had tiredness, dizziness, breathlessness, pale skin, or unusual weakness around this report?");
+        }
+        if (value.matches(".*(glucose|hba1c|sugar|diabetes).*")) {
+            questions.add("Was this sugar-related result fasting, after food, or part of diabetes monitoring?");
+        }
+        if (value.matches(".*(cholesterol|ldl|hdl|triglyceride).*")) {
+            questions.add("Has a clinician discussed heart-risk factors, diet, activity, or medicines related to these lipid values?");
+        }
+        if (value.matches(".*(vitamin d|b12|calcium).*")) {
+            questions.add("Do you have fatigue, muscle aches, bone pain, numbness, or diet changes connected to these nutrition values?");
+        }
+        if (value.matches(".*(tsh|thyroid).*")) {
+            questions.add("Have you noticed weight, sleep, heat or cold tolerance, mood, or heart-rate changes?");
+        }
+        if (value.matches(".*(creatinine|kidney|egfr|urea).*")) {
+            questions.add("Have hydration, urine changes, swelling, blood pressure, or kidney history been discussed with your clinician?");
+        }
+        return questions;
+    }
+
+    private List<String> connectedHealthFollowUps(String connectedHealthSummary) {
+        String value = normalizeQuestionContext(connectedHealthSummary);
+        List<String> questions = new ArrayList<>();
+        if (value.matches(".*(heart rate|resting heart|pulse|bpm).*")) {
+            questions.add("Did the connected heart-rate change happen with palpitations, chest discomfort, dizziness, or breathlessness?");
+        }
+        if (value.matches(".*(sleep|hours).*")) {
+            questions.add("Did reduced or disrupted sleep happen before the symptoms or report concern?");
+        }
+        if (value.matches(".*(steps|activity|workout|movement).*")) {
+            questions.add("Did your symptoms start during activity or make normal walking and movement harder?");
+        }
+        if (value.matches(".*(stress|high stress).*")) {
+            questions.add("Did high stress appear before the symptoms, appetite change, or report concern?");
+        }
+        if (value.matches(".*(oxygen|spo2|blood oxygen).*")) {
+            questions.add("Have you had breathing difficulty, blue lips, or worsening shortness of breath with oxygen changes?");
+        }
+        return questions;
+    }
+
+    private String normalizeQuestionContext(String value) {
+        return (value == null ? "" : value).toLowerCase().replaceAll("\\s+", " ");
     }
 
     private String cleanReportName(String fileName) {

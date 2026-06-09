@@ -320,6 +320,58 @@ describe("section rendering", () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith("/connections/APPLE_HEALTH/callback", expect.objectContaining({ externalAccountId: "patient@example.com" }), expect.anything()));
   });
 
+  it("imports Samsung smartwatch sample records during connected-health sync", async () => {
+    const notify = vi.fn();
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url === "/connections") {
+        return Promise.resolve({
+          data: [{
+            id: 12,
+            provider: "SAMSUNG_HEALTH",
+            displayName: "Samsung Health",
+            status: "CONNECTED",
+            connectedAt: "2026-06-09T08:00:00",
+            lastSyncAt: null,
+            permissionSummary: "Samsung permission",
+          }],
+        });
+      }
+      if (url === "/health-timeline") return Promise.resolve({ data: [] });
+      return Promise.reject(new Error("Unexpected get"));
+    });
+    const post = vi.spyOn(api, "post").mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          sourceType: "DEVICE",
+          recordType: "Vital reading",
+          label: "Resting heart rate",
+          valueText: "96",
+          unit: "bpm",
+          sourceName: "Samsung Galaxy Watch",
+          notes: "Sample value",
+          observedAt: "2026-06-09T08:00:00",
+        },
+      ],
+    });
+
+    render(<ConnectedHealth token="token" notify={notify} />);
+
+    await waitFor(() => expect(screen.getByText("Samsung Health")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Sync Samsung Health" }));
+
+    await waitFor(() => expect(post).toHaveBeenCalledWith(
+      "/connections/12/sync",
+      expect.objectContaining({
+        records: expect.arrayContaining([
+          expect.objectContaining({ label: "Resting heart rate", sourceName: "Samsung Galaxy Watch" }),
+        ]),
+      }),
+      expect.anything(),
+    ));
+    expect(notify).toHaveBeenCalledWith("1 connected health record imported.");
+  });
+
   it("opens a complete assessment report from history", () => {
     render(<History assessments={[assessment]} token="token" />);
     fireEvent.click(screen.getByRole("button", { name: /15 May \| Fever/i }));

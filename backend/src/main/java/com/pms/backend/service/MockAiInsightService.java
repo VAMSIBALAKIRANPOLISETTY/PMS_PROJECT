@@ -41,15 +41,31 @@ public class MockAiInsightService implements AiInsightService {
     }
 
     @Override
-    public QuestionSet reportFollowUps(String reportName) {
-        return new QuestionSet(List.of(
+    public QuestionSet reportFollowUps(String reportName, String reportText, String connectedHealthSummary) {
+        List<String> questions = new ArrayList<>(List.of(
                 "What main symptom or concern made you upload this report?",
                 "Did a doctor already review this report with you?",
                 "Are any values marked high, low, critical, abnormal, or outside range?",
                 "Do you currently have fever, pain, breathing difficulty, dizziness, weakness, or confusion?",
                 "Are you taking medicines related to this report?",
                 "Do you have a chronic condition connected to these results?"
-        ), activeMode());
+        ));
+        String context = (safeText(reportText) + " " + safeText(connectedHealthSummary))
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ");
+        if (context.matches(".*(hemoglobin|hb |anemia|iron).*")) {
+            questions.add("Have you noticed tiredness, dizziness, breathlessness, or unusual weakness with this report?");
+        }
+        if (context.matches(".*(glucose|hba1c|sugar|diabetes).*")) {
+            questions.add("Was this sugar-related test fasting, after food, or connected to diabetes monitoring?");
+        }
+        if (context.matches(".*(heart rate|resting heart|pulse|bpm).*")) {
+            questions.add("Did the wearable heart-rate change happen with palpitations, chest discomfort, dizziness, or breathlessness?");
+        }
+        if (context.matches(".*(sleep|stress|steps|activity).*")) {
+            questions.add("Did low sleep, high stress, or lower activity happen before the report concern or symptoms?");
+        }
+        return new QuestionSet(dedupe(questions).stream().limit(7).toList(), activeMode());
     }
 
     @Override

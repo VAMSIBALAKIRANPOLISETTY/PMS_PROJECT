@@ -153,10 +153,10 @@ public class ConfiguredAiInsightService implements AiInsightService {
     }
 
     @Override
-    public QuestionSet reportFollowUps(String reportName) {
+    public QuestionSet reportFollowUps(String reportName, String reportText, String connectedHealthSummary) {
         if (!providerMode()) {
             remember("mock", "AI_MODE is not provider; using internal fallback output.");
-            return mockAiInsightService.reportFollowUps(reportName);
+            return mockAiInsightService.reportFollowUps(reportName, reportText, connectedHealthSummary);
         }
         for (String provider : providerChain) {
             try {
@@ -166,7 +166,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                         continue;
                     }
                     rememberSuccess(provider);
-                    return ollamaInsightClient.reportFollowUps(reportName);
+                    return ollamaInsightClient.reportFollowUps(reportName, reportText, connectedHealthSummary);
                 }
                 if (OPENAI_PROVIDER.equals(provider)) {
                     if (openAiApiKey.isBlank()) {
@@ -174,7 +174,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
                         continue;
                     }
                     rememberSuccess(provider);
-                    return openAiInsightClient.reportFollowUps(reportName);
+                    return openAiInsightClient.reportFollowUps(reportName, reportText, connectedHealthSummary);
                 }
             } catch (RuntimeException exception) {
                 remember(provider, exception.getMessage());
@@ -182,7 +182,7 @@ public class ConfiguredAiInsightService implements AiInsightService {
             }
         }
         rememberFinalMockFallback();
-        return mockAiInsightService.reportFollowUps(reportName);
+        return mockAiInsightService.reportFollowUps(reportName, reportText, connectedHealthSummary);
     }
 
     @Override

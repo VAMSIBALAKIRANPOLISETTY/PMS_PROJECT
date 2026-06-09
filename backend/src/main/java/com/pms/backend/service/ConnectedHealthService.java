@@ -70,6 +70,9 @@ public class ConnectedHealthService {
         if (connection.getStatus() != ConnectionStatus.CONNECTED) {
             throw new IllegalArgumentException("Connection is not active.");
         }
+        if ((records == null || records.isEmpty()) && connection.getProvider() == ConnectionProvider.SAMSUNG_HEALTH) {
+            records = samsungSmartWatchSample();
+        }
         if (records == null || records.isEmpty()) {
             connection.setLastSyncAt(LocalDateTime.now());
             connectionRepository.save(connection);
@@ -175,6 +178,43 @@ public class ConnectedHealthService {
             case LAB_REPORT_UPLOAD -> "Lab Report Upload";
             case MANUAL_ENTRY -> "Manual Entry";
         };
+    }
+
+    private List<TimelineRecordRequest> samsungSmartWatchSample() {
+        return List.of(
+                new TimelineRecordRequest(
+                        "Vital reading",
+                        "Resting heart rate",
+                        "96",
+                        "bpm",
+                        "Samsung Galaxy Watch",
+                        "Imported Samsung smartwatch value. Higher than usual resting range."
+                ),
+                new TimelineRecordRequest(
+                        "Sleep summary",
+                        "Sleep duration",
+                        "4.8",
+                        "hours",
+                        "Samsung Galaxy Watch",
+                        "Wearable sleep summary showing reduced sleep before the assessment."
+                ),
+                new TimelineRecordRequest(
+                        "Activity summary",
+                        "Daily steps",
+                        "2380",
+                        "steps",
+                        "Samsung Galaxy Watch",
+                        "Activity summary showing lower movement than usual."
+                ),
+                new TimelineRecordRequest(
+                        "Stress trend",
+                        "Stress level",
+                        "High",
+                        null,
+                        "Samsung Galaxy Watch",
+                        "Wearable stress trend from the connected device."
+                )
+        );
     }
 
     private void requirePatient(AppUser user) {
