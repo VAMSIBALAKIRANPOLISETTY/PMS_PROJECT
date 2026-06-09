@@ -1585,6 +1585,7 @@ main { min-width: 0; padding: 28px; }
   cursor: pointer;
 }
 .profile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.profile-detail.span-2 { grid-column: span 2; }
 .profile-edit-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 .profile-detail, .question-list div, .rule-card, .dataset-grid div {

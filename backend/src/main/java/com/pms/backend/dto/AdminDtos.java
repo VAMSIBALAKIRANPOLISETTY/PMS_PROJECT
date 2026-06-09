@@ -8,6 +8,19 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 public class AdminDtos {
+    public record AiStatusResponse(
+            String mode,
+            java.util.List<String> providerChain,
+            String ollamaModel,
+            String ollamaBaseUrl,
+            boolean ollamaApiKeyPresent,
+            String openAiModel,
+            String openAiBaseUrl,
+            boolean openAiApiKeyPresent,
+            String lastProviderAttempt,
+            String lastFallbackReason
+    ) {}
+
     public record QuestionResponse(Long id, String symptomKey, String prompt, String inputType, boolean active) {}
 
     public record QuestionRequest(

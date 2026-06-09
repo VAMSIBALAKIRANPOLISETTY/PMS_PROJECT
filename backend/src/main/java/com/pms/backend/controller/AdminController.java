@@ -1,6 +1,7 @@
 package com.pms.backend.controller;
 
 import com.pms.backend.config.OpenApiConfig;
+import com.pms.backend.dto.AdminDtos.AiStatusResponse;
 import com.pms.backend.dto.AdminDtos.ActiveRequest;
 import com.pms.backend.dto.AdminDtos.QuestionRequest;
 import com.pms.backend.dto.AdminDtos.QuestionResponse;
@@ -17,6 +18,7 @@ import com.pms.backend.repository.HealthQuestionRepository;
 import com.pms.backend.service.AiInsightService;
 import com.pms.backend.service.AnalyticsService;
 import com.pms.backend.service.AuthService;
+import com.pms.backend.service.ConfiguredAiInsightService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,19 +37,22 @@ public class AdminController {
     private final HealthQuestionRepository questionRepository;
     private final AdminRuleRepository ruleRepository;
     private final AiInsightService aiInsightService;
+    private final ConfiguredAiInsightService configuredAiInsightService;
 
     public AdminController(
             AuthService authService,
             AnalyticsService analyticsService,
             HealthQuestionRepository questionRepository,
             AdminRuleRepository ruleRepository,
-            AiInsightService aiInsightService
+            AiInsightService aiInsightService,
+            ConfiguredAiInsightService configuredAiInsightService
     ) {
         this.authService = authService;
         this.analyticsService = analyticsService;
         this.questionRepository = questionRepository;
         this.ruleRepository = ruleRepository;
         this.aiInsightService = aiInsightService;
+        this.configuredAiInsightService = configuredAiInsightService;
     }
 
     @Operation(tags = {"Admin Analytics"}, summary = "Get clinical operations analytics", description = "Returns staff-only totals, risk mix, and common completed-assessment symptom counts.")
@@ -55,6 +60,25 @@ public class AdminController {
     public AnalyticsResponse analytics(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
         authService.requireAdmin(authHeader);
         return analyticsService.getAnalytics();
+    }
+
+    @Operation(tags = {"Admin Analytics"}, summary = "Get AI provider status", description = "Returns sanitized backend AI mode, provider configuration, and the latest fallback reason without exposing secrets.")
+    @GetMapping("/ai/status")
+    public AiStatusResponse aiStatus(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
+        authService.requireAdmin(authHeader);
+        ConfiguredAiInsightService.RuntimeStatus status = configuredAiInsightService.status();
+        return new AiStatusResponse(
+                status.mode(),
+                status.providerChain(),
+                status.ollamaModel(),
+                status.ollamaBaseUrl(),
+                status.ollamaApiKeyPresent(),
+                status.openAiModel(),
+                status.openAiBaseUrl(),
+                status.openAiApiKeyPresent(),
+                status.lastProviderAttempt(),
+                status.lastFallbackReason()
+        );
     }
 
     @Operation(tags = {"Admin Questions"}, summary = "List managed assessment questions", description = "Returns active and inactive follow-up prompts that staff can manage for future assessment drafts.")

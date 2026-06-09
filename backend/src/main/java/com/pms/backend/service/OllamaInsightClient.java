@@ -21,13 +21,16 @@ public class OllamaInsightClient {
     private final String endpoint;
     private final String apiKey;
     private final String model;
+    private final boolean cloudMode;
     private final Duration timeout;
     private final double temperature;
 
     public OllamaInsightClient(String baseUrl, String apiKey, String model, Duration timeout, double temperature) {
-        this.endpoint = normalizedBaseUrl(baseUrl) + "/chat";
+        String normalizedBaseUrl = normalizedBaseUrl(baseUrl);
+        this.endpoint = normalizedBaseUrl + "/chat";
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = hasText(model) ? model.trim() : "gemma4:31b";
+        this.cloudMode = normalizedBaseUrl.contains("ollama.com");
         this.timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
         this.temperature = temperature;
         this.httpClient = HttpClient.newBuilder().connectTimeout(this.timeout).build();
@@ -169,29 +172,41 @@ public class OllamaInsightClient {
     }
 
     private AiInsightService.CarePrepInsight requestInsight(String input) {
-        try {
-            String content = send(chatBody(systemInstructions(), input, responseSchema()));
-            ProviderInsight providerInsight = objectMapper.readValue(content, ProviderInsight.class);
-            return toCarePrepInsight(providerInsight);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Ollama response could not be read");
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Ollama request was interrupted");
+        RuntimeException lastFailure = null;
+        for (String candidate : modelCandidates()) {
+            try {
+                String content = send(chatBody(candidate, systemInstructions(), input, responseSchema()));
+                ProviderInsight providerInsight = objectMapper.readValue(content, ProviderInsight.class);
+                return toCarePrepInsight(providerInsight);
+            } catch (IOException exception) {
+                lastFailure = new IllegalStateException("Ollama response could not be read for " + candidate);
+            } catch (RuntimeException exception) {
+                lastFailure = exception;
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Ollama request was interrupted");
+            }
         }
+        throw lastFailure == null ? new IllegalStateException("Ollama provider failed") : lastFailure;
     }
 
     private AiInsightService.QuestionSet requestQuestions(String input, int maxItems) {
-        try {
-            String content = send(chatBody(questionInstructions(), input, questionSchema(maxItems)));
-            ProviderQuestions providerQuestions = objectMapper.readValue(content, ProviderQuestions.class);
-            return new AiInsightService.QuestionSet(requireList(providerQuestions.questions(), "questions", maxItems), "OLLAMA");
-        } catch (IOException exception) {
-            throw new IllegalStateException("Ollama question response could not be read");
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Ollama question request was interrupted");
+        RuntimeException lastFailure = null;
+        for (String candidate : modelCandidates()) {
+            try {
+                String content = send(chatBody(candidate, questionInstructions(), input, questionSchema(maxItems)));
+                ProviderQuestions providerQuestions = objectMapper.readValue(content, ProviderQuestions.class);
+                return new AiInsightService.QuestionSet(requireList(providerQuestions.questions(), "questions", maxItems), "OLLAMA");
+            } catch (IOException exception) {
+                lastFailure = new IllegalStateException("Ollama question response could not be read for " + candidate);
+            } catch (RuntimeException exception) {
+                lastFailure = exception;
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Ollama question request was interrupted");
+            }
         }
+        throw lastFailure == null ? new IllegalStateException("Ollama question provider failed") : lastFailure;
     }
 
     private String send(Map<String, Object> body) throws IOException, InterruptedException {
@@ -212,15 +227,15 @@ public class OllamaInsightClient {
         return messageContent(response.body());
     }
 
-    private Map<String, Object> chatBody(String instructions, String input, Map<String, Object> schema) {
+    private Map<String, Object> chatBody(String selectedModel, String instructions, String input, Map<String, Object> schema) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", model);
+        body.put("model", selectedModel);
         body.put("messages", List.of(
                 Map.of("role", "system", "content", instructions),
-                Map.of("role", "user", "content", input)
+                Map.of("role", "user", "content", cloudMode ? input + "\n\nReturn only valid JSON matching this shape:\n" + schemaHint(schema) : input)
         ));
         body.put("stream", false);
-        body.put("format", schema);
+        body.put("format", cloudMode ? "json" : schema);
         body.put("options", Map.of("temperature", temperature));
         return body;
     }
@@ -291,6 +306,24 @@ public class OllamaInsightClient {
         schema.put("maxItems", maxItems);
         schema.put("items", Map.of("type", "string", "minLength", 8));
         return schema;
+    }
+
+    private List<String> modelCandidates() {
+        if (!cloudMode) {
+            return List.of(model);
+        }
+        if ("gemma4:31b-cloud".equalsIgnoreCase(model)) {
+            return List.of(model);
+        }
+        return List.of(model, "gemma4:31b-cloud").stream().distinct().toList();
+    }
+
+    private String schemaHint(Map<String, Object> schema) {
+        try {
+            return objectMapper.writeValueAsString(schema);
+        } catch (JsonProcessingException exception) {
+            return "JSON object with the requested PMS care-preparation fields.";
+        }
     }
 
     private String messageContent(String responseBody) throws JsonProcessingException {

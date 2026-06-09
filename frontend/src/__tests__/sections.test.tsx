@@ -375,8 +375,20 @@ describe("section rendering", () => {
     expect(screen.getByRole("button", { name: /Hide full care details/i })).toBeInTheDocument();
   });
 
-  it("renders admin overview, management sections, and staff profile", () => {
+  it("renders admin overview, management sections, and staff profile", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(api, "get").mockResolvedValue({ data: {
+      mode: "provider",
+      providerChain: ["ollama", "openai"],
+      ollamaModel: "gemma4:31b",
+      ollamaBaseUrl: "https://ollama.com/api",
+      ollamaApiKeyPresent: true,
+      openAiModel: "gpt-4o-mini",
+      openAiBaseUrl: "https://api.openai.com/v1",
+      openAiApiKeyPresent: false,
+      lastProviderAttempt: "ollama",
+      lastFallbackReason: "No provider call has been attempted.",
+    } });
     render(<AdminOverview analytics={analytics} assessments={[assessment]} setPage={vi.fn()} token="token" />);
     expect(screen.getByText("Common symptoms")).toBeInTheDocument();
     render(<AssessmentTable assessments={[assessment]} token="token" />);
@@ -385,8 +397,10 @@ describe("section rendering", () => {
     expect(screen.getByText("Safety rule review")).toBeInTheDocument();
     render(<Questions token="token" questions={[question]} refresh={refresh} notify={vi.fn()} />);
     expect(screen.getByText("Assessment question bank")).toBeInTheDocument();
-    render(<AdminProfile user={admin} />);
+    render(<AdminProfile user={admin} token="token" />);
     expect(screen.getByText("Staff profile")).toBeInTheDocument();
+    expect(screen.getByText("Backend provider chain")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("gemma4:31b")).toBeInTheDocument());
     expect(screen.queryByText("Quality review")).not.toBeInTheDocument();
   });
 

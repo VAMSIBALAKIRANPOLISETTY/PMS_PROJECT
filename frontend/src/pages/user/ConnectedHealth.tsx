@@ -29,16 +29,34 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    void load();
-  }, []);
+    void loadConnections();
+    void loadTimeline();
+  }, [token]);
 
-  async function load() {
-    const [connectionResponse, timelineResponse] = await Promise.all([
-      api.get<HealthConnection[]>("/connections", { headers: authHeaders(token) }),
-      api.get<TimelineRecord[]>("/health-timeline", { headers: authHeaders(token) }),
-    ]);
-    setConnections(connectionResponse.data);
-    setTimeline(timelineResponse.data);
+  async function loadConnections(showError = true) {
+    try {
+      const response = await api.get<HealthConnection[]>("/connections", { headers: authHeaders(token) });
+      setConnections(response.data);
+      return true;
+    } catch (error) {
+      const fallback = apiMessage(error, "Connected sources could not be loaded.");
+      setMessage(fallback);
+      if (showError) notify("Connected sources could not be loaded.", "danger");
+      return false;
+    }
+  }
+
+  async function loadTimeline(showError = true) {
+    try {
+      const response = await api.get<TimelineRecord[]>("/health-timeline", { headers: authHeaders(token) });
+      setTimeline(response.data);
+      return true;
+    } catch (error) {
+      const fallback = apiMessage(error, "Connected health timeline could not be loaded.");
+      setMessage(fallback);
+      if (showError) notify("Connected health timeline could not be loaded.", "danger");
+      return false;
+    }
   }
 
   async function start(provider: string) {
@@ -70,10 +88,17 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
       setCredentialAccount("");
       setCredentialSecret("");
       setConnectionReady(false);
-      await load();
       notify("Connected health source saved.");
+      setMessage("Connection saved. Checking for imported records...");
+      const connectionsLoaded = await loadConnections(false);
+      const timelineLoaded = await loadTimeline(false);
+      if (connectionsLoaded && timelineLoaded) {
+        setMessage("Connection saved. No provider password or API token was stored.");
+      } else {
+        setMessage("Connection saved, but the latest connected-health records could not be refreshed. Try opening Connected Health again or log in again if the session expired.");
+      }
     } catch (error) {
-      const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Connection could not be saved." : "Connection could not be saved.";
+      const fallback = apiMessage(error, "Connection could not be saved.");
       setMessage(fallback);
       notify("Connection save failed.", "danger");
     }
@@ -84,10 +109,11 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
       await api.post(`/connections/${connection.id}/sync`, {
         records: [],
       }, { headers: authHeaders(token) });
-      await load();
+      await loadConnections(false);
+      await loadTimeline(false);
       notify("Connection checked. No new records imported.");
     } catch (error) {
-      const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Sync failed." : "Sync failed.";
+      const fallback = apiMessage(error, "Sync failed.");
       setMessage(fallback);
       notify("Health sync failed.", "danger");
     }
@@ -95,7 +121,8 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
 
   async function revoke(connection: HealthConnection) {
     await api.delete(`/connections/${connection.id}`, { headers: authHeaders(token) });
-    await load();
+    await loadConnections(false);
+    await loadTimeline(false);
     notify("Connection access stopped.");
   }
 
@@ -235,4 +262,13 @@ export function ConnectedHealth({ token, notify }: ConnectedHealthProps) {
       </section>
     </div>
   );
+}
+
+function apiMessage(error: unknown, fallback: string) {
+  if (!axios.isAxiosError(error)) return fallback;
+  if (typeof error.response?.data?.message === "string") return error.response.data.message;
+  if (error.response?.status === 401 || error.response?.status === 403) return "Log in with a patient account before using connected health records.";
+  if (error.response?.status) return `${fallback} Server returned ${error.response.status}.`;
+  if (error.request) return `${fallback} Confirm the backend is running and the frontend proxy is connected.`;
+  return fallback;
 }

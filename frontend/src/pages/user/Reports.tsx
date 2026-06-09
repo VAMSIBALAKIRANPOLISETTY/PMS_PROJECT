@@ -53,8 +53,7 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
         ? `Connected health data selected: ${records.length} recent record${records.length === 1 ? "" : "s"}.`
         : "No connected health records are available yet.");
     } catch (error) {
-      const fallback = axios.isAxiosError(error) ? error.response?.data?.message ?? "Connected health records could not be loaded." : "Connected health records could not be loaded.";
-      setMessage(fallback);
+      setMessage(connectedHealthMessage(error));
       notify("Connected health lookup failed.", "danger");
     }
   }
@@ -276,4 +275,13 @@ function formatAnswer(answer: ReportAnswer) {
 function recentTimelineRecords(records: TimelineRecord[]) {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   return records.filter((record) => !record.observedAt || new Date(record.observedAt).getTime() >= cutoff).slice(0, 20);
+}
+
+function connectedHealthMessage(error: unknown) {
+  if (!axios.isAxiosError(error)) return "Connected health records could not be loaded.";
+  if (typeof error.response?.data?.message === "string") return error.response.data.message;
+  if (error.response?.status === 401 || error.response?.status === 403) return "Log in with a patient account before using connected health records.";
+  if (error.response?.status) return `Connected health records could not be loaded. Server returned ${error.response.status}.`;
+  if (error.request) return "Connected health records could not be loaded. Confirm the backend is running and the frontend proxy is connected.";
+  return "Connected health records could not be loaded.";
 }

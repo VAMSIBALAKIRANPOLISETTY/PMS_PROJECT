@@ -198,4 +198,17 @@ export interface QuestionSuggestionResponse {
   aiMode: AiMode;
 }
 
+export interface AiStatus {
+  mode: string;
+  providerChain: string[];
+  ollamaModel: string;
+  ollamaBaseUrl: string;
+  ollamaApiKeyPresent: boolean;
+  openAiModel: string;
+  openAiBaseUrl: string;
+  openAiApiKeyPresent: boolean;
+  lastProviderAttempt: string;
+  lastFallbackReason: string;
+}
+
 export type NavItem = [Page, string, LucideIcon];

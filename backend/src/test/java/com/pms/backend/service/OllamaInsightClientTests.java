@@ -66,6 +66,46 @@ class OllamaInsightClientTests {
     }
 
     @Test
+    void cloudModeUsesJsonFormatAndCloudModelAliasFallback() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/ollama.com/api/chat", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            capturedAuthorization = exchange.getRequestHeaders().getFirst("Authorization");
+            capturedBody = body;
+            String responseBody;
+            int status;
+            if (body.contains("\"model\":\"gemma4:31b-cloud\"")) {
+                status = 200;
+                responseBody = ollamaResponse(validStructuredOutput());
+            } else {
+                status = 404;
+                responseBody = "{\"error\":\"model not available\"}";
+            }
+            byte[] bytes = responseBody.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(status, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        OllamaInsightClient client = new OllamaInsightClient(
+                "http://localhost:" + server.getAddress().getPort() + "/ollama.com/api",
+                "test-ollama-key",
+                "gemma4:31b",
+                Duration.ofSeconds(3),
+                0.2
+        );
+
+        var insight = client.forAssessment(patient(), assessment(), riskResult());
+
+        assertEquals("OLLAMA", insight.aiMode());
+        assertEquals("Bearer test-ollama-key", capturedAuthorization);
+        assertTrue(capturedBody.contains("\"model\":\"gemma4:31b-cloud\""));
+        assertTrue(capturedBody.contains("\"format\":\"json\""));
+        assertTrue(capturedBody.contains("Return only valid JSON matching this shape"));
+    }
+
+    @Test
     void rejectsMissingMessageContent() throws Exception {
         startServer(200, "{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}");
         OllamaInsightClient client = client();

@@ -30,7 +30,7 @@ export function MainContent(props: MainContentProps) {
     if (props.page === "assessments") return <AssessmentTable assessments={props.assessments} token={props.token} />;
     if (props.page === "rules") return <Rules token={props.token} rules={props.rules} refresh={props.refresh} notify={props.notify} />;
     if (props.page === "questions") return <Questions token={props.token} questions={props.questions} refresh={props.refresh} notify={props.notify} />;
-    if (props.page === "profile") return <AdminProfile user={props.user} />;
+    if (props.page === "profile") return <AdminProfile user={props.user} token={props.token} />;
     return <AdminOverview analytics={props.analytics} assessments={props.assessments} setPage={props.setPage} token={props.token} />;
   }
   if (props.page === "assessment" || props.page === "reports") {

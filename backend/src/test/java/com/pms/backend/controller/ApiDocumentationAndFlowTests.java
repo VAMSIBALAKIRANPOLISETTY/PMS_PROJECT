@@ -55,6 +55,7 @@ class ApiDocumentationAndFlowTests {
                 .andExpect(jsonPath("$.paths['/api/reports/follow-ups']").exists())
                 .andExpect(jsonPath("$.paths['/api/reports/insight']").exists())
                 .andExpect(jsonPath("$.paths['/api/admin/analytics']").exists())
+                .andExpect(jsonPath("$.paths['/api/admin/ai/status']").exists())
                 .andExpect(jsonPath("$.paths['/api/admin/rules']").exists())
                 .andExpect(jsonPath("$.paths['/api/admin/questions']").exists());
 
@@ -154,11 +155,24 @@ class ApiDocumentationAndFlowTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalUsers").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
+        mockMvc.perform(get("/api/admin/ai/status")
+                        .header("Authorization", bearer(patientToken)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/ai/status")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").exists())
+                .andExpect(jsonPath("$.providerChain").isArray())
+                .andExpect(jsonPath("$.ollamaApiKeyPresent").isBoolean())
+                .andExpect(jsonPath("$.openAiApiKeyPresent").isBoolean())
+                .andExpect(jsonPath("$.lastFallbackReason").exists());
+
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(assessmentBody(List.of("Headache"), 3, 1))))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Patient access is required to create an assessment."));
     }
 

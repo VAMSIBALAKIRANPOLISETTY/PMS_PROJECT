@@ -33,7 +33,11 @@ class ConfiguredAiInsightServiceTests {
                 "mock",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forAssessment(user, assessment, riskResult);
@@ -51,12 +55,44 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "",
-                ""
+                "",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forAssessment(user, assessment, riskResult);
 
         assertEquals("MOCK", insight.aiMode());
+        assertEquals("mock", service.status().lastProviderAttempt());
+        assertEquals("All configured providers failed or were missing configuration.", service.status().lastFallbackReason());
+    }
+
+    @Test
+    void statusDoesNotExposeProviderSecrets() {
+        ConfiguredAiInsightService service = new ConfiguredAiInsightService(
+                new MockAiInsightService(),
+                new ThrowingOllamaClient(),
+                new ThrowingClient(),
+                "provider",
+                "ollama,openai",
+                "secret-ollama-key",
+                "secret-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
+        );
+
+        var status = service.status();
+
+        assertEquals("provider", status.mode());
+        assertEquals(List.of("ollama", "openai"), status.providerChain());
+        assertEquals("gemma4:31b", status.ollamaModel());
+        assertEquals("https://ollama.com/api", status.ollamaBaseUrl());
+        assertEquals(true, status.ollamaApiKeyPresent());
+        assertEquals(true, status.openAiApiKeyPresent());
     }
 
     @Test
@@ -68,7 +104,11 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forAssessment(user, assessment, riskResult);
@@ -87,7 +127,11 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forAssessment(user, assessment, riskResult);
@@ -105,7 +149,11 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forAssessment(user, assessment, riskResult);
@@ -122,7 +170,11 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var insight = service.forReport(user, "visit-report.pdf", "Patient notes mention chest pain and breathing difficulty.", List.of("Yes"));
@@ -141,7 +193,11 @@ class ConfiguredAiInsightServiceTests {
                 "provider",
                 "ollama,openai",
                 "test-ollama-key",
-                "test-openai-key"
+                "test-openai-key",
+                "gemma4:31b",
+                "https://ollama.com/api",
+                "gpt-4o-mini",
+                "https://api.openai.com/v1"
         );
 
         var suggestions = service.suggestQuestions("Fever", "duration");

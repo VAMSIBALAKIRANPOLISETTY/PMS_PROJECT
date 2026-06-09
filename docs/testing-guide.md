@@ -230,6 +230,10 @@ Use Swagger or Postman to check:
 - If `AI_MODE=provider` is used without `OLLAMA_API_KEY`, `OPENAI_API_KEY`, or legacy `AI_API_KEY`, the response still succeeds with local fallback output.
 - If Ollama fails while OpenAI is configured, the response can return `aiMode=OPENAI`.
 - If Ollama succeeds, the response can return `aiMode=OLLAMA`.
+- `/api/admin/ai/status` is staff-only and shows sanitized provider status without returning API key values.
+- Ollama Cloud runs with JSON mode and can retry the `gemma4:31b-cloud` tag when the configured model tag is unavailable.
+- Connected Health save success is not hidden by a later timeline refresh error.
+- Assessment and Report Assessment connected-data buttons show clear stale-login, backend, or empty-timeline messages.
 - Protected red-flag wording remains rule-based.
 
 JWT automated test checklist:

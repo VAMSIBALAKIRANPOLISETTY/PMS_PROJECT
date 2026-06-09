@@ -49,10 +49,11 @@ flowchart TD
 - Symptom-matched active staff questions for future assessment drafts
 - Summary-first care-preparation results with expandable detail sections
 - Backend-owned `ConfiguredAiInsightService` with default mock output and optional Ollama -> OpenAI -> mock provider mode
+- Sanitized staff AI status at `/api/admin/ai/status` for mode, model, key-present flags, and latest fallback reason
 - Admin analytics, rule management, question management, and read-only staff profile
 - OpenAPI documentation at `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml`
 
-The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with `gemma4:31b`, then `OpenAiInsightClient`, then the local fallback implementation. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
+The frontend never calls AI providers and never stores provider keys. In provider mode, the backend tries `OllamaInsightClient` with the configured model, can retry the Ollama Cloud tag `gemma4:31b-cloud`, then tries `OpenAiInsightClient`, then the local fallback implementation. The rule engine still owns score, risk, and urgent warning behavior, and provider errors fall to the next safe fallback.
 
 ## Report And Connected-Health Flow
 

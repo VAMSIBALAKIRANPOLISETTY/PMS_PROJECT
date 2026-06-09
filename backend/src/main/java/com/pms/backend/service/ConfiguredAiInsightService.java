@@ -5,6 +5,7 @@ import com.pms.backend.model.Assessment;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,12 @@ public class ConfiguredAiInsightService implements AiInsightService {
     private final List<String> providerChain;
     private final String ollamaApiKey;
     private final String openAiApiKey;
+    private final String ollamaModel;
+    private final String ollamaBaseUrl;
+    private final String openAiModel;
+    private final String openAiBaseUrl;
+    private final AtomicReference<String> lastProviderAttempt = new AtomicReference<>("none");
+    private final AtomicReference<String> lastFallbackReason = new AtomicReference<>("No provider call has been attempted.");
 
     @Autowired
     public ConfiguredAiInsightService(
@@ -45,7 +52,11 @@ public class ConfiguredAiInsightService implements AiInsightService {
                 mode,
                 providerChain,
                 ollamaApiKey,
-                openAiApiKey
+                openAiApiKey,
+                ollamaModel,
+                ollamaBaseUrl,
+                openAiModel,
+                openAiBaseUrl
         );
     }
 
@@ -56,7 +67,11 @@ public class ConfiguredAiInsightService implements AiInsightService {
             String mode,
             String providerChain,
             String ollamaApiKey,
-            String openAiApiKey
+            String openAiApiKey,
+            String ollamaModel,
+            String ollamaBaseUrl,
+            String openAiModel,
+            String openAiBaseUrl
     ) {
         this.mockAiInsightService = mockAiInsightService;
         this.ollamaInsightClient = ollamaInsightClient;
@@ -65,65 +80,108 @@ public class ConfiguredAiInsightService implements AiInsightService {
         this.providerChain = parseProviderChain(providerChain);
         this.ollamaApiKey = ollamaApiKey == null ? "" : ollamaApiKey.trim();
         this.openAiApiKey = openAiApiKey == null ? "" : openAiApiKey.trim();
+        this.ollamaModel = ollamaModel == null ? "gemma4:31b" : ollamaModel.trim();
+        this.ollamaBaseUrl = ollamaBaseUrl == null ? "https://ollama.com/api" : ollamaBaseUrl.trim();
+        this.openAiModel = openAiModel == null ? "gpt-4o-mini" : openAiModel.trim();
+        this.openAiBaseUrl = openAiBaseUrl == null ? "https://api.openai.com/v1" : openAiBaseUrl.trim();
     }
 
     @Override
     public CarePrepInsight forAssessment(AppUser user, Assessment assessment, RiskEngineService.RiskResult result) {
         if (!providerMode()) {
+            remember("mock", "AI_MODE is not provider; using internal fallback output.");
             return mockAiInsightService.forAssessment(user, assessment, result);
         }
         for (String provider : providerChain) {
             try {
-                if (OLLAMA_PROVIDER.equals(provider) && !ollamaApiKey.isBlank()) {
+                if (OLLAMA_PROVIDER.equals(provider)) {
+                    if (ollamaApiKey.isBlank()) {
+                        remember(provider, "OLLAMA_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return withoutAiUrgentWarning(ollamaInsightClient.forAssessment(user, assessment, result));
                 }
-                if (OPENAI_PROVIDER.equals(provider) && !openAiApiKey.isBlank()) {
+                if (OPENAI_PROVIDER.equals(provider)) {
+                    if (openAiApiKey.isBlank()) {
+                        remember(provider, "OPENAI_API_KEY or AI_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return withoutAiUrgentWarning(openAiInsightClient.forAssessment(user, assessment, result));
                 }
             } catch (RuntimeException exception) {
+                remember(provider, exception.getMessage());
                 log.warn("{} assessment insight failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
+        remember("mock", "All configured providers failed or were missing configuration.");
         return mockAiInsightService.forAssessment(user, assessment, result);
     }
 
     @Override
     public QuestionSet assessmentFollowUps(AppUser user, Assessment assessment, RiskEngineService.RiskResult result) {
         if (!providerMode()) {
+            remember("mock", "AI_MODE is not provider; using internal fallback output.");
             return mockAiInsightService.assessmentFollowUps(user, assessment, result);
         }
         for (String provider : providerChain) {
             try {
-                if (OLLAMA_PROVIDER.equals(provider) && !ollamaApiKey.isBlank()) {
+                if (OLLAMA_PROVIDER.equals(provider)) {
+                    if (ollamaApiKey.isBlank()) {
+                        remember(provider, "OLLAMA_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return ollamaInsightClient.forAssessmentFollowUps(user, assessment, result);
                 }
-                if (OPENAI_PROVIDER.equals(provider) && !openAiApiKey.isBlank()) {
+                if (OPENAI_PROVIDER.equals(provider)) {
+                    if (openAiApiKey.isBlank()) {
+                        remember(provider, "OPENAI_API_KEY or AI_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return openAiInsightClient.forAssessmentFollowUps(user, assessment, result);
                 }
             } catch (RuntimeException exception) {
+                remember(provider, exception.getMessage());
                 log.warn("{} assessment question suggestion failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
+        remember("mock", "All configured providers failed or were missing configuration.");
         return mockAiInsightService.assessmentFollowUps(user, assessment, result);
     }
 
     @Override
     public QuestionSet reportFollowUps(String reportName) {
         if (!providerMode()) {
+            remember("mock", "AI_MODE is not provider; using internal fallback output.");
             return mockAiInsightService.reportFollowUps(reportName);
         }
         for (String provider : providerChain) {
             try {
-                if (OLLAMA_PROVIDER.equals(provider) && !ollamaApiKey.isBlank()) {
+                if (OLLAMA_PROVIDER.equals(provider)) {
+                    if (ollamaApiKey.isBlank()) {
+                        remember(provider, "OLLAMA_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return ollamaInsightClient.reportFollowUps(reportName);
                 }
-                if (OPENAI_PROVIDER.equals(provider) && !openAiApiKey.isBlank()) {
+                if (OPENAI_PROVIDER.equals(provider)) {
+                    if (openAiApiKey.isBlank()) {
+                        remember(provider, "OPENAI_API_KEY or AI_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return openAiInsightClient.reportFollowUps(reportName);
                 }
             } catch (RuntimeException exception) {
+                remember(provider, exception.getMessage());
                 log.warn("{} report follow-up generation failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
+        remember("mock", "All configured providers failed or were missing configuration.");
         return mockAiInsightService.reportFollowUps(reportName);
     }
 
@@ -131,45 +189,86 @@ public class ConfiguredAiInsightService implements AiInsightService {
     public CarePrepInsight forReport(AppUser user, String reportName, String reportText, List<String> answers) {
         CarePrepInsight safetyScan = mockAiInsightService.forReport(user, reportName, reportText, answers);
         if (!providerMode()) {
+            remember("mock", "AI_MODE is not provider; using internal fallback output.");
             return safetyScan;
         }
         for (String provider : providerChain) {
             try {
                 CarePrepInsight providerInsight = null;
-                if (OLLAMA_PROVIDER.equals(provider) && !ollamaApiKey.isBlank()) {
+                if (OLLAMA_PROVIDER.equals(provider)) {
+                    if (ollamaApiKey.isBlank()) {
+                        remember(provider, "OLLAMA_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     providerInsight = ollamaInsightClient.forReport(user, reportName, reportText, answers);
                 }
-                if (OPENAI_PROVIDER.equals(provider) && !openAiApiKey.isBlank()) {
+                if (OPENAI_PROVIDER.equals(provider)) {
+                    if (openAiApiKey.isBlank()) {
+                        remember(provider, "OPENAI_API_KEY or AI_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     providerInsight = openAiInsightClient.forReport(user, reportName, reportText, answers);
                 }
                 if (providerInsight != null) {
                     return withJavaOwnedUrgentWarning(providerInsight, safetyScan.urgentWarning());
                 }
             } catch (RuntimeException exception) {
+                remember(provider, exception.getMessage());
                 log.warn("{} report insight failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
+        remember("mock", "All configured providers failed or were missing configuration.");
         return safetyScan;
     }
 
     @Override
     public QuestionSet suggestQuestions(String symptomKey, String focus) {
         if (!providerMode()) {
+            remember("mock", "AI_MODE is not provider; using internal fallback output.");
             return mockAiInsightService.suggestQuestions(symptomKey, focus);
         }
         for (String provider : providerChain) {
             try {
-                if (OLLAMA_PROVIDER.equals(provider) && !ollamaApiKey.isBlank()) {
+                if (OLLAMA_PROVIDER.equals(provider)) {
+                    if (ollamaApiKey.isBlank()) {
+                        remember(provider, "OLLAMA_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return ollamaInsightClient.suggestQuestions(symptomKey, focus);
                 }
-                if (OPENAI_PROVIDER.equals(provider) && !openAiApiKey.isBlank()) {
+                if (OPENAI_PROVIDER.equals(provider)) {
+                    if (openAiApiKey.isBlank()) {
+                        remember(provider, "OPENAI_API_KEY or AI_API_KEY is not configured.");
+                        continue;
+                    }
+                    rememberSuccess(provider);
                     return openAiInsightClient.suggestQuestions(symptomKey, focus);
                 }
             } catch (RuntimeException exception) {
+                remember(provider, exception.getMessage());
                 log.warn("{} managed question suggestion failed; trying next fallback: {}", provider, exception.getMessage());
             }
         }
+        remember("mock", "All configured providers failed or were missing configuration.");
         return mockAiInsightService.suggestQuestions(symptomKey, focus);
+    }
+
+    public RuntimeStatus status() {
+        return new RuntimeStatus(
+                mode,
+                providerChain,
+                ollamaModel,
+                ollamaBaseUrl,
+                !ollamaApiKey.isBlank(),
+                openAiModel,
+                openAiBaseUrl,
+                !openAiApiKey.isBlank(),
+                lastProviderAttempt.get(),
+                lastFallbackReason.get()
+        );
     }
 
     private boolean providerMode() {
@@ -210,4 +309,27 @@ public class ConfiguredAiInsightService implements AiInsightService {
     private static double safeTemperature(Double temperature) {
         return temperature == null ? 0.2 : Math.max(0, Math.min(1, temperature));
     }
+
+    private void remember(String provider, String reason) {
+        lastProviderAttempt.set(provider == null || provider.isBlank() ? "unknown" : provider);
+        lastFallbackReason.set(reason == null || reason.isBlank() ? "Provider failed without a detail message." : reason);
+    }
+
+    private void rememberSuccess(String provider) {
+        lastProviderAttempt.set(provider == null || provider.isBlank() ? "unknown" : provider);
+        lastFallbackReason.set("Provider completed successfully.");
+    }
+
+    public record RuntimeStatus(
+            String mode,
+            List<String> providerChain,
+            String ollamaModel,
+            String ollamaBaseUrl,
+            boolean ollamaApiKeyPresent,
+            String openAiModel,
+            String openAiBaseUrl,
+            boolean openAiApiKeyPresent,
+            String lastProviderAttempt,
+            String lastFallbackReason
+    ) {}
 }

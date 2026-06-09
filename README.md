@@ -130,6 +130,34 @@ The real-world product expansion plan is documented in `docs/real-world-product-
 
 For a short speaking sheet before a professor or manager walkthrough, use `docs/product-quick-summary.md`.
 
+For a business-team pitch, use `docs/business-selling-points.md`. It contains the short pitch, detailed selling points, differentiators, business value, and safe product boundary.
+
+For the live product flow, use `docs/presentation-walkthrough.md`. It explains how to start the project, what screens to open, what to say on each screen, and how to explain AI/provider fallback behavior.
+
+## Today Presentation Quick Guide
+
+Use this short talk track:
+
+```text
+PMS Health is a patient-owned care-preparation platform. It organizes symptoms, profile context, lab reports, connected-health records, and follow-up answers before a doctor conversation. Rules own safety and urgent warnings. AI only improves wording, summaries, tips, questions, and doctor-preparation notes.
+```
+
+Recommended live flow:
+
+1. Open landing page and explain the product boundary.
+2. Login as patient and show the profile.
+3. Open Connected Health and explain the connector platform.
+4. Open Assessment and show Guided Assessment plus Report Assessment in one page.
+5. Generate a care guide, expand details, and export or open history.
+6. Login as staff and show analytics, care review, rules, question bank, and AI provider status.
+7. Open Swagger to show all backend endpoints.
+
+Key business line:
+
+```text
+PMS is not just a symptom form. It is a health-context preparation hub that can combine symptoms, profile, reports, device data, hospital records, rules, and AI wording into one saved doctor-preparation record.
+```
+
 ## JWT Authentication
 
 PMS now uses signed JWT access tokens instead of the earlier in-memory token map.
@@ -223,7 +251,11 @@ PMS/
 
   docs/
     architecture.md
+    business-selling-points.md
     pregnancy-care-prep-feature-plan.md
+    presentation-walkthrough.md
+    product-quick-summary.md
+    real-world-product-expansion.md
     testing-guide.md
 ```
 
@@ -283,9 +315,12 @@ $env:AI_MODE="provider"
 $env:AI_PROVIDER_CHAIN="ollama,openai"
 $env:OLLAMA_API_KEY="your-rotated-ollama-key"
 $env:OLLAMA_MODEL="gemma4:31b"
+$env:OLLAMA_BASE_URL="https://ollama.com/api"
 $env:OPENAI_API_KEY="your-openai-key-if-you-want-fallback"
 $env:OPENAI_MODEL="gpt-4o-mini"
 ```
+
+For a local Ollama installation, `OLLAMA_BASE_URL` can be `http://localhost:11434/api` and `OLLAMA_MODEL` can be `gemma4:31b` after the model is available locally. For Ollama Cloud, `https://ollama.com/api` requires `OLLAMA_API_KEY`. PMS tries the configured `OLLAMA_MODEL` first and can fall back to the Cloud tag `gemma4:31b-cloud` before trying OpenAI and then internal fallback output. Staff can view sanitized runtime status at `/api/admin/ai/status` or from the staff profile screen.
 
 Do not put provider keys in frontend files, browser storage, screenshots, or GitHub commits. If a key is pasted into chat or documentation by mistake, revoke or rotate it before use. Real patient data should not be sent to an external provider until privacy, consent, logging, retention, and security requirements are reviewed.
 
