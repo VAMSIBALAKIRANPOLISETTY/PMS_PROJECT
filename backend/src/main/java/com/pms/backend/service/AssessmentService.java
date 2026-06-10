@@ -524,6 +524,8 @@ public class AssessmentService {
                 "Temperature: " + safePdf(assessment.getTemperatureAvailable() && assessment.getTemperatureF() != null ? assessment.getTemperatureF() + " F" : "Not available"),
                 "Chronic-condition context: " + safePdf(nullSafe(assessment.getChronicCondition()))
         ));
+        writer.writeSection("Patient context");
+        writer.writeFactRows(patientContextRows(assessment.getUser()));
         if (assessment.getUrgentWarning() != null) {
             writer.writeSection("Urgent guidance");
             writer.writeParagraph(assessment.getUrgentWarning());
@@ -562,6 +564,21 @@ public class AssessmentService {
         writer.writeBullets(nullList(assessment.getTrustedSourceLinks()));
     }
 
+    private List<String> patientContextRows(AppUser user) {
+        List<String> rows = new ArrayList<>();
+        rows.add("Full name: " + safePdf(user.getFullName()));
+        rows.add("Age: " + (user.getAge() == null ? "Not recorded" : user.getAge() + " years"));
+        rows.add("Sex: " + safePdf(nullSafe(user.getGender())));
+        rows.add("Height: " + safePdf(formatHeightForPdf(user.getHeightCm())));
+        rows.add("Weight: " + safePdf(user.getWeightKg() == null ? "Not recorded" : user.getWeightKg() + " kg"));
+        rows.add("Blood type: " + safePdf(nullSafe(user.getBloodType())));
+        rows.add("Allergies: " + safePdf(nullSafe(user.getAllergies())));
+        rows.add("Chronic conditions: " + safePdf(nullSafe(user.getChronicConditions())));
+        rows.add("Emergency contact: " + safePdf(nullSafe(user.getEmergencyContactName())));
+        rows.add("Preferred hospital: " + safePdf(nullSafe(user.getPreferredHospital())));
+        return rows;
+    }
+
     private List<String> mergePdfLists(List<String> first, List<String> second) {
         List<String> merged = new ArrayList<>();
         merged.addAll(nullList(first));
@@ -581,6 +598,17 @@ public class AssessmentService {
 
     private String formatDateForPdf(LocalDateTime value) {
         return value == null ? "Not recorded" : value.format(PDF_DATE_FORMAT);
+    }
+
+    private String formatHeightForPdf(Double value) {
+        if (value == null || !Double.isFinite(value)) {
+            return "Not recorded";
+        }
+        int roundedCm = (int) Math.round(value);
+        int totalInches = (int) Math.round(value / 2.54d);
+        int feet = totalInches / 12;
+        int inches = totalInches % 12;
+        return roundedCm + " cm (" + feet + " ft " + inches + " in)";
     }
 
     private final class PdfWriter implements AutoCloseable {

@@ -74,7 +74,7 @@ flowchart TD
   L --> N["PDF export"]
 ```
 
-Report records and connected-health records are normalized before they are used for summaries. Provider-specific raw payloads should not directly drive risk logic. Connected-health context can enrich care-preparation wording only after the patient explicitly chooses to include recent timeline records.
+Report records and connected-health records are normalized before they are used for summaries. The report-assessment UI intentionally separates patient profile context from parsed report findings: the patient details anchor the review, while extracted values remain in a dedicated findings section. Provider-specific raw payloads should not directly drive risk logic. Connected-health context can enrich care-preparation wording only after the patient explicitly chooses to include recent timeline records.
 
 ## JWT Authentication Flow
 
@@ -156,7 +156,7 @@ src/
 - Resumable pending intake followed by required follow-up cards and completed care guide
 - Compact summary-first result view with a full-details toggle
 - Assessment history, reusable completed-report drawer, PDF export, and labeled profile views
-- Report upload with saved report assessments, image-file acceptance, extracted value display, and connected-data inclusion
+- Report upload with saved report assessments, image-file acceptance, patient-context review, separated extracted-value display, and connected-data inclusion
 - Connected Health page for patient-owned source metadata, dummy credential staging, and normalized timeline records
 - Clinical operations analytics overview
 - Full-width staff care review, operational safety-rule management, managed questions, and read-only staff profile

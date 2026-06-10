@@ -3,10 +3,12 @@ import axios from "axios";
 import { Activity, ArrowRight, CheckCircle2, Download, FileText, Upload } from "lucide-react";
 import { api, authHeaders } from "../../api";
 import { CarePrepGuide } from "../../components/CarePrepGuide";
-import type { Assessment, Notify, TimelineRecord } from "../../types";
+import type { Assessment, Notify, TimelineRecord, User } from "../../types";
+import { formatHeight } from "../../utils";
 
 interface ReportsProps {
   token: string;
+  user: User;
   notify: Notify;
   onCreated?: () => Promise<void>;
 }
@@ -20,7 +22,7 @@ interface ReportAnswer {
   note: string;
 }
 
-export function Reports({ token, notify, onCreated }: ReportsProps) {
+export function Reports({ token, user, notify, onCreated }: ReportsProps) {
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [reportText, setReportText] = useState("");
@@ -196,23 +198,51 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
       <section className="panel report-review-panel">
         <p className="eyebrow">Report assessment</p>
         <h2>{currentQuestion ? `Question ${step + 1} of ${draft?.followUpQuestions.length}` : "Prepare a report-based care guide"}</h2>
-        <p className="section-note">This section collects follow-up details, saves the completed report assessment to history, and prepares a structured summary for clinical discussion.</p>
+        <p className="section-note">
+          {currentQuestion
+            ? "PMS is reviewing the uploaded report with the patient's profile context. Answer each follow-up question to finish and save the report-based care guide."
+            : "Upload a report, review the patient context, and answer a few follow-up questions to save a report-based care guide in history."}
+        </p>
         {message && <div className="form-message">{message}</div>}
 
-        {sourceAssessment?.extractedObservations && sourceAssessment.extractedObservations.length > 0 && (
-          <div className="observation-grid" aria-label="Extracted report values">
-            {sourceAssessment.extractedObservations.slice(0, 6).map((observation, index) => (
-              <div className="observation-chip" key={`${observation.testName}-${index}`}>
-                <span>{observation.testName}</span>
-                <strong>{observation.valueText}{observation.unit ? ` ${observation.unit}` : ""}</strong>
-                {observation.flag && <em>{observation.flag}</em>}
-              </div>
-            ))}
-          </div>
+        {sourceAssessment && (
+          <section className="report-review-section" aria-label="Patient context">
+            <div className="report-review-heading">
+              <h3>Patient context</h3>
+              <p>These details come from the current patient profile and help keep the report review grounded in the right health record.</p>
+            </div>
+            <div className="observation-grid report-context-grid">
+              {patientContextRows(user).map((item) => (
+                <div className="observation-chip" key={item.label}>
+                  <small>{item.label}</small>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {sourceAssessment?.connectedHealthSummary && (
           <div className="summary-box compact-summary">{sourceAssessment.connectedHealthSummary}</div>
+        )}
+
+        {sourceAssessment?.extractedObservations && sourceAssessment.extractedObservations.length > 0 && (
+          <section className="report-review-section" aria-label="Report findings">
+            <div className="report-review-heading">
+              <h3>Report findings</h3>
+              <p>These are the values PMS could read from the uploaded report. Keep the original report available for clinical review.</p>
+            </div>
+            <div className="observation-grid" aria-label="Extracted report values">
+              {sourceAssessment.extractedObservations.slice(0, 6).map((observation, index) => (
+                <div className="observation-chip" key={`${observation.testName}-${index}`}>
+                  <small>{observation.testName || "Reported value"}</small>
+                  <strong>{observation.valueText}{observation.unit ? ` ${observation.unit}` : ""}</strong>
+                  <span>Reference range: {observation.referenceRange || "Not recorded"}</span>
+                  {observation.flag && <em>{observation.flag}</em>}
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {draft && currentQuestion && !result ? (
@@ -247,7 +277,7 @@ export function Reports({ token, notify, onCreated }: ReportsProps) {
             </div>
           </div>
         ) : !result ? (
-          <p className="summary-box">Upload a report and complete the follow-up questions to save a report-based assessment in history.</p>
+          <p className="summary-box">Upload a readable report to begin the review. PMS will ask a few follow-up questions before saving the completed report-based care guide.</p>
         ) : null}
 
         {result && (
@@ -290,4 +320,23 @@ function connectedHealthMessage(error: unknown) {
   if (error.response?.status) return `Connected health records could not be loaded. Server returned ${error.response.status}.`;
   if (error.request) return "Connected health records could not be loaded. Confirm the backend is running and the frontend proxy is connected.";
   return "Connected health records could not be loaded.";
+}
+
+function patientContextRows(user: User) {
+  return [
+    { label: "Full name", value: fallback(user.fullName) },
+    { label: "Age", value: user.age ? `${user.age} years` : "Not recorded" },
+    { label: "Sex", value: fallback(user.sex) },
+    { label: "Height", value: user.heightCm ? formatHeight(user.heightCm) : "Not recorded" },
+    { label: "Weight", value: user.weightKg ? `${user.weightKg} kg` : "Not recorded" },
+    { label: "Blood type", value: fallback(user.bloodType) },
+    { label: "Chronic conditions", value: fallback(user.chronicConditions) },
+    { label: "Allergies", value: fallback(user.allergies) },
+    { label: "Emergency contact", value: fallback(user.emergencyContactName) },
+    { label: "Preferred hospital", value: fallback(user.preferredHospital) },
+  ];
+}
+
+function fallback(value?: string | null) {
+  return value && value.trim() ? value : "Not recorded";
 }

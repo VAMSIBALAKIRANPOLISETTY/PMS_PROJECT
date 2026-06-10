@@ -115,6 +115,8 @@ Upload or paste readable report text.
 
 Explain:
 
+- PMS first shows the patient profile context that belongs to this record.
+- PMS keeps parsed report findings in a separate lower section so profile details and report values do not get mixed together.
 - PMS extracts notable report values when text is readable.
 - Image upload is accepted, but readable pasted text is required until OCR/vision extraction is added.
 - Final report assessment is saved to history and can be exported.

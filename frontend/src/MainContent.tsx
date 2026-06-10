@@ -34,7 +34,7 @@ export function MainContent(props: MainContentProps) {
     return <AdminOverview analytics={props.analytics} assessments={props.assessments} setPage={props.setPage} token={props.token} />;
   }
   if (props.page === "assessment" || props.page === "reports") {
-    return <AssessmentWorkspace token={props.token} onCreated={props.refresh} notify={props.notify} initialMode={props.page === "reports" ? "report" : "guided"} />;
+    return <AssessmentWorkspace user={props.user} token={props.token} onCreated={props.refresh} notify={props.notify} initialMode={props.page === "reports" ? "report" : "guided"} />;
   }
   if (props.page === "connected") return <ConnectedHealth token={props.token} notify={props.notify} />;
   if (props.page === "history") return <History assessments={props.assessments} token={props.token} />;

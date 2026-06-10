@@ -20,7 +20,7 @@ The long-term vision is a patient health context hub. PMS can connect to wearabl
 
 - Unified assessment workspace: Guided symptom assessment and report-based assessment live on the same patient page, so users do not need to learn two separate flows.
 - Structured patient profile: The product supports real patient-record style details such as body basics, blood type, allergies, chronic conditions, medications, family history, emergency contact, care team, insurance, lifestyle, and preferences.
-- Report-based assessment: Users can upload PDF, text, or image report files. Text-based reports and pasted report content can be extracted into notable observations, summary, tips, directions, and doctor questions.
+- Report-based assessment: Users can upload PDF, text, or image report files. PMS reviews the current patient profile context first, keeps parsed report findings in a separate section, and turns readable report content into notable observations, summary, tips, directions, and doctor questions.
 - Connected Health foundation: PMS has a connector model for Apple Health, Android Health Connect, Samsung Health, hospital portals, lab uploads, and manual entry. Current connectors store safe metadata and normalized timeline records.
 - Rules plus AI: Safety rules decide risk and urgent warning behavior. AI only improves wording, question drafts, summaries, tips, and patient-friendly explanations.
 - Provider fallback chain: `PMS_Test3` supports Ollama Cloud, OpenAI, and internal fallback output in a configurable order, so the product can keep working even when a provider is unavailable.

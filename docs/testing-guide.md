@@ -163,7 +163,7 @@ Check these screens:
 - Profile setup: every card requires a current answer and disappears after final save.
 - Assessment: symptom drawer, severity, duration, temperature availability, chronic condition, follow-up cards, compact completed care guide, and `View full care details` toggle.
 - History: clicking a record opens the full assessment report drawer.
-- Reports: upload a text-based PDF/text/image file or paste report text, verify extracted values, include connected health when available, answer follow-up cards, save to history, and export PDF. Image-only reports should ask for readable pasted text until OCR is added.
+- Reports: upload a text-based PDF/text/image file or paste report text, verify the patient profile context appears first, confirm parsed report findings appear in a separate lower section, include connected health when available, answer follow-up cards, save to history, and export PDF. Image-only reports should ask for readable pasted text until OCR is added.
 - Connected Health: review provider permissions, enter dummy credentials, wait for `Connection established`, save the connection, and confirm no provider password or token is stored in the browser.
 - Staff overview: analytics, compact charts, risk mix, full-width care review.
 - Staff rules: create rule, activate/deactivate rule.
@@ -207,6 +207,7 @@ Black-box testing checks behavior from the user or API perspective without readi
 - Do staff-created inactive rules or questions affect future assessments? Expected: no.
 - Does an uploaded report become a saved history record only after follow-ups are answered? Expected: yes.
 - Does report export return a PDF for completed records? Expected: yes.
+- Does report follow-up view show patient profile context separately from parsed report values? Expected: yes.
 - Does Connected Health require staged dummy credentials and store only metadata? Expected: yes.
 - Does `Use connected health data` include only the authenticated patient's recent timeline records? Expected: yes.
 - Does image report upload require pasted readable text until OCR is implemented? Expected: yes.
@@ -335,6 +336,7 @@ Use this short script before a professor or manager walkthrough:
 6. Login as patient, create an assessment, answer follow-ups, and verify the completed care guide.
 7. Open frontend and repeat the same flow visually.
 8. Upload a report or paste report text, answer report follow-ups, confirm the saved report appears in History, and export the PDF.
-9. Open Connected Health, save a connection, sync normalized records, and confirm timeline entries.
-10. Login as staff and verify analytics, care review, rule creation, question creation, and full report drawer.
-11. Explain clearly: rules control safety, fallback wording is local by default, optional Ollama/OpenAI wording is backend-only, and PMS does not diagnose or prescribe.
+9. In the report flow, confirm the top section shows patient profile context, the findings section shows parsed report values, and the PDF contains matching patient details.
+10. Open Connected Health, save a connection, sync normalized records, and confirm timeline entries.
+11. Login as staff and verify analytics, care review, rule creation, question creation, and full report drawer.
+12. Explain clearly: rules control safety, fallback wording is local by default, optional Ollama/OpenAI wording is backend-only, and PMS does not diagnose or prescribe.

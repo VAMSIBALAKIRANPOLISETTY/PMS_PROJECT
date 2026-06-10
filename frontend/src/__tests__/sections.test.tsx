@@ -59,6 +59,11 @@ const user: User = {
   sex: "Female",
   heightCm: 162,
   weightKg: 58,
+  bloodType: "O+",
+  allergies: "No known allergies",
+  chronicConditions: "None",
+  emergencyContactName: "Ravi Rao",
+  preferredHospital: "City Care Hospital",
   profileCompletion: 100,
   profileSetupComplete: true,
 };
@@ -102,6 +107,24 @@ const assessment: Assessment = {
   connectedHealthSummary: "Recent connected health context: Resting heart rate 72 bpm from Apple Health.",
   patientProfilePhotoDataUrl: "data:image/png;base64,ZmFrZQ==",
   createdAt: "2026-05-15T10:00:00",
+};
+
+const reportDraft: Assessment = {
+  ...assessment,
+  id: 22,
+  status: "PENDING_FOLLOW_UP",
+  sourceType: "REPORT",
+  sourceName: "Report-based assessment",
+  reportName: "cbc-report.pdf",
+  reportProvider: "City Diagnostic Laboratory",
+  mainSymptom: "Report review",
+  symptoms: ["Report review"],
+  careSummary: null,
+  explanation: null,
+  extractedObservations: [
+    { testName: "Hemoglobin", valueText: "10.5", unit: "g/dL", referenceRange: "12-16", flag: "Low" },
+    { testName: "Glucose", valueText: "92", unit: "mg/dL", referenceRange: "70-110", flag: "Normal" },
+  ],
 };
 
 const analytics: Analytics = {
@@ -221,7 +244,7 @@ describe("section rendering", () => {
 
   it("combines guided and report assessment flows in one workspace", () => {
     vi.spyOn(api, "get").mockRejectedValue(new Error("No draft"));
-    render(<AssessmentWorkspace token="token" onCreated={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
+    render(<AssessmentWorkspace user={user} token="token" onCreated={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} />);
 
     expect(screen.getByRole("tab", { name: /Guided assessment/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("Record what you are feeling")).toBeVisible();
@@ -287,7 +310,7 @@ describe("section rendering", () => {
   }, 15000);
 
   it("renders reports, history, profile, and recent assessments", () => {
-    render(<Reports token="token" notify={vi.fn()} />);
+    render(<Reports user={user} token="token" notify={vi.fn()} />);
     expect(screen.getByText("Upload a report for review")).toBeInTheDocument();
     expect(screen.getByText("Prepare a report-based care guide")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Use connected health data/i })).toBeInTheDocument();
@@ -323,6 +346,31 @@ describe("section rendering", () => {
     await waitFor(() => expect(screen.getByText("Connection established. Review and save this source.")).toBeInTheDocument(), { timeout: 1500 });
     fireEvent.click(screen.getByRole("button", { name: "Save connection" }));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/connections/APPLE_HEALTH/callback", expect.objectContaining({ externalAccountId: "patient@example.com" }), expect.anything()));
+  });
+
+  it("shows patient context first and parsed report findings below during report follow-ups", async () => {
+    vi.spyOn(api, "post").mockImplementation((url) => {
+      if (url === "/reports/upload") {
+        return Promise.resolve({ data: reportDraft });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    render(<Reports user={user} token="token" notify={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Report text or notes"), {
+      target: { value: "City Diagnostic Laboratory\nHemoglobin 10.5 g/dL 12-16 Low" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Prepare report questions/i }));
+
+    await waitFor(() => expect(screen.getByText("Question 1 of 4")).toBeInTheDocument());
+    expect(screen.getByText(/reviewing the uploaded report with the patient's profile context/i)).toBeInTheDocument();
+    expect(screen.getByText("Patient context")).toBeInTheDocument();
+    expect(screen.getByText("Anaya Rao")).toBeInTheDocument();
+    expect(screen.getByText("O+")).toBeInTheDocument();
+    expect(screen.getByText("No known allergies")).toBeInTheDocument();
+    expect(screen.getByText("Report findings")).toBeInTheDocument();
+    expect(screen.getByText("Hemoglobin")).toBeInTheDocument();
+    expect(screen.getByText("Reference range: 12-16")).toBeInTheDocument();
   });
 
   it("opens the real Google Health authorization flow", async () => {

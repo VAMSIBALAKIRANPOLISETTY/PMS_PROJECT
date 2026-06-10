@@ -13,7 +13,10 @@ import com.pms.backend.dto.ConnectedHealthDtos.TimelineRecordRequest;
 import com.pms.backend.model.AssessmentSourceType;
 import com.pms.backend.model.AssessmentStatus;
 import com.pms.backend.repository.UserRepository;
+import java.io.ByteArrayInputStream;
 import java.util.List;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +41,12 @@ class RealWorldExpansionServiceTests {
     @Test
     void reportUploadFinalizationHistoryAndExportWorkTogether() {
         var user = registerPatient("report.patient@example.com", "reportpatient");
+        user.setBloodType("O+");
+        user.setAllergies("No known allergies");
+        user.setChronicConditions("None");
+        user.setEmergencyContactName("Ravi Rao");
+        user.setPreferredHospital("City Care Hospital");
+        user = userRepository.save(user);
         var draft = assessmentService.uploadReport(user, null,
                 "City Diagnostic Laboratory\nHemoglobin 10.5 g/dL 12-16 Low\nGlucose 92 mg/dL 70-110 Normal");
 
@@ -52,8 +61,17 @@ class RealWorldExpansionServiceTests {
         assertEquals(AssessmentSourceType.REPORT, completed.sourceType());
         assertTrue(completed.careSummary() != null && !completed.careSummary().isBlank());
         assertTrue(assessmentService.reportHistoryFor(user).stream().anyMatch(item -> item.id().equals(completed.id())));
-        assertTrue(assessmentService.exportAssessment(user, completed.id()).length > 100);
-        assertTrue(assessmentService.exportHistory(user).length > 100);
+        byte[] recordPdf = assessmentService.exportAssessment(user, completed.id());
+        byte[] historyPdf = assessmentService.exportHistory(user);
+
+        assertTrue(recordPdf.length > 100);
+        assertTrue(historyPdf.length > 100);
+        String exportText = readPdf(recordPdf);
+        assertTrue(exportText.contains("Patient context"));
+        assertTrue(exportText.contains("Blood type: O+"));
+        assertTrue(exportText.contains("Emergency contact: Ravi Rao"));
+        assertTrue(exportText.contains("Extracted report values"));
+        assertTrue(exportText.contains("Hemoglobin"));
     }
 
     @Test
@@ -204,5 +222,13 @@ class RealWorldExpansionServiceTests {
                 true
         ));
         return userRepository.findByEmailIgnoreCase(email).orElseThrow();
+    }
+
+    private String readPdf(byte[] pdf) {
+        try (PDDocument document = PDDocument.load(new ByteArrayInputStream(pdf))) {
+            return new PDFTextStripper().getText(document);
+        } catch (Exception exception) {
+            throw new IllegalStateException("PDF test content could not be read.", exception);
+        }
     }
 }

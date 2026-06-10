@@ -18,7 +18,7 @@ The system has two workspaces. Patients can sign up, complete a structured profi
 4. Enter severity, duration, temperature availability, and chronic-condition context.
 5. Answer follow-up cards.
 6. View compact care guide first, then expand details.
-7. Upload report PDF/text, answer report follow-ups, save report assessment, and export PDF.
+7. Upload report PDF/text, review patient profile context and parsed report findings separately, answer report follow-ups, save report assessment, and export PDF.
 8. Connect health sources and review normalized health timeline records.
 
 ## Staff Flow
@@ -65,4 +65,4 @@ PMS is not just a symptom form. It combines symptoms, structured profile, lab re
   The backend and UI now support the connector model and normalized timeline records. Real Apple Health, Health Connect, Samsung Health, and hospital connections require native companion apps or SMART on FHIR integration work.
 
 - What makes report assessment valuable?
-  Reports become saved records with extracted values, follow-up answers, care-preparation summary, history drawer, staff review visibility, and PDF export.
+  Reports become saved records with patient profile context, extracted values, follow-up answers, care-preparation summary, history drawer, staff review visibility, and PDF export.

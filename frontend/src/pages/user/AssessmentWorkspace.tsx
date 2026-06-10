@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FileText, Stethoscope } from "lucide-react";
-import type { Notify } from "../../types";
+import type { Notify, User } from "../../types";
 import { AssessmentForm } from "./AssessmentForm";
 import { Reports } from "./Reports";
 
@@ -8,12 +8,13 @@ type AssessmentMode = "guided" | "report";
 
 interface AssessmentWorkspaceProps {
   token: string;
+  user: User;
   notify: Notify;
   onCreated: () => Promise<void>;
   initialMode?: AssessmentMode;
 }
 
-export function AssessmentWorkspace({ token, notify, onCreated, initialMode = "guided" }: AssessmentWorkspaceProps) {
+export function AssessmentWorkspace({ token, user, notify, onCreated, initialMode = "guided" }: AssessmentWorkspaceProps) {
   const [activeMode, setActiveMode] = useState<AssessmentMode>(initialMode);
 
   useEffect(() => {
@@ -70,7 +71,7 @@ export function AssessmentWorkspace({ token, notify, onCreated, initialMode = "g
         aria-labelledby="report-assessment-tab"
         hidden={activeMode !== "report"}
       >
-        <Reports token={token} notify={notify} onCreated={onCreated} />
+        <Reports token={token} user={user} notify={notify} onCreated={onCreated} />
       </div>
     </div>
   );
